@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TornaguiaAsistente.Api/TornaguiaAsistente.Api.csproj" />
+    <Project Path="src/TornaguiaAsistente.Application/TornaguiaAsistente.Application.csproj" />
+    <Project Path="src/TornaguiaAsistente.Domain/TornaguiaAsistente.Domain.csproj" />
+    <Project Path="src/TornaguiaAsistente.Infrastructure/TornaguiaAsistente.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TornaguiaAsistente.Tests/TornaguiaAsistente.Tests.csproj" />
+  </Folder>
+</Solution>

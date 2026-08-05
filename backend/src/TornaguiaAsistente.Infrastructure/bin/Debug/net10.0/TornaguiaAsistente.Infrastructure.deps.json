@@ -1,0 +1,56 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "TornaguiaAsistente.Infrastructure/1.0.0": {
+        "dependencies": {
+          "TornaguiaAsistente.Application": "1.0.0",
+          "TornaguiaAsistente.Domain": "1.0.0"
+        },
+        "runtime": {
+          "TornaguiaAsistente.Infrastructure.dll": {}
+        }
+      },
+      "TornaguiaAsistente.Application/1.0.0": {
+        "dependencies": {
+          "TornaguiaAsistente.Domain": "1.0.0"
+        },
+        "runtime": {
+          "TornaguiaAsistente.Application.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "TornaguiaAsistente.Domain/1.0.0": {
+        "runtime": {
+          "TornaguiaAsistente.Domain.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "TornaguiaAsistente.Infrastructure/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "TornaguiaAsistente.Application/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "TornaguiaAsistente.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
