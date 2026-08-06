@@ -1,0 +1,19 @@
+'EOF'
+# ---------------- .NET / Backend ----------------
+backend/**/bin/
+backend/**/obj/
+backend/**/*.user
+
+# ---------------- Node / Frontend ----------------
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# ---------------- General ----------------
+.vs/
+.vscode/
+*.log
+.DS_Store
+Thumbs.db
+EOF
