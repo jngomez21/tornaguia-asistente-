@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: tornaguia-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tornaguia_db
+      POSTGRES_USER: tornaguia_user
+      POSTGRES_PASSWORD: tornaguia_pass
+    ports:
+      - "5433:5432"
+    volumes:
+      - tornaguia_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tornaguia_user -d tornaguia_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  tornaguia_pgdata:
