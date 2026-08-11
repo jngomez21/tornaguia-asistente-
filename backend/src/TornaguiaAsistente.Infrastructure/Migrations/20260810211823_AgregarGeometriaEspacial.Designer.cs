@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using TornaguiaAsistente.Infrastructure.Persistence;
 namespace TornaguiaAsistente.Infrastructure.Migrations
 {
     [DbContext(typeof(TornaguiaDbContext))]
-    partial class TornaguiaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260810211823_AgregarGeometriaEspacial")]
+    partial class AgregarGeometriaEspacial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -31,10 +34,6 @@ namespace TornaguiaAsistente.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CodigoDane")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<MultiPolygon>("Limites")
                         .HasColumnType("geometry");
