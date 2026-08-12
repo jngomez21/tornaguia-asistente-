@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using TornaguiaAsistente.Infrastructure.Persistence;
 namespace TornaguiaAsistente.Infrastructure.Migrations
 {
     [DbContext(typeof(TornaguiaDbContext))]
-    partial class TornaguiaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260812225241_SincronizarModeloMunicipio")]
+    partial class SincronizarModeloMunicipio
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
