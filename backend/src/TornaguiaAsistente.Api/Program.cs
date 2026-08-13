@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TornaguiaAsistente.Infrastructure.Persistence;
+using TornaguiaAsistente.Application.Geografia;
+using TornaguiaAsistente.Infrastructure.Geografia;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,6 +13,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddHttpClient<IMotorGeografico, MotorGeograficoMapbox>();
 
 builder.Services.AddDbContext<TornaguiaDbContext>(options =>
     options.UseNpgsql(
