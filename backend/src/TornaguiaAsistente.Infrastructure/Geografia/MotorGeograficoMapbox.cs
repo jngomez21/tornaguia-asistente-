@@ -34,16 +34,23 @@ public class MotorGeograficoMapbox : IMotorGeografico
         if (origen.Ubicacion is null || destino.Ubicacion is null)
             throw new InvalidOperationException("Origen o destino no tienen coordenadas cargadas.");
 
-        var coordenadasUrl =
-            $"{origen.Ubicacion.X},{origen.Ubicacion.Y};{destino.Ubicacion.X},{destino.Ubicacion.Y}";
+        var coordenadasUrl = string.Format(
+            System.Globalization.CultureInfo.InvariantCulture,
+            "{0},{1};{2},{3}",
+            origen.Ubicacion.X, origen.Ubicacion.Y,
+            destino.Ubicacion.X, destino.Ubicacion.Y);
 
         var url = $"https://api.mapbox.com/directions/v5/mapbox/driving/{coordenadasUrl}" +
                    $"?geometries=geojson&overview=full&access_token={_accessToken}";
 
         var respuesta = await _httpClient.GetAsync(url);
-        respuesta.EnsureSuccessStatusCode();
-
         var json = await respuesta.Content.ReadAsStringAsync();
+
+        if (!respuesta.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException(
+                $"Mapbox devolvió {(int)respuesta.StatusCode}: {json}");
+        }
         using var documento = JsonDocument.Parse(json);
 
         var ruta = documento.RootElement.GetProperty("routes")[0];
