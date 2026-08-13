@@ -13,7 +13,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-builder.Services.AddHttpClient<IMotorGeografico, MotorGeograficoMapbox>();
+builder.Services.AddHttpClient<MotorGeograficoMapbox>();
+builder.Services.AddScoped<IMotorGeografico, MotorGeograficoConCache>();
 
 builder.Services.AddDbContext<TornaguiaDbContext>(options =>
     options.UseNpgsql(
