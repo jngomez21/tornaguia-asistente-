@@ -37,7 +37,7 @@ async Task CargarDepartamentos()
 {
     Console.WriteLine("=== Cargador de polígonos departamentales ===");
 
-    var rutaArchivo = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "colombia-departamentos.geo.json");
+    var rutaArchivo = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "..", "database", "raw-data", "colombia-departamentos.geo.json");
     var geoJsonTexto = File.ReadAllText(rutaArchivo);
 
     var geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
@@ -102,7 +102,7 @@ async Task CargarMunicipios()
 {
     Console.WriteLine("=== Cargador de municipios (DIVIPOLA - DANE) ===");
 
-    var rutaArchivo = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "municipios-colombia.csv");
+    var rutaArchivo = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "..", "database", "raw-data", "municipios-colombia.csv");
     Console.WriteLine($"Leyendo archivo: {rutaArchivo}");
 
     var geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
