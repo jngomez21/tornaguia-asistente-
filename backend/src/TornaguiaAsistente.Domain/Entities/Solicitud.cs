@@ -20,7 +20,9 @@ public class Solicitud
     public Pais? PaisDestino { get; set; }
 
     public bool EstaDeclarado { get; set; }
+    public bool EsParaExportacion { get; set; }
     public string? NumeroDeclaracionOrigen { get; set; }
+
 
     public DateTime FechaSolicitud { get; set; }
 
