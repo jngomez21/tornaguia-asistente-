@@ -25,6 +25,11 @@ switch (modo)
     case "municipios":
         await CargarMunicipios();
         break;
+    case "hash":
+        var textoPlano = args.Length > 1 ? args[1] : "temporal123";
+        var hash = BCrypt.Net.BCrypt.HashPassword(textoPlano);
+        Console.WriteLine(hash);
+        break;
     default:
         Console.WriteLine("Uso: dotnet run -- departamentos | municipios");
         break;
