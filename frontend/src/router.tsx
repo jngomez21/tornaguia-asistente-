@@ -2,6 +2,7 @@ import { createBrowserRouter  } from 'react-router-dom'
 import { LoginPage } from './features/auth/pages/LoginPage'
 import { RegisterPage } from './features/auth/pages/RegisterPage'
 import { ForgotPasswordPage } from './features/auth/pages/ForgotPasswordPage'
+import { NuevaSolicitudPage } from './features/solicitudes/pages/NuevaSolicitudPage'
 
 export const router = createBrowserRouter([
     {
@@ -14,6 +15,10 @@ export const router = createBrowserRouter([
     },
     {
         path: '/olvide-password',
-        element: <ForgotPasswordPage />, 
+        element: <ForgotPasswordPage />,
+    },
+    {
+        path: '/solicitudes/nueva',
+        element: <NuevaSolicitudPage />,
     },
 ])
