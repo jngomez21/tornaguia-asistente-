@@ -1,29 +1,41 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
+import { useNavigate, Link } from 'react-router-dom'
+import { login } from '../api/authApi'
 import loginHero from '../../../assets/login.png'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [mostrarPassword, setMostrarPassword] = useState(false)
+  const navigate = useNavigate()
+
+  const mutation = useMutation({
+    mutationFn: login,
+    onSuccess: (data) => {
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('usuarioId', data.usuarioId.toString())
+      localStorage.setItem('nombre', data.nombre)
+      navigate('/solicitudes/nueva')
+    },
+  })
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    // TODO: conectar con el endpoint de login cuando exista en el backend
-    console.log({ email, password })
+    mutation.mutate({ email, password })
   }
 
   return (
     <div className="h-screen flex flex-col lg:flex-row overflow-hidden">
-        <div className="hidden md:block h-1/3 lg:h-full lg:w-1/2 relative shrink-0">
-            <img
-                src={loginHero}
-                alt="Ilustración de una carretera entre montañas, representando el trayecto de una tornaguía"
-                className="w-full h-full object-cover"
-            />
-        </div>
+      <div className="hidden md:block h-1/3 lg:h-full lg:w-1/2 relative shrink-0">
+        <img
+          src={loginHero}
+          alt="Ilustración de una carretera entre montañas, representando el trayecto de una tornaguía"
+          className="w-full h-full object-cover"
+        />
+      </div>
 
-      <div className="w-full lg:w-1/2 flex items-center justify-center bg-white p-8">
+      <div className="flex-1 min-h-0 flex items-center justify-center bg-white p-6 sm:p-8 overflow-y-auto">
         <div className="w-full max-w-md">
           <h1 className="text-2xl font-bold text-marca-oscuro mb-1">
             Iniciar sesión
@@ -66,6 +78,12 @@ export function LoginPage() {
               </button>
             </div>
 
+            {mutation.isError && (
+              <p className="text-sm text-red-600 mb-4">
+                Correo o contraseña incorrectos.
+              </p>
+            )}
+
             <div className="text-right mb-6">
               <Link to="/olvide-password" className="text-sm text-marca-medio">
                 ¿Olvidaste tu contraseña?
@@ -74,9 +92,10 @@ export function LoginPage() {
 
             <button
               type="submit"
-              className="w-full bg-marca-oscuro text-white font-semibold py-3 rounded-lg hover:opacity-90 transition"
+              disabled={mutation.isPending}
+              className="w-full bg-marca-oscuro text-white font-semibold py-3 rounded-lg hover:opacity-90 transition disabled:opacity-50"
             >
-              Iniciar sesión
+              {mutation.isPending ? 'Ingresando...' : 'Iniciar sesión'}
             </button>
           </form>
 
