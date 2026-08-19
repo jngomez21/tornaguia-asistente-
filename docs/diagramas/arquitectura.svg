@@ -1,0 +1,67 @@
+<svg width="680" height="520" viewBox="0 0 680 520" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>Arquitectura del sistema Tornaguía Asistente</title>
+<desc>Diagrama de capas: Frontend React se comunica con el backend en .NET organizado en Clean Architecture (Api, Application, Domain, Infrastructure), que a su vez depende de PostgreSQL con PostGIS y de la API externa de Mapbox.</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="#3d3d3a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+
+<rect width="680" height="520" fill="#ffffff"/>
+
+<g>
+<rect x="250" y="30" width="180" height="44" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="0.5"/>
+<text x="340" y="46" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="600" fill="#3d3d3a">Frontend</text>
+<text x="340" y="62" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">React + Vite + TS</text>
+</g>
+<line x1="340" y1="74" x2="340" y2="138" stroke="#3d3d3a" stroke-width="1" marker-end="url(#arrow)"/>
+
+<rect x="60" y="100" width="560" height="310" rx="20" fill="none" stroke="#9c9a92" stroke-width="0.5" stroke-dasharray="4 4"/>
+<text x="80" y="122" font-family="sans-serif" font-size="13" font-weight="600" fill="#3d3d3a">Backend</text>
+
+<g>
+<rect x="250" y="140" width="180" height="44" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="0.5"/>
+<text x="340" y="156" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="600" fill="#3d3d3a">Api</text>
+<text x="340" y="172" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">Controllers, Swagger</text>
+</g>
+<line x1="340" y1="184" x2="340" y2="208" stroke="#3d3d3a" stroke-width="1" marker-end="url(#arrow)"/>
+
+<g>
+<rect x="250" y="210" width="180" height="44" rx="8" fill="#ccfbf1" stroke="#0d9488" stroke-width="0.5"/>
+<text x="340" y="226" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="600" fill="#3d3d3a">Application</text>
+<text x="340" y="242" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">Casos de uso, interfaces</text>
+</g>
+
+<path d="M340 254 L340 270 L205 270 L205 288" fill="none" stroke="#3d3d3a" stroke-width="1" marker-end="url(#arrow)"/>
+<path d="M340 254 L340 270 L475 270 L475 288" fill="none" stroke="#3d3d3a" stroke-width="1" marker-end="url(#arrow)"/>
+
+<g>
+<rect x="110" y="290" width="190" height="56" rx="8" fill="#ffe4e0" stroke="#e11d48" stroke-width="0.5"/>
+<text x="205" y="308" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="600" fill="#3d3d3a">Domain</text>
+<text x="205" y="326" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">Entidades, motor de reglas</text>
+</g>
+
+<g>
+<rect x="380" y="290" width="190" height="56" rx="8" fill="#fce7f3" stroke="#db2777" stroke-width="0.5"/>
+<text x="475" y="308" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="600" fill="#3d3d3a">Infrastructure</text>
+<text x="475" y="326" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">EF Core, motor geografico</text>
+</g>
+
+<line x1="378" y1="318" x2="302" y2="318" stroke="#3d3d3a" stroke-width="1" marker-end="url(#arrow)"/>
+
+<path d="M475 346 L475 380 L205 380 L205 428" fill="none" stroke="#3d3d3a" stroke-width="1" marker-end="url(#arrow)"/>
+<line x1="475" y1="346" x2="475" y2="428" stroke="#3d3d3a" stroke-width="1" marker-end="url(#arrow)"/>
+
+<g>
+<rect x="110" y="430" width="190" height="44" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="0.5"/>
+<text x="205" y="446" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="600" fill="#3d3d3a">PostgreSQL + PostGIS</text>
+<text x="205" y="462" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">Datos y geometrias</text>
+</g>
+
+<g>
+<rect x="380" y="430" width="190" height="44" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="0.5"/>
+<text x="475" y="446" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="600" fill="#3d3d3a">Mapbox Directions API</text>
+<text x="475" y="462" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">Calculo de rutas</text>
+</g>
+</g>
+</svg>

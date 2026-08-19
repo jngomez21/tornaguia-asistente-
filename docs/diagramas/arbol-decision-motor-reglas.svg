@@ -1,0 +1,93 @@
+<svg width="900" height="460" viewBox="0 0 900 460" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>Arbol de decision del motor de reglas de tornaguias, con panel de referencia de tipos de Transito</title>
+<desc>A la izquierda, el arbol de decision que determina uno de tres resultados legales: Movilizacion, Reenvio o Transito, evaluando proposito de exportacion, mismo departamento y estado de declaracion. A la derecha, separado por una linea divisoria, un panel de referencia independiente que lista los tipos de Transito por finalidad: exportacion o transito a otro pais, dentro de un solo departamento, o dentro de un departamento pero pasando por otro. Este panel es solo informativo y no afecta la decision del motor de reglas.</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="#3d3d3a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+
+<rect width="900" height="460" fill="#ffffff"/>
+
+<text x="20" y="20" font-family="sans-serif" font-size="13" font-weight="600" fill="#3d3d3a">Motor de reglas — arbol de decision</text>
+
+<g>
+<rect x="230" y="30" width="220" height="56" rx="8" fill="#f1f0ec" stroke="#73726c" stroke-width="0.5"/>
+<text x="340" y="52" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="600" fill="#3d3d3a">Es para exportacion?</text>
+<text x="340" y="70" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">pais destino o checkbox</text>
+</g>
+
+<path d="M450 58 L560 58 L560 138" fill="none" stroke="#3d3d3a" stroke-width="1" marker-end="url(#arrow)"/>
+<text x="500" y="52" font-family="sans-serif" font-size="11" fill="#5b5b57">Si</text>
+<line x1="340" y1="86" x2="340" y2="138" stroke="#3d3d3a" stroke-width="1" marker-end="url(#arrow)"/>
+<text x="350" y="108" font-family="sans-serif" font-size="11" fill="#5b5b57">No</text>
+
+<g>
+<rect x="470" y="140" width="180" height="56" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="0.5"/>
+<text x="560" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="600" fill="#3d3d3a">Transito</text>
+<text x="560" y="176" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">resultado final</text>
+</g>
+
+<g>
+<rect x="250" y="140" width="180" height="56" rx="8" fill="#f1f0ec" stroke="#73726c" stroke-width="0.5"/>
+<text x="340" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="600" fill="#3d3d3a">Origen y destino</text>
+<text x="340" y="176" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">mismo departamento?</text>
+</g>
+
+<path d="M270 196 L270 222 L210 222 L210 248" fill="none" stroke="#3d3d3a" stroke-width="1" marker-end="url(#arrow)"/>
+<text x="230" y="216" font-family="sans-serif" font-size="11" fill="#5b5b57">No</text>
+<path d="M410 196 L410 222 L540 222 L540 248" fill="none" stroke="#3d3d3a" stroke-width="1" marker-end="url(#arrow)"/>
+<text x="460" y="216" font-family="sans-serif" font-size="11" fill="#5b5b57">Si</text>
+
+<g>
+<rect x="120" y="250" width="180" height="56" rx="8" fill="#f1f0ec" stroke="#73726c" stroke-width="0.5"/>
+<text x="210" y="268" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="600" fill="#3d3d3a">Producto</text>
+<text x="210" y="286" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">declarado?</text>
+</g>
+
+<g>
+<rect x="450" y="250" width="180" height="56" rx="8" fill="#f3e8ff" stroke="#9333ea" stroke-width="0.5"/>
+<text x="540" y="268" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="600" fill="#3d3d3a">Transito</text>
+<text x="540" y="286" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">resultado final</text>
+</g>
+
+<path d="M160 306 L160 334 L120 334 L120 358" fill="none" stroke="#3d3d3a" stroke-width="1" marker-end="url(#arrow)"/>
+<text x="130" y="328" font-family="sans-serif" font-size="11" fill="#5b5b57">No</text>
+<path d="M260 306 L260 334 L300 334 L300 358" fill="none" stroke="#3d3d3a" stroke-width="1" marker-end="url(#arrow)"/>
+<text x="270" y="328" font-family="sans-serif" font-size="11" fill="#5b5b57">Si</text>
+
+<g>
+<rect x="40" y="360" width="160" height="56" rx="8" fill="#ffe4e0" stroke="#e11d48" stroke-width="0.5"/>
+<text x="120" y="378" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="600" fill="#3d3d3a">Movilizacion</text>
+<text x="120" y="396" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">interdepartamental</text>
+</g>
+
+<g>
+<rect x="220" y="360" width="160" height="56" rx="8" fill="#ccfbf1" stroke="#0d9488" stroke-width="0.5"/>
+<text x="300" y="378" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="600" fill="#3d3d3a">Reenvio</text>
+<text x="300" y="396" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">interdepartamental</text>
+</g>
+
+<line x1="700" y1="20" x2="700" y2="440" stroke="#9c9a92" stroke-width="0.5" stroke-dasharray="3 3"/>
+
+<text x="720" y="40" font-family="sans-serif" font-size="13" font-weight="600" fill="#3d3d3a">Tg de transito por:</text>
+
+<g>
+<rect x="720" y="66" width="160" height="64" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="0.5"/>
+<text x="800" y="92" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">Exportacion o transito</text>
+<text x="800" y="108" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">a otro pais</text>
+</g>
+
+<g>
+<rect x="720" y="144" width="160" height="64" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="0.5"/>
+<text x="800" y="170" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">Transito dentro de</text>
+<text x="800" y="186" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">1 solo departamento</text>
+</g>
+
+<g>
+<rect x="720" y="222" width="160" height="80" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="0.5"/>
+<text x="800" y="248" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">Transito dentro de un</text>
+<text x="800" y="264" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">solo departamento pero</text>
+<text x="800" y="280" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5b5b57">pasa por otro</text>
+</g>
+</svg>
