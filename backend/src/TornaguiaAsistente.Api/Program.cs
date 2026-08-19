@@ -7,6 +7,11 @@ using TornaguiaAsistente.Infrastructure.Solicitudes;
 using TornaguiaAsistente.Domain.Reglas;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using TornaguiaAsistente.Application.Autenticacion;
+using TornaguiaAsistente.Infrastructure.Autenticacion;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,13 +20,31 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.ParameterLocation.Header,
+        Description = "Ingresa el token JWT obtenido en /api/auth/login"
+    });
+
+    options.AddSecurityRequirement(document => new Microsoft.OpenApi.OpenApiSecurityRequirement
+    {
+        [new Microsoft.OpenApi.OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
+});
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddHttpClient<MotorGeograficoMapbox>();
 builder.Services.AddScoped<IMotorGeografico, MotorGeograficoConCache>();
 builder.Services.AddScoped<IMotorReglas, MotorReglas>();
 builder.Services.AddScoped<ICasoUsoCrearSolicitud, CasoUsoCrearSolicitud>();
+builder.Services.AddScoped<ICasoUsoRegistrarUsuario, CasoUsoRegistrarUsuario>();
+builder.Services.AddScoped<ICasoUsoLogin, CasoUsoLogin>();
 
 builder.Services.AddDbContext<TornaguiaDbContext>(options =>
     options.UseNpgsql(
@@ -39,6 +62,28 @@ builder.Services.AddDbContext<TornaguiaDbContext>(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
+var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]
+    ?? throw new InvalidOperationException("Falta configurar Jwt:SecretKey");
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.MapInboundClaims = false;
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey))
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -53,6 +98,7 @@ app.UseHttpsRedirection();
 
 app.UseRateLimiter();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

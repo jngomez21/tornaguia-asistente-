@@ -4,7 +4,7 @@ using TornaguiaAsistente.Application.Geografia;
 namespace TornaguiaAsistente.Api.Controllers;
 
 [ApiController]
-[Route("api/controller")]
+[Route("api/[controller]")]
 public class RutasController : ControllerBase
 {
     private readonly IMotorGeografico _motorGeografico;
