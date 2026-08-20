@@ -37,7 +37,7 @@ export function LoginPage() {
         <img
           src={logo}
           alt="Tornaguía Asistente"
-          className="absolute left-1/2 top-1/4 w-[35%] min-w-[140px] max-w-xs -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_4px_12px_rgba(0,0,0,0.35)]"
+          className="absolute left-1/2 top-1/4 w-[63%] min-w-[252px] max-w-[36rem] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_4px_12px_rgba(0,0,0,0.35)]"
         />
       </div>
 
@@ -46,13 +46,16 @@ export function LoginPage() {
         <div className="pointer-events-none absolute -bottom-24 -left-10 h-72 w-72 rounded-full bg-marca-verde/30 blur-3xl" />
 
         <div className="relative h-full overflow-y-auto bg-white/25 backdrop-blur-md">
-        <div className="min-h-full flex items-center justify-center p-6 sm:p-8">
-          <div className="w-full max-w-md">
+        <div className="min-h-full flex flex-col sm:items-center sm:justify-center">
+          <div className="sm:hidden flex-1 flex items-center justify-center px-6">
             <img
               src={logo}
               alt="Tornaguía Asistente"
-              className="sm:hidden mx-auto mb-6 w-48 max-w-[70%]"
+              className="w-[21.6rem] max-w-[70%]"
             />
+          </div>
+          <div className="flex-none flex items-center justify-center w-full p-6 sm:p-8">
+          <div className="w-full max-w-md">
             <h1 className="text-2xl font-bold text-marca-oscuro mb-1 text-center">
               Iniciar sesión
             </h1>
@@ -124,6 +127,7 @@ export function LoginPage() {
                 Regístrate
               </Link>
             </p>
+          </div>
           </div>
         </div>
         </div>
