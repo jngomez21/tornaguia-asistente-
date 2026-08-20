@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate, Link } from 'react-router-dom'
 import { login } from '../api/authApi'
-import loginHero from '../../../assets/Fondo_Login.png'
+import loginHero from '../../../assets/Fondo.png'
+import logo from '../../../assets/Logo.png'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
@@ -33,6 +34,11 @@ export function LoginPage() {
           alt="Ilustración de una carretera entre montañas, representando el trayecto de una tornaguía"
           className="absolute inset-0 h-full w-full object-cover object-left"
         />
+        <img
+          src={logo}
+          alt="Tornaguía Asistente"
+          className="absolute left-1/2 top-1/4 w-[35%] min-w-[140px] max-w-xs -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_4px_12px_rgba(0,0,0,0.35)]"
+        />
       </div>
 
       <div className="relative h-full w-full sm:w-[clamp(380px,35%,560px)] shrink-0 overflow-hidden bg-gradient-to-br from-sky-100 via-white to-emerald-50 shadow-xl">
@@ -42,6 +48,11 @@ export function LoginPage() {
         <div className="relative h-full overflow-y-auto bg-white/25 backdrop-blur-md">
         <div className="min-h-full flex items-center justify-center p-6 sm:p-8">
           <div className="w-full max-w-md">
+            <img
+              src={logo}
+              alt="Tornaguía Asistente"
+              className="sm:hidden mx-auto mb-6 w-48 max-w-[70%]"
+            />
             <h1 className="text-2xl font-bold text-marca-oscuro mb-1 text-center">
               Iniciar sesión
             </h1>
