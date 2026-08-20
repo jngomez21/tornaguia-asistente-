@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate, Link } from 'react-router-dom'
 import { login } from '../api/authApi'
-import loginHero from '../../../assets/login.png'
+import loginHero from '../../../assets/Fondo_Login.png'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
@@ -26,17 +26,15 @@ export function LoginPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col lg:flex-row overflow-hidden">
-      <div className="hidden md:block h-1/3 lg:h-full lg:w-1/2 relative shrink-0">
-        <img
-          src={loginHero}
-          alt="Ilustración de una carretera entre montañas, representando el trayecto de una tornaguía"
-          className="w-full h-full object-cover"
-        />
-      </div>
+    <div className="h-screen w-screen relative overflow-hidden">
+      <img
+        src={loginHero}
+        alt="Ilustración de una carretera entre montañas, representando el trayecto de una tornaguía"
+        className="absolute inset-0 w-full h-full object-cover"
+      />
 
-      <div className="flex-1 min-h-0 flex items-center justify-center bg-white p-6 sm:p-8 overflow-y-auto">
-        <div className="w-full max-w-md">
+      <div className="relative h-full w-full flex items-center justify-center lg:justify-end p-4 sm:p-6 lg:pr-16">
+        <div className="w-full max-w-md max-h-full overflow-y-auto bg-white/75 backdrop-blur-md rounded-2xl shadow-xl p-6 sm:p-8">
           <h1 className="text-2xl font-bold text-marca-oscuro mb-1">
             Iniciar sesión
           </h1>
