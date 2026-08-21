@@ -23,6 +23,10 @@ public class Solicitud
     public bool EsParaExportacion { get; set; }
     public string? NumeroDeclaracionOrigen { get; set; }
 
+    public string Justificacion { get; set; } = string.Empty;
+    public double? DistanciaKm { get; set; }
+    public int? TiempoEstimadoMinutos { get; set; }
+    public List<string>? DepartamentosIntermedios { get; set; }
 
     public DateTime FechaSolicitud { get; set; }
 

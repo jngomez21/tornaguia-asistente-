@@ -3,6 +3,7 @@ import { LoginPage } from './features/auth/pages/LoginPage'
 import { RegisterPage } from './features/auth/pages/RegisterPage'
 import { ForgotPasswordPage } from './features/auth/pages/ForgotPasswordPage'
 import { NuevaSolicitudPage } from './features/solicitudes/pages/NuevaSolicitudPage'
+import { HistorialPage } from './features/solicitudes/pages/HistorialPage'
 
 export const router = createBrowserRouter([
     {
@@ -20,5 +21,9 @@ export const router = createBrowserRouter([
     {
         path: '/solicitudes/nueva',
         element: <NuevaSolicitudPage />,
+    },
+    {
+        path: '/solicitudes/historial',
+        element: <HistorialPage />,
     },
 ])

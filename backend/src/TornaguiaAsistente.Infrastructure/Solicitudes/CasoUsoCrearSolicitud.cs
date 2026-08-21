@@ -93,7 +93,11 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
             PaisDestinoId = destinoPais?.Id,
             EstaDeclarado = request.EstaDeclarado,
             EsParaExportacion = request.EsParaExportacion,
-            FechaSolicitud = DateTime.UtcNow
+            FechaSolicitud = DateTime.UtcNow,
+            Justificacion = justificacionCompleta,
+            DistanciaKm = distanciaKm,
+            TiempoEstimadoMinutos = tiempoEstimado,
+            DepartamentosIntermedios = departamentosIntermedios,
         };
 
         _context.Solicitudes.Add(solicitud);

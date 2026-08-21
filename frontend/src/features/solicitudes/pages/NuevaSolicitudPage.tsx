@@ -3,22 +3,18 @@ import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
-import { getMunicipios, getPaises, crearSolicitud, guardarDetalleTornaguia } from '../api/solicitudesApi'
+import { getMunicipios, getPaises, crearSolicitud, guardarDetalleTornaguia, guardarPdfTornaguia } from '../api/solicitudesApi'
 import { nuevaSolicitudFormSchema, solicitudItemPorDefecto } from '../schemas'
 import type { NuevaSolicitudFormValues, SolicitudItemFormValues, DetalleTornaguiaFormValues } from '../schemas'
 import { ResultadoSolicitud } from '../components/ResultadoSolicitud'
 import type { EstadoTornaguiaPdf } from '../components/ResultadoSolicitud'
 import { SolicitudFormItem } from '../components/SolicitudFormItem'
 import { ModalDetalleTornaguia } from '../components/ModalDetalleTornaguia'
-import { construirPdfTornaguia, descargarPdf } from '../lib/generarPdfTornaguia'
+import { construirPdfTornaguia, descargarPdf, bytesABase64 } from '../lib/generarPdfTornaguia'
+import { mapearDetalleARequest } from '../lib/mapearDetalle'
 import { Sidebar } from '../../../shared/components/Sidebar'
-import { sidebarIconos } from '../../../shared/components/sidebarIconos'
+import { solicitudesSidebarItems } from '../sidebarItems'
 import type { CrearSolicitudResponse } from '../types'
-
-const sidebarItems = [
-  { key: 'nueva', label: 'Nueva solicitud', icon: sidebarIconos.nuevaSolicitud, to: '/solicitudes/nueva' },
-  { key: 'historial', label: 'Historial de solicitudes', icon: sidebarIconos.historial, disabled: true },
-]
 
 type ResultadoItem = { label: string } & (
   | { ok: true; data: CrearSolicitudResponse }
@@ -130,20 +126,7 @@ export function NuevaSolicitudPage() {
 
   const guardarDetalleMutation = useMutation({
     mutationFn: ({ solicitudId, values }: { solicitudId: number; values: DetalleTornaguiaFormValues }) =>
-      guardarDetalleTornaguia(solicitudId, {
-        remitenteNombre: values.remitenteNombre,
-        remitenteIdentificacion: values.remitenteIdentificacion,
-        destinatarioNombre: values.destinatarioNombre,
-        destinatarioIdentificacion: values.destinatarioIdentificacion,
-        transportadorNombre: values.transportadorNombre,
-        transportadorIdentificacion: values.transportadorIdentificacion,
-        placaVehiculo: values.placaVehiculo,
-        productos: values.productos.map((p) => ({
-          productoId: p.productoId!,
-          cantidad: p.cantidad,
-          capacidad: p.capacidad,
-        })),
-      }),
+      guardarDetalleTornaguia(solicitudId, mapearDetalleARequest(values)),
   })
 
   function abrirModal(solicitudId: number) {
@@ -153,6 +136,14 @@ export function NuevaSolicitudPage() {
 
   function cerrarModal() {
     setSolicitudModalAbierta(null)
+  }
+
+  async function subirPdf(solicitudId: number, bytes: Uint8Array) {
+    try {
+      await guardarPdfTornaguia(solicitudId, bytesABase64(bytes))
+    } catch {
+      // El PDF ya quedó disponible para descarga en esta sesión; queda pendiente sincronizarlo con el historial.
+    }
   }
 
   async function onConfirmarModal(values: DetalleTornaguiaFormValues) {
@@ -166,6 +157,7 @@ export function NuevaSolicitudPage() {
       try {
         const detalle = await guardarDetalleMutation.mutateAsync({ solicitudId, values })
         const bytes = await construirPdfTornaguia(resultadoItem.data, detalle, resultadoItem.label)
+        await subirPdf(solicitudId, bytes)
         setPdfsGenerados((prev) => ({ ...prev, [solicitudId]: bytes }))
         setGenerados((prev) => ({ ...prev, [solicitudId]: true }))
         cerrarModal()
@@ -194,6 +186,7 @@ export function NuevaSolicitudPage() {
           const bytes = resultadoItem
             ? await construirPdfTornaguia(resultadoItem.data, detalle, resultadoItem.label)
             : null
+          if (bytes) await subirPdf(solicitudId, bytes)
           return { solicitudId, bytes }
         }),
       )
@@ -242,7 +235,7 @@ export function NuevaSolicitudPage() {
 
   return (
     <div className="min-h-dvh flex bg-gray-50">
-      <Sidebar items={sidebarItems} />
+      <Sidebar items={solicitudesSidebarItems} />
 
       <main className="flex-1 overflow-y-auto">
         <div className={`${esResultadoMultiple ? 'max-w-5xl' : 'max-w-2xl'} mx-auto p-6 sm:p-10`}>

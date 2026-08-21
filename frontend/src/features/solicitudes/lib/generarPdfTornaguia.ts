@@ -101,6 +101,15 @@ function dividirEnLineas(texto: string, fontActual: PDFFont, tamano: number): st
   return lineas
 }
 
+export function bytesABase64(bytes: Uint8Array): string {
+  let binario = ''
+  const tamanoBloque = 0x8000
+  for (let i = 0; i < bytes.length; i += tamanoBloque) {
+    binario += String.fromCharCode(...bytes.subarray(i, i + tamanoBloque))
+  }
+  return btoa(binario)
+}
+
 export function descargarPdf(bytes: Uint8Array, nombreArchivo: string) {
   const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' })
   const url = URL.createObjectURL(blob)

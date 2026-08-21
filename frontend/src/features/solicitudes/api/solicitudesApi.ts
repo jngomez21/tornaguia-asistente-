@@ -7,6 +7,7 @@ import type {
   CrearSolicitudResponse,
   GuardarDetalleTornaguiaRequest,
   DetalleTornaguiaResponse,
+  HistorialSolicitud,
 } from '../types'
 
 export async function getMunicipios(): Promise<Municipio[]> {
@@ -43,4 +44,25 @@ export async function guardarDetalleTornaguia(
     data,
   )
   return response.data
+}
+
+export async function getHistorialSolicitudes(): Promise<HistorialSolicitud[]> {
+  const response = await api.get<HistorialSolicitud[]>('/solicitudes')
+  return response.data
+}
+
+export async function getSolicitud(solicitudId: number): Promise<CrearSolicitudResponse> {
+  const response = await api.get<CrearSolicitudResponse>(`/solicitudes/${solicitudId}`)
+  return response.data
+}
+
+export async function guardarPdfTornaguia(solicitudId: number, pdfBase64: string): Promise<void> {
+  await api.put(`/solicitudes/${solicitudId}/pdf`, { pdfBytes: pdfBase64 })
+}
+
+export async function getPdfTornaguia(solicitudId: number): Promise<Uint8Array> {
+  const response = await api.get<ArrayBuffer>(`/solicitudes/${solicitudId}/pdf`, {
+    responseType: 'arraybuffer',
+  })
+  return new Uint8Array(response.data)
 }

@@ -67,3 +67,16 @@ export interface DetalleTornaguiaResponse {
   fechaGeneracion: string
   productos: ProductoTransportadoResponse[]
 }
+
+export interface HistorialSolicitud {
+  solicitudId: number
+  tipoTornaguia: string
+  municipioOrigenNombre: string
+  municipioDestinoNombre: string | null
+  paisDestinoNombre: string | null
+  estaDeclarado: boolean
+  esParaExportacion: boolean
+  fechaSolicitud: string
+  tieneDetalleGenerado: boolean
+  tienePdf: boolean
+}

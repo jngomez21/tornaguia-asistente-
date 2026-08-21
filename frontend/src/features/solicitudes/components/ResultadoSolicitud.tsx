@@ -11,7 +11,7 @@ interface ResultadoSolicitudProps {
   estadoPdf?: EstadoTornaguiaPdf
 }
 
-const colorPorTipo: Record<string, string> = {
+export const colorPorTipo: Record<string, string> = {
   Movilización: 'bg-marca-medio',
   Reenvío: 'bg-marca-verde',
   Tránsito: 'bg-marca-oscuro',

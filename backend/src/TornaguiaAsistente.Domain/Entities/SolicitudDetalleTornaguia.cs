@@ -16,4 +16,5 @@ public class SolicitudDetalleTornaguia
     public string PlacaVehiculo { get; set; } = string.Empty;
 
     public DateTime FechaGeneracion { get; set; }
+    public byte[]? PdfBytes { get; set; }
 }
