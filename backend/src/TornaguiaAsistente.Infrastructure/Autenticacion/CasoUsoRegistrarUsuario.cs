@@ -23,12 +23,15 @@ public class CasoUsoRegistrarUsuario : ICasoUsoRegistrarUsuario
             throw new UsuarioYaExisteException($"Ya existe una cuenta registrada con el correo {request.Email}.");
     
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+        var respuestaSeguridadHash = BCrypt.Net.BCrypt.HashPassword(NormalizarRespuesta(request.RespuestaSeguridad));
 
         var usuario = new Usuario
         {
             Nombre = request.Nombre,
             Email = request.Email,
-            PasswordHash = passwordHash
+            PasswordHash = passwordHash,
+            PreguntaSeguridad = request.PreguntaSeguridad,
+            RespuestaSeguridadHash = respuestaSeguridadHash
         };
 
         _context.Usuarios.Add(usuario);
@@ -36,4 +39,6 @@ public class CasoUsoRegistrarUsuario : ICasoUsoRegistrarUsuario
 
         return new RegistrarUsuarioResponse(usuario.Id, usuario.Nombre, usuario.Email);
     }
+
+    internal static string NormalizarRespuesta(string respuesta) => respuesta.Trim().ToLowerInvariant();
 }

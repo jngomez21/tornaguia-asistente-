@@ -6,11 +6,20 @@ import { register } from '../api/authApi'
 import loginHero from '../../../assets/newFondo.png'
 import logo from '../../../assets/Logo.png'
 
+const PREGUNTAS_SEGURIDAD = [
+  '¿Cuál es el nombre de tu primera mascota?',
+  '¿En qué ciudad naciste?',
+  '¿Cuál es tu comida favorita?',
+  '¿Cuál es el nombre de tu mejor amigo de la infancia?',
+]
+
 export function RegisterPage() {
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmarPassword, setConfirmarPassword] = useState('')
+  const [preguntaSeguridad, setPreguntaSeguridad] = useState(PREGUNTAS_SEGURIDAD[0])
+  const [respuestaSeguridad, setRespuestaSeguridad] = useState('')
   const [mostrarPassword, setMostrarPassword] = useState(false)
   const [errorPasswords, setErrorPasswords] = useState(false)
   const navigate = useNavigate()
@@ -31,7 +40,7 @@ export function RegisterPage() {
     }
 
     setErrorPasswords(false)
-    mutation.mutate({ nombre, email, password })
+    mutation.mutate({ nombre, email, password, preguntaSeguridad, respuestaSeguridad })
   }
 
   const mensajeError = errorPasswords
@@ -136,6 +145,37 @@ export function RegisterPage() {
                 placeholder="Repite tu contraseña"
                 className="w-full bg-white/60 border border-gray-200 rounded-lg px-3 py-2.5 mb-2 focus:outline-none focus:ring-2 focus:ring-marca-medio"
                 minLength={8}
+                required
+              />
+
+              <label className="block text-sm text-gray-700 mb-1">
+                Pregunta de seguridad
+              </label>
+              <select
+                value={preguntaSeguridad}
+                onChange={(e) => setPreguntaSeguridad(e.target.value)}
+                className="w-full bg-white/60 border border-gray-200 rounded-lg px-3 py-2.5 mb-4 focus:outline-none focus:ring-2 focus:ring-marca-medio"
+                required
+              >
+                {PREGUNTAS_SEGURIDAD.map((pregunta) => (
+                  <option key={pregunta} value={pregunta}>
+                    {pregunta}
+                  </option>
+                ))}
+              </select>
+
+              <label className="block text-sm text-gray-700 mb-1">
+                Respuesta de seguridad
+              </label>
+              <p className="text-xs text-gray-600 mb-1">
+                La usarás para recuperar tu contraseña si la olvidas.
+              </p>
+              <input
+                type="text"
+                value={respuestaSeguridad}
+                onChange={(e) => setRespuestaSeguridad(e.target.value)}
+                placeholder="Tu respuesta"
+                className="w-full bg-white/60 border border-gray-200 rounded-lg px-3 py-2.5 mb-2 focus:outline-none focus:ring-2 focus:ring-marca-medio"
                 required
               />
 

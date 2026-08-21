@@ -54,6 +54,8 @@ builder.Services.AddScoped<IMotorReglas, MotorReglas>();
 builder.Services.AddScoped<ICasoUsoCrearSolicitud, CasoUsoCrearSolicitud>();
 builder.Services.AddScoped<ICasoUsoRegistrarUsuario, CasoUsoRegistrarUsuario>();
 builder.Services.AddScoped<ICasoUsoLogin, CasoUsoLogin>();
+builder.Services.AddScoped<ICasoUsoObtenerPreguntaSeguridad, CasoUsoObtenerPreguntaSeguridad>();
+builder.Services.AddScoped<ICasoUsoRestaurarPassword, CasoUsoRestaurarPassword>();
 
 builder.Services.AddDbContext<TornaguiaDbContext>(options =>
     options.UseNpgsql(

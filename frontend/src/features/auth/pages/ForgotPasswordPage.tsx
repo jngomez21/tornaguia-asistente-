@@ -1,16 +1,68 @@
 import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
+import { isAxiosError } from 'axios'
+import { obtenerPreguntaSeguridad, restaurarPassword } from '../api/authApi'
 import loginHero from '../../../assets/newFondo.png'
 import logo from '../../../assets/Logo.png'
 
-export function ForgotPasswordPage() {
-  const [email, setEmail] = useState('')
-  const [enviado, setEnviado] = useState(false)
+type Paso = 'email' | 'respuesta' | 'exito'
 
-  function handleSubmit(e: React.FormEvent) {
+export function ForgotPasswordPage() {
+  const [paso, setPaso] = useState<Paso>('email')
+  const [email, setEmail] = useState('')
+  const [pregunta, setPregunta] = useState('')
+  const [respuestaSeguridad, setRespuestaSeguridad] = useState('')
+  const [nuevaPassword, setNuevaPassword] = useState('')
+  const [confirmarPassword, setConfirmarPassword] = useState('')
+  const [mostrarPassword, setMostrarPassword] = useState(false)
+  const [errorPasswords, setErrorPasswords] = useState(false)
+
+  const mutationPregunta = useMutation({
+    mutationFn: obtenerPreguntaSeguridad,
+    onSuccess: (data) => {
+      setPregunta(data.pregunta)
+      setPaso('respuesta')
+    },
+  })
+
+  const mutationRestaurar = useMutation({
+    mutationFn: restaurarPassword,
+    onSuccess: () => {
+      setPaso('exito')
+    },
+  })
+
+  function handleSubmitEmail(e: React.FormEvent) {
     e.preventDefault()
-    setEnviado(true)
+    mutationPregunta.mutate({ email })
   }
+
+  function handleSubmitRespuesta(e: React.FormEvent) {
+    e.preventDefault()
+
+    if (nuevaPassword !== confirmarPassword) {
+      setErrorPasswords(true)
+      return
+    }
+
+    setErrorPasswords(false)
+    mutationRestaurar.mutate({ email, respuestaSeguridad, nuevaPassword })
+  }
+
+  const mensajeErrorEmail = isAxiosError(mutationPregunta.error) && mutationPregunta.error.response?.status === 404
+    ? 'No existe una cuenta registrada con ese correo.'
+    : mutationPregunta.isError
+      ? 'No fue posible continuar. Intenta de nuevo.'
+      : null
+
+  const mensajeErrorRespuesta = errorPasswords
+    ? 'Las contraseñas no coinciden.'
+    : isAxiosError(mutationRestaurar.error) && mutationRestaurar.error.response?.status === 401
+      ? 'La respuesta de seguridad no es correcta.'
+      : mutationRestaurar.isError
+        ? 'No fue posible restablecer la contraseña. Intenta de nuevo.'
+        : null
 
   return (
     <div className="h-dvh w-full flex overflow-hidden">
@@ -45,37 +97,122 @@ export function ForgotPasswordPage() {
             <h1 className="text-2xl font-bold text-marca-oscuro mb-1 text-center">
               Recuperar contraseña
             </h1>
-            <p className="text-sm text-gray-700 mb-8 text-center">
-              Ingresa tu correo y te enviaremos instrucciones para restablecerla
-            </p>
 
-            {enviado ? (
-              <p className="text-sm text-center text-marca-oscuro bg-white/60 border border-gray-200 rounded-lg px-3 py-4">
-                Si el correo <span className="font-semibold">{email}</span> está
-                registrado, recibirás un mensaje con los pasos para restablecer
-                tu contraseña.
-              </p>
+            {paso === 'exito' ? (
+              <>
+                <p className="text-sm text-gray-700 mb-8 text-center">
+                  Tu contraseña fue restablecida
+                </p>
+                <p className="text-sm text-center text-marca-oscuro bg-white/60 border border-gray-200 rounded-lg px-3 py-4">
+                  Ya puedes iniciar sesión con tu nueva contraseña.
+                </p>
+              </>
+            ) : paso === 'respuesta' ? (
+              <>
+                <p className="text-sm text-gray-700 mb-8 text-center">
+                  Responde tu pregunta de seguridad para continuar
+                </p>
+
+                <form onSubmit={handleSubmitRespuesta}>
+                  <label className="block text-sm text-gray-700 mb-1">
+                    Pregunta de seguridad
+                  </label>
+                  <p className="text-sm text-marca-oscuro bg-white/60 border border-gray-200 rounded-lg px-3 py-2.5 mb-4">
+                    {pregunta}
+                  </p>
+
+                  <label className="block text-sm text-gray-700 mb-1">
+                    Respuesta
+                  </label>
+                  <input
+                    type="text"
+                    value={respuestaSeguridad}
+                    onChange={(e) => setRespuestaSeguridad(e.target.value)}
+                    placeholder="Tu respuesta"
+                    className="w-full bg-white/60 border border-gray-200 rounded-lg px-3 py-2.5 mb-4 focus:outline-none focus:ring-2 focus:ring-marca-medio"
+                    required
+                  />
+
+                  <label className="block text-sm text-gray-700 mb-1">
+                    Nueva contraseña
+                  </label>
+                  <div className="relative mb-4">
+                    <input
+                      type={mostrarPassword ? 'text' : 'password'}
+                      value={nuevaPassword}
+                      onChange={(e) => setNuevaPassword(e.target.value)}
+                      placeholder="Crea una nueva contraseña"
+                      className="w-full bg-white/60 border border-gray-200 rounded-lg px-3 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-marca-medio"
+                      minLength={8}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setMostrarPassword(!mostrarPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"
+                    >
+                      {mostrarPassword ? 'Ocultar' : 'Ver'}
+                    </button>
+                  </div>
+
+                  <label className="block text-sm text-gray-700 mb-1">
+                    Confirmar contraseña
+                  </label>
+                  <input
+                    type={mostrarPassword ? 'text' : 'password'}
+                    value={confirmarPassword}
+                    onChange={(e) => setConfirmarPassword(e.target.value)}
+                    placeholder="Repite tu nueva contraseña"
+                    className="w-full bg-white/60 border border-gray-200 rounded-lg px-3 py-2.5 mb-2 focus:outline-none focus:ring-2 focus:ring-marca-medio"
+                    minLength={8}
+                    required
+                  />
+
+                  {mensajeErrorRespuesta && (
+                    <p className="text-sm text-red-600 mt-2 mb-4">{mensajeErrorRespuesta}</p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={mutationRestaurar.isPending}
+                    className="w-full bg-marca-oscuro text-white font-semibold py-3 rounded-lg hover:opacity-90 transition disabled:opacity-50 mt-4"
+                  >
+                    {mutationRestaurar.isPending ? 'Restableciendo...' : 'Restablecer contraseña'}
+                  </button>
+                </form>
+              </>
             ) : (
-              <form onSubmit={handleSubmit}>
-                <label className="block text-sm text-gray-700 mb-1">
-                  Correo electrónico
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="nombre@empresa.com"
-                  className="w-full bg-white/60 border border-gray-200 rounded-lg px-3 py-2.5 mb-6 focus:outline-none focus:ring-2 focus:ring-marca-medio"
-                  required
-                />
+              <>
+                <p className="text-sm text-gray-700 mb-8 text-center">
+                  Ingresa tu correo para continuar con la recuperación
+                </p>
 
-                <button
-                  type="submit"
-                  className="w-full bg-marca-oscuro text-white font-semibold py-3 rounded-lg hover:opacity-90 transition"
-                >
-                  Enviar instrucciones
-                </button>
-              </form>
+                <form onSubmit={handleSubmitEmail}>
+                  <label className="block text-sm text-gray-700 mb-1">
+                    Correo electrónico
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="nombre@empresa.com"
+                    className="w-full bg-white/60 border border-gray-200 rounded-lg px-3 py-2.5 mb-2 focus:outline-none focus:ring-2 focus:ring-marca-medio"
+                    required
+                  />
+
+                  {mensajeErrorEmail && (
+                    <p className="text-sm text-red-600 mt-2 mb-4">{mensajeErrorEmail}</p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={mutationPregunta.isPending}
+                    className="w-full bg-marca-oscuro text-white font-semibold py-3 rounded-lg hover:opacity-90 transition disabled:opacity-50 mt-4"
+                  >
+                    {mutationPregunta.isPending ? 'Buscando cuenta...' : 'Continuar'}
+                  </button>
+                </form>
+              </>
             )}
 
             <p className="text-center text-sm text-gray-700 drop-shadow-[0_1px_3px_rgba(255,255,255,0.95)] mt-6">
