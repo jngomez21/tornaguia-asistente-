@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate, Link } from 'react-router-dom'
 import { login } from '../api/authApi'
-import loginHero from '../../../assets/Fondo.png'
+import loginHero from '../../../assets/newFondo.png'
 import logo from '../../../assets/Logo.png'
 
 export function LoginPage() {
