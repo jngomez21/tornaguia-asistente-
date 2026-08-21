@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const nuevaSolicitudSchema = z
+export const solicitudItemSchema = z
   .object({
     municipioOrigenId: z.number().optional(),
     tipoDestino: z.enum(['municipio', 'pais']),
@@ -41,4 +41,18 @@ export const nuevaSolicitudSchema = z
     }
   })
 
-export type NuevaSolicitudFormValues = z.infer<typeof nuevaSolicitudSchema>
+export const nuevaSolicitudFormSchema = z.object({
+  solicitudes: z.array(solicitudItemSchema).min(1),
+})
+
+export type SolicitudItemFormValues = z.infer<typeof solicitudItemSchema>
+export type NuevaSolicitudFormValues = z.infer<typeof nuevaSolicitudFormSchema>
+
+export const solicitudItemPorDefecto: SolicitudItemFormValues = {
+  municipioOrigenId: undefined,
+  tipoDestino: 'municipio',
+  municipioDestinoId: undefined,
+  paisDestinoId: undefined,
+  estaDeclarado: false,
+  esParaExportacion: false,
+}
