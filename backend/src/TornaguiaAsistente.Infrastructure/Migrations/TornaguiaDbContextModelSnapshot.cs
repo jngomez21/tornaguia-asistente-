@@ -49,6 +49,35 @@ namespace TornaguiaAsistente.Infrastructure.Migrations
                     b.ToTable("Departamentos");
                 });
 
+            modelBuilder.Entity("TornaguiaAsistente.Domain.Entities.EntradaInventario", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Cantidad")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ProductoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductoId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("EntradasInventario");
+                });
+
             modelBuilder.Entity("TornaguiaAsistente.Domain.Entities.ExcepcionTransitoLocal", b =>
                 {
                     b.Property<int>("Id")
@@ -74,6 +103,83 @@ namespace TornaguiaAsistente.Infrastructure.Migrations
                     b.HasIndex("ProductoId");
 
                     b.ToTable("ExcepcionesTransitoLocal");
+                });
+
+            modelBuilder.Entity("TornaguiaAsistente.Domain.Entities.InventarioProducto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("CantidadDisponible")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("ProductoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductoId");
+
+                    b.HasIndex("UsuarioId", "ProductoId")
+                        .IsUnique();
+
+                    b.ToTable("InventarioProductos");
+                });
+
+            modelBuilder.Entity("TornaguiaAsistente.Domain.Entities.Lote", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("Lotes");
+                });
+
+            modelBuilder.Entity("TornaguiaAsistente.Domain.Entities.LoteProducto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Cantidad")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("LoteId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProductoId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LoteId");
+
+                    b.HasIndex("ProductoId");
+
+                    b.ToTable("LotesProductos");
                 });
 
             modelBuilder.Entity("TornaguiaAsistente.Domain.Entities.Municipio", b =>
@@ -168,6 +274,9 @@ namespace TornaguiaAsistente.Infrastructure.Migrations
                     b.Property<DateTime>("FechaConsulta")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<LineString>("Geometria")
+                        .HasColumnType("geometry");
+
                     b.Property<int>("MunicipioDestinoId")
                         .HasColumnType("integer");
 
@@ -213,6 +322,9 @@ namespace TornaguiaAsistente.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int?>("LoteId")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("MunicipioDestinoId")
                         .HasColumnType("integer");
 
@@ -235,6 +347,9 @@ namespace TornaguiaAsistente.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("LoteId")
+                        .IsUnique();
 
                     b.HasIndex("MunicipioDestinoId");
 
@@ -381,6 +496,25 @@ namespace TornaguiaAsistente.Infrastructure.Migrations
                     b.ToTable("Usuarios");
                 });
 
+            modelBuilder.Entity("TornaguiaAsistente.Domain.Entities.EntradaInventario", b =>
+                {
+                    b.HasOne("TornaguiaAsistente.Domain.Entities.Producto", "Producto")
+                        .WithMany()
+                        .HasForeignKey("ProductoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TornaguiaAsistente.Domain.Entities.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Producto");
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("TornaguiaAsistente.Domain.Entities.ExcepcionTransitoLocal", b =>
                 {
                     b.HasOne("TornaguiaAsistente.Domain.Entities.Departamento", "Departamento")
@@ -394,6 +528,55 @@ namespace TornaguiaAsistente.Infrastructure.Migrations
                         .HasForeignKey("ProductoId");
 
                     b.Navigation("Departamento");
+
+                    b.Navigation("Producto");
+                });
+
+            modelBuilder.Entity("TornaguiaAsistente.Domain.Entities.InventarioProducto", b =>
+                {
+                    b.HasOne("TornaguiaAsistente.Domain.Entities.Producto", "Producto")
+                        .WithMany()
+                        .HasForeignKey("ProductoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TornaguiaAsistente.Domain.Entities.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Producto");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("TornaguiaAsistente.Domain.Entities.Lote", b =>
+                {
+                    b.HasOne("TornaguiaAsistente.Domain.Entities.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("TornaguiaAsistente.Domain.Entities.LoteProducto", b =>
+                {
+                    b.HasOne("TornaguiaAsistente.Domain.Entities.Lote", "Lote")
+                        .WithMany("LoteProductos")
+                        .HasForeignKey("LoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TornaguiaAsistente.Domain.Entities.Producto", "Producto")
+                        .WithMany()
+                        .HasForeignKey("ProductoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lote");
 
                     b.Navigation("Producto");
                 });
@@ -430,6 +613,11 @@ namespace TornaguiaAsistente.Infrastructure.Migrations
 
             modelBuilder.Entity("TornaguiaAsistente.Domain.Entities.Solicitud", b =>
                 {
+                    b.HasOne("TornaguiaAsistente.Domain.Entities.Lote", "Lote")
+                        .WithOne("Solicitud")
+                        .HasForeignKey("TornaguiaAsistente.Domain.Entities.Solicitud", "LoteId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("TornaguiaAsistente.Domain.Entities.Municipio", "MunicipioDestino")
                         .WithMany()
                         .HasForeignKey("MunicipioDestinoId")
@@ -457,6 +645,8 @@ namespace TornaguiaAsistente.Infrastructure.Migrations
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Lote");
 
                     b.Navigation("MunicipioDestino");
 
@@ -502,6 +692,13 @@ namespace TornaguiaAsistente.Infrastructure.Migrations
             modelBuilder.Entity("TornaguiaAsistente.Domain.Entities.Departamento", b =>
                 {
                     b.Navigation("Municipios");
+                });
+
+            modelBuilder.Entity("TornaguiaAsistente.Domain.Entities.Lote", b =>
+                {
+                    b.Navigation("LoteProductos");
+
+                    b.Navigation("Solicitud");
                 });
 
             modelBuilder.Entity("TornaguiaAsistente.Domain.Entities.Producto", b =>

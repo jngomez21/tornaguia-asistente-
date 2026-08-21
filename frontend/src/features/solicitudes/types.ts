@@ -25,6 +25,7 @@ export interface CrearSolicitudResponse {
   distanciaKm: number | null
   tiempoEstimadoMinutos: number | null
   departamentosIntermedios: string[] | null
+  geometria: [number, number][] | null
 }
 
 export interface Producto {
@@ -32,15 +33,14 @@ export interface Producto {
   nombre: string
 }
 
-export interface ProductoTransportadoRequest {
-  productoId: number
+export interface ProductoTransportadoResponse {
+  productoNombre: string
   cantidad: number
   capacidad: number
 }
 
-export interface ProductoTransportadoResponse {
-  productoNombre: string
-  cantidad: number
+export interface CapacidadPorProductoRequest {
+  productoId: number
   capacidad: number
 }
 
@@ -52,7 +52,8 @@ export interface GuardarDetalleTornaguiaRequest {
   transportadorNombre: string
   transportadorIdentificacion: string
   placaVehiculo: string
-  productos: ProductoTransportadoRequest[]
+  loteId: number
+  capacidades: CapacidadPorProductoRequest[]
 }
 
 export interface DetalleTornaguiaResponse {

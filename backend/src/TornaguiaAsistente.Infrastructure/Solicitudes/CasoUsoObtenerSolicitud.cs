@@ -23,12 +23,26 @@ public class CasoUsoObtenerSolicitud : ICasoUsoObtenerSolicitud
         if (solicitud.UsuarioId != usuarioId)
             throw new SolicitudInvalidaException("La solicitud no pertenece al usuario autenticado.");
 
+        IReadOnlyList<double[]>? geometria = null;
+        if (solicitud.MunicipioDestinoId is not null)
+        {
+            var rutaCacheada = await _context.RutasCalculadas
+                .FirstOrDefaultAsync(r =>
+                    r.MunicipioOrigenId == solicitud.MunicipioOrigenId &&
+                    r.MunicipioDestinoId == solicitud.MunicipioDestinoId.Value);
+
+            geometria = rutaCacheada?.Geometria?.Coordinates
+                .Select(c => new[] { c.X, c.Y })
+                .ToList();
+        }
+
         return new CrearSolicitudResponse(
             SolicitudId: solicitud.Id,
             TipoTornaguia: solicitud.TipoTornaguia.Nombre,
             Justificacion: solicitud.Justificacion,
             DistanciaKm: solicitud.DistanciaKm,
             TiempoEstimadoMinutos: solicitud.TiempoEstimadoMinutos,
-            DepartamentosIntermedios: solicitud.DepartamentosIntermedios);
+            DepartamentosIntermedios: solicitud.DepartamentosIntermedios,
+            Geometria: geometria);
     }
 }

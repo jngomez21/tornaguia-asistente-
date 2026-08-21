@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 using TornaguiaAsistente.Application.Geografia;
 using TornaguiaAsistente.Domain.Entities;
 using TornaguiaAsistente.Infrastructure.Persistence;
@@ -28,15 +29,24 @@ public class MotorGeograficoConCache : IMotorGeografico
         {
             var departamentosCacheados = JsonSerializer.Deserialize<List<int>>(
                 rutaCacheada.DepartamentosIntermedios) ?? new List<int>();
+            var geometriaCacheada = rutaCacheada.Geometria?.Coordinates
+                .Select(c => new[] { c.X, c.Y })
+                .ToList() ?? new List<double[]>();
 
             return new ResultadoRuta(
                 DistanciaKm: (double)rutaCacheada.DistanciaKm,
                 TiempoEstimadoMinutos: rutaCacheada.TiempoEstimadoMinutos,
-                DepartamentosIntermedioIds: departamentosCacheados
+                DepartamentosIntermedioIds: departamentosCacheados,
+                Geometria: geometriaCacheada
             );
         }
 
         var resultado = await _motorReal.CalcularRutaAsync(municipioOrigenId, municipioDestinoId);
+
+        var geometryFactory = NetTopologySuite.NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+        var lineaRuta = geometryFactory.CreateLineString(
+            resultado.Geometria.Select(p => new Coordinate(p[0], p[1])).ToArray());
+        lineaRuta.SRID = 4326;
 
         _context.RutasCalculadas.Add(new RutaCalculada
         {
@@ -45,7 +55,8 @@ public class MotorGeograficoConCache : IMotorGeografico
             DepartamentosIntermedios = JsonSerializer.Serialize(resultado.DepartamentosIntermedioIds),
             DistanciaKm = (decimal)resultado.DistanciaKm,
             TiempoEstimadoMinutos = resultado.TiempoEstimadoMinutos,
-            FechaConsulta = DateTime.UtcNow
+            FechaConsulta = DateTime.UtcNow,
+            Geometria = lineaRuta
         });
         await _context.SaveChangesAsync();
 

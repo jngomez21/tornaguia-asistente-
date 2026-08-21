@@ -30,6 +30,9 @@ public class Solicitud
 
     public DateTime FechaSolicitud { get; set; }
 
+    public int? LoteId { get; set; }
+    public Lote? Lote { get; set; }
+
     public ICollection<SolicitudProducto> SolicitudProductos { get; set; } = new List<SolicitudProducto>();
     public SolicitudDetalleTornaguia? DetalleTornaguia { get; set; }
 }

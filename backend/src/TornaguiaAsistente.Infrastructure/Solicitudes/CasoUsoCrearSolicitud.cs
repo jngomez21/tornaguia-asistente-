@@ -39,6 +39,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
         double? distanciaKm = null;
         int? tiempoEstimado = null;
         List<string>? departamentosIntermedios = null;
+        IReadOnlyList<double[]>? geometria = null;
 
         if (request.MunicipioDestinoId is not null)
         {
@@ -53,6 +54,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
             var ruta = await _motorGeografico.CalcularRutaAsync(origen.Id, destinoMunicipio.Id);
             distanciaKm = ruta.DistanciaKm;
             tiempoEstimado = ruta.TiempoEstimadoMinutos;
+            geometria = ruta.Geometria;
 
             if (ruta.DepartamentosIntermedioIds.Count > 0)
             {
@@ -109,6 +111,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
             Justificacion: justificacionCompleta,
             DistanciaKm: distanciaKm,
             TiempoEstimadoMinutos: tiempoEstimado,
-            DepartamentosIntermedios: departamentosIntermedios);
+            DepartamentosIntermedios: departamentosIntermedios,
+            Geometria: geometria);
     }
 }

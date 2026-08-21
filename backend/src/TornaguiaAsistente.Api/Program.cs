@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using TornaguiaAsistente.Application.Autenticacion;
 using TornaguiaAsistente.Infrastructure.Autenticacion;
+using TornaguiaAsistente.Application.Inventario;
+using TornaguiaAsistente.Infrastructure.Inventario;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -61,6 +63,12 @@ builder.Services.AddScoped<ICasoUsoRegistrarUsuario, CasoUsoRegistrarUsuario>();
 builder.Services.AddScoped<ICasoUsoLogin, CasoUsoLogin>();
 builder.Services.AddScoped<ICasoUsoObtenerPreguntaSeguridad, CasoUsoObtenerPreguntaSeguridad>();
 builder.Services.AddScoped<ICasoUsoRestaurarPassword, CasoUsoRestaurarPassword>();
+builder.Services.AddScoped<ICasoUsoObtenerInventario, CasoUsoObtenerInventario>();
+builder.Services.AddScoped<ICasoUsoRegistrarEntrada, CasoUsoRegistrarEntrada>();
+builder.Services.AddScoped<ICasoUsoListarLotesDisponibles, CasoUsoListarLotesDisponibles>();
+builder.Services.AddScoped<ICasoUsoCrearLote, CasoUsoCrearLote>();
+builder.Services.AddScoped<ICasoUsoEditarLote, CasoUsoEditarLote>();
+builder.Services.AddScoped<ICasoUsoCancelarLote, CasoUsoCancelarLote>();
 
 builder.Services.AddDbContext<TornaguiaDbContext>(options =>
     options.UseNpgsql(

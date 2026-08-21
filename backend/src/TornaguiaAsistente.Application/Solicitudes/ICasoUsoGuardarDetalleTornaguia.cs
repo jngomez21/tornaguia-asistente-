@@ -15,10 +15,11 @@ public record GuardarDetalleTornaguiaRequest(
     string TransportadorNombre,
     string TransportadorIdentificacion,
     string PlacaVehiculo,
-    IReadOnlyList<ProductoTransportadoRequest> Productos
+    int LoteId,
+    IReadOnlyList<CapacidadPorProductoRequest> Capacidades
 );
 
-public record ProductoTransportadoRequest(int ProductoId, decimal Cantidad, decimal Capacidad);
+public record CapacidadPorProductoRequest(int ProductoId, decimal Capacidad);
 
 public record DetalleTornaguiaResponse(
     int SolicitudId,

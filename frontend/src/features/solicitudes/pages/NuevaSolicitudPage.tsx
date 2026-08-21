@@ -8,6 +8,7 @@ import { nuevaSolicitudFormSchema, solicitudItemPorDefecto } from '../schemas'
 import type { NuevaSolicitudFormValues, SolicitudItemFormValues, DetalleTornaguiaFormValues } from '../schemas'
 import { ResultadoSolicitud } from '../components/ResultadoSolicitud'
 import type { EstadoTornaguiaPdf } from '../components/ResultadoSolicitud'
+import { MapaRutasTornaguias } from '../components/MapaRutasTornaguias'
 import { SolicitudFormItem } from '../components/SolicitudFormItem'
 import { ModalDetalleTornaguia } from '../components/ModalDetalleTornaguia'
 import { construirPdfTornaguia, descargarPdf, bytesABase64 } from '../lib/generarPdfTornaguia'
@@ -250,6 +251,24 @@ export function NuevaSolicitudPage() {
                   : 'Este es el tipo de tornaguía que aplica.'}
               </p>
 
+              {esResultadoMultiple && (
+                <MapaRutasTornaguias
+                  rutas={resultados.flatMap((r) =>
+                    r.ok && r.data.geometria && r.data.geometria.length > 1
+                      ? [
+                          {
+                            solicitudId: r.data.solicitudId,
+                            geometria: r.data.geometria,
+                            tipoTornaguia: r.data.tipoTornaguia,
+                            estadoPdf: estadoPdfDe(r.data.solicitudId),
+                            onDescargarPdf: () => descargarPdfSolicitud(r.data.solicitudId),
+                          },
+                        ]
+                      : [],
+                  )}
+                />
+              )}
+
               <div className={esResultadoMultiple ? 'grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8' : 'mb-8'}>
                 {resultados.map((resultado, i) => (
                   <div
@@ -265,6 +284,7 @@ export function NuevaSolicitudPage() {
                         estadoPdf={estadoPdfDe(resultado.data.solicitudId)}
                         onSolicitarTornaguia={() => abrirModal(resultado.data.solicitudId)}
                         onDescargarPdf={() => descargarPdfSolicitud(resultado.data.solicitudId)}
+                        mostrarMapa={!esResultadoMultiple}
                       />
                     ) : (
                       <div className="h-full flex flex-col">

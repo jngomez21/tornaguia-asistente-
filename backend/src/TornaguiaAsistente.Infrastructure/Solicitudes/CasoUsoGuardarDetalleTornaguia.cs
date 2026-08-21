@@ -27,18 +27,27 @@ public class CasoUsoGuardarDetalleTornaguia : ICasoUsoGuardarDetalleTornaguia
         if (solicitud.DetalleTornaguia is not null)
             throw new SolicitudInvalidaException("Esta solicitud ya tiene un detalle de tornaguía generado.");
 
-        if (request.Productos.Count == 0)
-            throw new SolicitudInvalidaException("Debe indicar al menos un producto transportado.");
+        var lote = await _context.Lotes
+            .Include(l => l.LoteProductos).ThenInclude(lp => lp.Producto)
+            .FirstOrDefaultAsync(l => l.Id == request.LoteId)
+            ?? throw new SolicitudInvalidaException($"Lote {request.LoteId} no encontrado.");
 
-        var productoIds = request.Productos.Select(p => p.ProductoId).Distinct().ToList();
-        var productosExistentes = await _context.Productos
-            .Where(p => productoIds.Contains(p.Id))
-            .ToDictionaryAsync(p => p.Id);
+        if (lote.UsuarioId != request.UsuarioId)
+            throw new SolicitudInvalidaException("El lote no pertenece al usuario autenticado.");
 
-        foreach (var productoId in productoIds)
+        if (lote.Estado != EstadoLote.Reservado)
+            throw new SolicitudInvalidaException(
+                lote.Estado == EstadoLote.Vinculado
+                    ? "Este lote ya fue vinculado a otra solicitud."
+                    : "Este lote fue cancelado.");
+
+        var capacidadesPorProducto = request.Capacidades.ToDictionary(c => c.ProductoId, c => c.Capacidad);
+
+        foreach (var loteProducto in lote.LoteProductos)
         {
-            if (!productosExistentes.ContainsKey(productoId))
-                throw new SolicitudInvalidaException($"Producto {productoId} no encontrado.");
+            if (!capacidadesPorProducto.ContainsKey(loteProducto.ProductoId))
+                throw new SolicitudInvalidaException(
+                    $"Debe indicar la capacidad para {loteProducto.Producto.Nombre}.");
         }
 
         var detalle = new SolicitudDetalleTornaguia
@@ -56,16 +65,19 @@ public class CasoUsoGuardarDetalleTornaguia : ICasoUsoGuardarDetalleTornaguia
 
         _context.SolicitudesDetalleTornaguia.Add(detalle);
 
-        foreach (var producto in request.Productos)
+        foreach (var loteProducto in lote.LoteProductos)
         {
             _context.SolicitudesProductos.Add(new SolicitudProducto
             {
                 SolicitudId = solicitud.Id,
-                ProductoId = producto.ProductoId,
-                Cantidad = producto.Cantidad,
-                Capacidad = producto.Capacidad,
+                ProductoId = loteProducto.ProductoId,
+                Cantidad = loteProducto.Cantidad,
+                Capacidad = capacidadesPorProducto[loteProducto.ProductoId],
             });
         }
+
+        solicitud.LoteId = lote.Id;
+        lote.Estado = EstadoLote.Vinculado;
 
         await _context.SaveChangesAsync();
 
@@ -79,9 +91,9 @@ public class CasoUsoGuardarDetalleTornaguia : ICasoUsoGuardarDetalleTornaguia
             TransportadorIdentificacion: detalle.TransportadorIdentificacion,
             PlacaVehiculo: detalle.PlacaVehiculo,
             FechaGeneracion: detalle.FechaGeneracion,
-            Productos: request.Productos
-                .Select(p => new ProductoTransportadoResponse(
-                    productosExistentes[p.ProductoId].Nombre, p.Cantidad, p.Capacidad))
+            Productos: lote.LoteProductos
+                .Select(lp => new ProductoTransportadoResponse(
+                    lp.Producto.Nombre, lp.Cantidad, capacidadesPorProducto[lp.ProductoId]))
                 .ToList());
     }
 }

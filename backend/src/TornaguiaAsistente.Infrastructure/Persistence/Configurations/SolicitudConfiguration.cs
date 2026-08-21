@@ -23,6 +23,13 @@ public class SolicitudCofiguration : IEntityTypeConfiguration<Solicitud>
             .HasForeignKey(s => s.PaisDestinoId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(s => s.Lote)
+            .WithOne(l => l.Solicitud)
+            .HasForeignKey<Solicitud>(s => s.LoteId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(s => s.LoteId).IsUnique();
+
         builder.Property(s => s.EstaDeclarado).IsRequired();
     }
 }

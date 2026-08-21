@@ -78,7 +78,8 @@ public class MotorGeograficoMapbox : IMotorGeografico
         return new ResultadoRuta(
             DistanciaKm: Math.Round(distanciaMetros / 1000, 2),
             TiempoEstimadoMinutos: (int)Math.Round(duracionSegundos / 60),
-            DepartamentosIntermedioIds: departamentosIntermedios
+            DepartamentosIntermedioIds: departamentosIntermedios,
+            Geometria: puntos.Select(p => new[] { p.X, p.Y }).ToList()
         );
     }
 }

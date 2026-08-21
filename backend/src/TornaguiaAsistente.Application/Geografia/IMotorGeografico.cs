@@ -8,5 +8,6 @@ public interface IMotorGeografico
 public record ResultadoRuta(
     double DistanciaKm,
     int TiempoEstimadoMinutos,
-    IReadOnlyList<int> DepartamentosIntermedioIds
+    IReadOnlyList<int> DepartamentosIntermedioIds,
+    IReadOnlyList<double[]> Geometria
 );

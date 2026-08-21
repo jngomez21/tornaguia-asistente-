@@ -20,7 +20,8 @@ public record CrearSolicitudResponse(
     string Justificacion,
     double? DistanciaKm,
     int? TiempoEstimadoMinutos,
-    IReadOnlyList<string>? DepartamentosIntermedios
+    IReadOnlyList<string>? DepartamentosIntermedios,
+    IReadOnlyList<double[]>? Geometria
 );
 
 public class SolicitudInvalidaException : Exception

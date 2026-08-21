@@ -1,4 +1,5 @@
 import type { CrearSolicitudResponse } from '../types'
+import { MapaRutasTornaguias } from './MapaRutasTornaguias'
 
 export type EstadoTornaguiaPdf = 'pendiente' | 'en_carrito' | 'generado'
 
@@ -9,6 +10,7 @@ interface ResultadoSolicitudProps {
   onSolicitarTornaguia?: () => void
   onDescargarPdf?: () => void
   estadoPdf?: EstadoTornaguiaPdf
+  mostrarMapa?: boolean
 }
 
 export const colorPorTipo: Record<string, string> = {
@@ -39,6 +41,7 @@ export function ResultadoSolicitud({
   onSolicitarTornaguia,
   onDescargarPdf,
   estadoPdf = 'pendiente',
+  mostrarMapa = true,
 }: ResultadoSolicitudProps) {
   const colorBadge = colorPorTipo[resultado.tipoTornaguia] ?? 'bg-marca-oscuro'
   const tieneIntermedios = (resultado.departamentosIntermedios?.length ?? 0) > 0
@@ -59,6 +62,20 @@ export function ResultadoSolicitud({
 
       <h1 className="text-2xl font-bold text-marca-oscuro mb-1">Tornaguía de {resultado.tipoTornaguia}</h1>
       <p className="text-sm text-gray-600 mb-6">{resultado.justificacion}</p>
+
+      {mostrarMapa && resultado.geometria && resultado.geometria.length > 1 && (
+        <MapaRutasTornaguias
+          rutas={[
+            {
+              solicitudId: resultado.solicitudId,
+              geometria: resultado.geometria,
+              tipoTornaguia: resultado.tipoTornaguia,
+              estadoPdf,
+              onDescargarPdf,
+            },
+          ]}
+        />
+      )}
 
       {tieneIntermedios && (
         <div className="mb-6">

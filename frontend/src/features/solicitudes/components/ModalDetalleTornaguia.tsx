@@ -1,15 +1,9 @@
 import { useEffect } from 'react'
-import { useForm, useFieldArray } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useQuery } from '@tanstack/react-query'
-import { getProductos } from '../api/solicitudesApi'
-import {
-  detalleTornaguiaSchema,
-  detalleTornaguiaPorDefecto,
-  productoTransportadoPorDefecto,
-} from '../schemas'
+import { detalleTornaguiaSchema, detalleTornaguiaPorDefecto } from '../schemas'
 import type { DetalleTornaguiaFormValues } from '../schemas'
-import { ProductoTransportadoField } from './ProductoTransportadoField'
+import { SelectorLote } from '../../inventario/components/SelectorLote'
 
 interface ModalDetalleTornaguiaProps {
   titulo: string
@@ -28,8 +22,6 @@ export function ModalDetalleTornaguia({
   onCerrar,
   onConfirmar,
 }: ModalDetalleTornaguiaProps) {
-  const productosQuery = useQuery({ queryKey: ['productos'], queryFn: getProductos })
-
   const {
     register,
     handleSubmit,
@@ -41,7 +33,8 @@ export function ModalDetalleTornaguia({
     defaultValues: valoresIniciales ?? detalleTornaguiaPorDefecto,
   })
 
-  const { fields, append, remove } = useFieldArray({ control, name: 'productos' })
+  const loteId = useWatch({ control, name: 'loteId' })
+  const capacidades = useWatch({ control, name: 'capacidades' }) ?? []
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -157,29 +150,18 @@ export function ModalDetalleTornaguia({
             {errors.placaVehiculo && <p className="text-xs text-red-600 mt-1">{errors.placaVehiculo.message}</p>}
           </div>
 
-          <label className="block text-sm text-gray-600 mb-2">Productos transportados</label>
-          {fields.map((field, index) => (
-            <ProductoTransportadoField
-              key={field.id}
-              index={index}
-              control={control}
-              register={register}
-              setValue={setValue}
-              errors={errors.productos}
-              productos={productosQuery.data ?? []}
-              productosCargando={productosQuery.isLoading}
-              mostrarQuitar={fields.length > 1}
-              onQuitar={() => remove(index)}
+          <div className="mb-6">
+            <SelectorLote
+              loteId={loteId}
+              capacidades={capacidades}
+              onCambiar={(nuevoLoteId, nuevasCapacidades) => {
+                setValue('loteId', nuevoLoteId)
+                setValue('capacidades', nuevasCapacidades)
+              }}
+              errorLoteId={errors.loteId?.message}
+              hayErroresCapacidad={Boolean(errors.capacidades)}
             />
-          ))}
-
-          <button
-            type="button"
-            onClick={() => append({ ...productoTransportadoPorDefecto })}
-            className="w-full border border-dashed border-marca-medio text-marca-medio text-sm font-semibold py-2 rounded-lg hover:bg-marca-medio/5 transition mb-6"
-          >
-            + Agregar otro producto
-          </button>
+          </div>
 
           <div className="flex gap-3">
             <button

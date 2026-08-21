@@ -57,45 +57,40 @@ export const solicitudItemPorDefecto: SolicitudItemFormValues = {
   esParaExportacion: false,
 }
 
-export const productoTransportadoSchema = z
-  .object({
-    productoId: z.number().optional(),
-    productoNombre: z.string(),
-    cantidad: z.number(),
-    capacidad: z.number(),
-  })
-  .superRefine((data, ctx) => {
-    if (!data.productoId) {
-      ctx.addIssue({ code: 'custom', path: ['productoId'], message: 'Selecciona o crea un producto.' })
-    }
-    if (!Number.isFinite(data.cantidad) || data.cantidad <= 0) {
-      ctx.addIssue({ code: 'custom', path: ['cantidad'], message: 'Debe ser mayor a 0.' })
-    }
-    if (!Number.isFinite(data.capacidad) || data.capacidad <= 0) {
-      ctx.addIssue({ code: 'custom', path: ['capacidad'], message: 'Debe ser mayor a 0.' })
-    }
-  })
-
-export const detalleTornaguiaSchema = z.object({
-  remitenteNombre: z.string().min(1, 'Campo requerido.'),
-  remitenteIdentificacion: z.string().min(1, 'Campo requerido.'),
-  destinatarioNombre: z.string().min(1, 'Campo requerido.'),
-  destinatarioIdentificacion: z.string().min(1, 'Campo requerido.'),
-  transportadorNombre: z.string().min(1, 'Campo requerido.'),
-  transportadorIdentificacion: z.string().min(1, 'Campo requerido.'),
-  placaVehiculo: z.string().min(1, 'Campo requerido.'),
-  productos: z.array(productoTransportadoSchema).min(1, 'Agrega al menos un producto.'),
+const capacidadPorProductoSchema = z.object({
+  productoId: z.number(),
+  capacidad: z.number(),
 })
 
-export type ProductoTransportadoFormValues = z.infer<typeof productoTransportadoSchema>
-export type DetalleTornaguiaFormValues = z.infer<typeof detalleTornaguiaSchema>
+export const detalleTornaguiaSchema = z
+  .object({
+    remitenteNombre: z.string().min(1, 'Campo requerido.'),
+    remitenteIdentificacion: z.string().min(1, 'Campo requerido.'),
+    destinatarioNombre: z.string().min(1, 'Campo requerido.'),
+    destinatarioIdentificacion: z.string().min(1, 'Campo requerido.'),
+    transportadorNombre: z.string().min(1, 'Campo requerido.'),
+    transportadorIdentificacion: z.string().min(1, 'Campo requerido.'),
+    placaVehiculo: z.string().min(1, 'Campo requerido.'),
+    loteId: z.number().optional(),
+    capacidades: z.array(capacidadPorProductoSchema),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.loteId) {
+      ctx.addIssue({ code: 'custom', path: ['loteId'], message: 'Selecciona o crea un lote.' })
+      return
+    }
+    data.capacidades.forEach((c, index) => {
+      if (!Number.isFinite(c.capacidad) || c.capacidad <= 0) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['capacidades', index, 'capacidad'],
+          message: 'La capacidad debe ser mayor a 0.',
+        })
+      }
+    })
+  })
 
-export const productoTransportadoPorDefecto: ProductoTransportadoFormValues = {
-  productoId: undefined,
-  productoNombre: '',
-  cantidad: NaN,
-  capacidad: NaN,
-}
+export type DetalleTornaguiaFormValues = z.infer<typeof detalleTornaguiaSchema>
 
 export const detalleTornaguiaPorDefecto: DetalleTornaguiaFormValues = {
   remitenteNombre: '',
@@ -105,5 +100,6 @@ export const detalleTornaguiaPorDefecto: DetalleTornaguiaFormValues = {
   transportadorNombre: '',
   transportadorIdentificacion: '',
   placaVehiculo: '',
-  productos: [productoTransportadoPorDefecto],
+  loteId: undefined,
+  capacidades: [],
 }
