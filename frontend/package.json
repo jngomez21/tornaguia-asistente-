@@ -14,6 +14,7 @@
     "@tanstack/react-query": "^5.101.4",
     "axios": "^1.19.0",
     "mapbox-gl": "^3.28.1",
+    "pdf-lib": "^1.17.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.85.0",

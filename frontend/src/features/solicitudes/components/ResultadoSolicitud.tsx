@@ -1,9 +1,14 @@
 import type { CrearSolicitudResponse } from '../types'
 
+export type EstadoTornaguiaPdf = 'pendiente' | 'en_carrito' | 'generado'
+
 interface ResultadoSolicitudProps {
   resultado: CrearSolicitudResponse
   onNuevaSolicitud?: () => void
   titulo?: string
+  onSolicitarTornaguia?: () => void
+  onDescargarPdf?: () => void
+  estadoPdf?: EstadoTornaguiaPdf
 }
 
 const colorPorTipo: Record<string, string> = {
@@ -12,9 +17,32 @@ const colorPorTipo: Record<string, string> = {
   Tránsito: 'bg-marca-oscuro',
 }
 
-export function ResultadoSolicitud({ resultado, onNuevaSolicitud, titulo }: ResultadoSolicitudProps) {
+const textoPorEstado: Record<EstadoTornaguiaPdf, { titulo: string; subtitulo: string }> = {
+  pendiente: {
+    titulo: 'Solicitud de Tornaguía',
+    subtitulo: 'Genera el PDF con los datos de esta tornaguía',
+  },
+  en_carrito: {
+    titulo: 'Datos completos ✓',
+    subtitulo: 'Editar antes de generar el lote',
+  },
+  generado: {
+    titulo: 'Tornaguía generada ✓',
+    subtitulo: 'Descarga el PDF cuando quieras',
+  },
+}
+
+export function ResultadoSolicitud({
+  resultado,
+  onNuevaSolicitud,
+  titulo,
+  onSolicitarTornaguia,
+  onDescargarPdf,
+  estadoPdf = 'pendiente',
+}: ResultadoSolicitudProps) {
   const colorBadge = colorPorTipo[resultado.tipoTornaguia] ?? 'bg-marca-oscuro'
   const tieneIntermedios = (resultado.departamentosIntermedios?.length ?? 0) > 0
+  const textoBoton = textoPorEstado[estadoPdf]
 
   return (
     <div className="w-full h-full flex flex-col">
@@ -39,24 +67,44 @@ export function ResultadoSolicitud({ resultado, onNuevaSolicitud, titulo }: Resu
         </div>
       )}
 
-      <button
-        type="button"
-        className="w-full mt-auto flex items-center justify-between gap-3 border border-marca-medio/30 bg-marca-medio/5 rounded-lg px-4 py-3 text-left hover:bg-marca-medio/10 transition"
-      >
-        <span>
-          <span className="block text-sm font-semibold text-marca-oscuro">Solicitud de Tornaguía</span>
-          <span className="block text-xs text-gray-500">Genera el PDF con los datos de esta tornaguía</span>
-        </span>
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          className="w-4 h-4 shrink-0 text-marca-medio"
+      {estadoPdf === 'generado' ? (
+        <div className="w-full mt-auto flex items-center justify-between gap-3 border border-marca-verde/30 bg-marca-verde/5 rounded-lg px-4 py-3">
+          <span>
+            <span className="block text-sm font-semibold text-marca-oscuro">{textoBoton.titulo}</span>
+            <span className="block text-xs text-gray-500">{textoBoton.subtitulo}</span>
+          </span>
+          <button
+            type="button"
+            onClick={onDescargarPdf}
+            className="shrink-0 flex items-center gap-1.5 bg-marca-oscuro text-white text-xs font-semibold px-3 py-2 rounded-lg hover:opacity-90 transition"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+              <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Descargar
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onSolicitarTornaguia}
+          className="w-full mt-auto flex items-center justify-between gap-3 rounded-lg px-4 py-3 text-left border border-marca-medio/30 bg-marca-medio/5 hover:bg-marca-medio/10 transition"
         >
-          <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
+          <span>
+            <span className="block text-sm font-semibold text-marca-oscuro">{textoBoton.titulo}</span>
+            <span className="block text-xs text-gray-500">{textoBoton.subtitulo}</span>
+          </span>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            className="w-4 h-4 shrink-0 text-marca-medio"
+          >
+            <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
 
       {onNuevaSolicitud && (
         <button

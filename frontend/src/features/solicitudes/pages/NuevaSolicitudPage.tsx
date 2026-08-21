@@ -1,12 +1,16 @@
+import { useState } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
-import { getMunicipios, getPaises, crearSolicitud } from '../api/solicitudesApi'
+import { getMunicipios, getPaises, crearSolicitud, guardarDetalleTornaguia } from '../api/solicitudesApi'
 import { nuevaSolicitudFormSchema, solicitudItemPorDefecto } from '../schemas'
-import type { NuevaSolicitudFormValues, SolicitudItemFormValues } from '../schemas'
+import type { NuevaSolicitudFormValues, SolicitudItemFormValues, DetalleTornaguiaFormValues } from '../schemas'
 import { ResultadoSolicitud } from '../components/ResultadoSolicitud'
+import type { EstadoTornaguiaPdf } from '../components/ResultadoSolicitud'
 import { SolicitudFormItem } from '../components/SolicitudFormItem'
+import { ModalDetalleTornaguia } from '../components/ModalDetalleTornaguia'
+import { construirPdfTornaguia, descargarPdf } from '../lib/generarPdfTornaguia'
 import { Sidebar } from '../../../shared/components/Sidebar'
 import { sidebarIconos } from '../../../shared/components/sidebarIconos'
 import type { CrearSolicitudResponse } from '../types'
@@ -88,13 +92,153 @@ export function NuevaSolicitudPage() {
     mutation.mutate(values.solicitudes)
   }
 
+  const resultados = mutation.data
+  const esResultadoMultiple = (resultados?.length ?? 0) > 1
+
+  const [carrito, setCarrito] = useState<Record<number, DetalleTornaguiaFormValues>>({})
+  const [generados, setGenerados] = useState<Record<number, boolean>>({})
+  const [pdfsGenerados, setPdfsGenerados] = useState<Record<number, Uint8Array>>({})
+  const [solicitudModalAbierta, setSolicitudModalAbierta] = useState<number | null>(null)
+  const [errorGeneracion, setErrorGeneracion] = useState<string | null>(null)
+
   function onNuevaConsulta() {
     mutation.reset()
     reset({ solicitudes: [solicitudItemPorDefecto] })
+    setCarrito({})
+    setGenerados({})
+    setPdfsGenerados({})
+    setSolicitudModalAbierta(null)
+    setErrorGeneracion(null)
   }
 
-  const resultados = mutation.data
-  const esResultadoMultiple = (resultados?.length ?? 0) > 1
+  function descargarPdfSolicitud(solicitudId: number) {
+    const bytes = pdfsGenerados[solicitudId]
+    if (!bytes) return
+    descargarPdf(bytes, `tornaguia-${solicitudId}.pdf`)
+  }
+
+  function estadoPdfDe(solicitudId: number): EstadoTornaguiaPdf {
+    if (generados[solicitudId]) return 'generado'
+    if (carrito[solicitudId]) return 'en_carrito'
+    return 'pendiente'
+  }
+
+  function resultadoOkPorId(solicitudId: number) {
+    const item = resultados?.find((r) => r.ok && r.data.solicitudId === solicitudId)
+    return item?.ok ? item : undefined
+  }
+
+  const guardarDetalleMutation = useMutation({
+    mutationFn: ({ solicitudId, values }: { solicitudId: number; values: DetalleTornaguiaFormValues }) =>
+      guardarDetalleTornaguia(solicitudId, {
+        remitenteNombre: values.remitenteNombre,
+        remitenteIdentificacion: values.remitenteIdentificacion,
+        destinatarioNombre: values.destinatarioNombre,
+        destinatarioIdentificacion: values.destinatarioIdentificacion,
+        transportadorNombre: values.transportadorNombre,
+        transportadorIdentificacion: values.transportadorIdentificacion,
+        placaVehiculo: values.placaVehiculo,
+        productos: values.productos.map((p) => ({
+          productoId: p.productoId!,
+          cantidad: p.cantidad,
+          capacidad: p.capacidad,
+        })),
+      }),
+  })
+
+  function abrirModal(solicitudId: number) {
+    setErrorGeneracion(null)
+    setSolicitudModalAbierta(solicitudId)
+  }
+
+  function cerrarModal() {
+    setSolicitudModalAbierta(null)
+  }
+
+  async function onConfirmarModal(values: DetalleTornaguiaFormValues) {
+    const solicitudId = solicitudModalAbierta
+    if (solicitudId == null) return
+
+    if (!esResultadoMultiple) {
+      const resultadoItem = resultadoOkPorId(solicitudId)
+      if (!resultadoItem) return
+
+      try {
+        const detalle = await guardarDetalleMutation.mutateAsync({ solicitudId, values })
+        const bytes = await construirPdfTornaguia(resultadoItem.data, detalle, resultadoItem.label)
+        setPdfsGenerados((prev) => ({ ...prev, [solicitudId]: bytes }))
+        setGenerados((prev) => ({ ...prev, [solicitudId]: true }))
+        cerrarModal()
+      } catch (error) {
+        setErrorGeneracion(
+          isAxiosError<{ mensaje?: string }>(error)
+            ? (error.response?.data?.mensaje ?? 'No se pudo guardar el detalle de la tornaguía.')
+            : 'No se pudo guardar el detalle de la tornaguía.',
+        )
+      }
+      return
+    }
+
+    setCarrito((prev) => ({ ...prev, [solicitudId]: values }))
+    cerrarModal()
+  }
+
+  const generarLoteMutation = useMutation({
+    mutationFn: async () => {
+      const entradas = Object.entries(carrito).map(([id, values]) => [Number(id), values] as const)
+
+      const resultadosLote = await Promise.allSettled(
+        entradas.map(async ([solicitudId, values]) => {
+          const detalle = await guardarDetalleMutation.mutateAsync({ solicitudId, values })
+          const resultadoItem = resultadoOkPorId(solicitudId)
+          const bytes = resultadoItem
+            ? await construirPdfTornaguia(resultadoItem.data, detalle, resultadoItem.label)
+            : null
+          return { solicitudId, bytes }
+        }),
+      )
+
+      const exitosos: { solicitudId: number; bytes: Uint8Array | null }[] = []
+      const fallidos: number[] = []
+      resultadosLote.forEach((r, i) => {
+        const [solicitudId] = entradas[i]
+        if (r.status === 'fulfilled') exitosos.push(r.value)
+        else fallidos.push(solicitudId)
+      })
+
+      return { exitosos, fallidos }
+    },
+    onSuccess: ({ exitosos, fallidos }) => {
+      setGenerados((prev) => {
+        const siguiente = { ...prev }
+        exitosos.forEach(({ solicitudId }) => {
+          siguiente[solicitudId] = true
+        })
+        return siguiente
+      })
+      setPdfsGenerados((prev) => {
+        const siguiente = { ...prev }
+        exitosos.forEach(({ solicitudId, bytes }) => {
+          if (bytes) siguiente[solicitudId] = bytes
+        })
+        return siguiente
+      })
+      setCarrito((prev) => {
+        const siguiente = { ...prev }
+        exitosos.forEach(({ solicitudId }) => {
+          delete siguiente[solicitudId]
+        })
+        return siguiente
+      })
+      setErrorGeneracion(
+        fallidos.length > 0
+          ? `No se pudieron generar ${fallidos.length} de las tornaguías seleccionadas. Vuelve a intentarlo.`
+          : null,
+      )
+    },
+  })
+
+  const solicitudesEnCarrito = Object.keys(carrito).length
 
   return (
     <div className="min-h-dvh flex bg-gray-50">
@@ -122,7 +266,13 @@ export function NuevaSolicitudPage() {
                     } ${esResultadoMultiple ? '' : 'max-w-md mx-auto'}`}
                   >
                     {resultado.ok ? (
-                      <ResultadoSolicitud resultado={resultado.data} titulo={resultado.label} />
+                      <ResultadoSolicitud
+                        resultado={resultado.data}
+                        titulo={resultado.label}
+                        estadoPdf={estadoPdfDe(resultado.data.solicitudId)}
+                        onSolicitarTornaguia={() => abrirModal(resultado.data.solicitudId)}
+                        onDescargarPdf={() => descargarPdfSolicitud(resultado.data.solicitudId)}
+                      />
                     ) : (
                       <div className="h-full flex flex-col">
                         <p className="text-xs font-semibold uppercase tracking-wide text-red-600 mb-3 pb-3 border-b border-red-100">
@@ -134,6 +284,29 @@ export function NuevaSolicitudPage() {
                   </div>
                 ))}
               </div>
+
+              {errorGeneracion && (
+                <p className="w-full max-w-md mx-auto mb-4 text-sm text-red-600 text-center">{errorGeneracion}</p>
+              )}
+
+              {esResultadoMultiple && solicitudesEnCarrito > 0 && (
+                <div className="w-full max-w-md mx-auto mb-4 flex items-center justify-between gap-3 border border-marca-medio/30 bg-marca-medio/5 rounded-lg px-4 py-3">
+                  <p className="text-sm text-marca-oscuro">
+                    {solicitudesEnCarrito} tornaguía{solicitudesEnCarrito > 1 ? 's' : ''} lista
+                    {solicitudesEnCarrito > 1 ? 's' : ''} para generar
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => generarLoteMutation.mutate()}
+                    disabled={generarLoteMutation.isPending}
+                    className="shrink-0 bg-marca-oscuro text-white text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition disabled:opacity-50"
+                  >
+                    {generarLoteMutation.isPending
+                      ? 'Generando...'
+                      : `Generar ${solicitudesEnCarrito} tornaguía${solicitudesEnCarrito > 1 ? 's' : ''}`}
+                  </button>
+                </div>
+              )}
 
               <button
                 type="button"
@@ -210,6 +383,17 @@ export function NuevaSolicitudPage() {
           )}
         </div>
       </main>
+
+      {solicitudModalAbierta != null && (
+        <ModalDetalleTornaguia
+          titulo={resultadoOkPorId(solicitudModalAbierta)?.label ?? ''}
+          valoresIniciales={carrito[solicitudModalAbierta]}
+          textoBotonPrincipal={esResultadoMultiple ? 'Agregar al PDF' : 'Generar tornaguía'}
+          enviando={!esResultadoMultiple && guardarDetalleMutation.isPending}
+          onCerrar={cerrarModal}
+          onConfirmar={onConfirmarModal}
+        />
+      )}
     </div>
   )
 }

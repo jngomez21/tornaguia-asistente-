@@ -52,6 +52,7 @@ builder.Services.AddHttpClient<MotorGeograficoMapbox>();
 builder.Services.AddScoped<IMotorGeografico, MotorGeograficoConCache>();
 builder.Services.AddScoped<IMotorReglas, MotorReglas>();
 builder.Services.AddScoped<ICasoUsoCrearSolicitud, CasoUsoCrearSolicitud>();
+builder.Services.AddScoped<ICasoUsoGuardarDetalleTornaguia, CasoUsoGuardarDetalleTornaguia>();
 builder.Services.AddScoped<ICasoUsoRegistrarUsuario, CasoUsoRegistrarUsuario>();
 builder.Services.AddScoped<ICasoUsoLogin, CasoUsoLogin>();
 builder.Services.AddScoped<ICasoUsoObtenerPreguntaSeguridad, CasoUsoObtenerPreguntaSeguridad>();

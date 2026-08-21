@@ -20,6 +20,7 @@ public class TornaguiaDbContext : DbContext
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<Solicitud> Solicitudes => Set<Solicitud>();
     public DbSet<SolicitudProducto> SolicitudesProductos => Set<SolicitudProducto>();
+    public DbSet<SolicitudDetalleTornaguia> SolicitudesDetalleTornaguia => Set<SolicitudDetalleTornaguia>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
