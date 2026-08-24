@@ -42,7 +42,7 @@ export function LoteForm({ valoresIniciales, textoBoton, guardando, onGuardar, o
   const puedeAgregarOtro = Boolean(productoActivo?.productoId) && Number(productoActivo?.cantidad) > 0
 
   return (
-    <form onSubmit={handleSubmit(onGuardar)}>
+    <div>
       <LoteProductoField
         index={indiceActivo}
         control={control}
@@ -85,13 +85,14 @@ export function LoteForm({ valoresIniciales, textoBoton, guardando, onGuardar, o
           </button>
         )}
         <button
-          type="submit"
+          type="button"
+          onClick={handleSubmit(onGuardar)}
           disabled={guardando}
           className="flex-1 bg-marca-oscuro text-white font-semibold py-2.5 rounded-lg hover:opacity-90 transition disabled:opacity-50"
         >
           {guardando ? 'Guardando...' : textoBoton}
         </button>
       </div>
-    </form>
+    </div>
   )
 }
