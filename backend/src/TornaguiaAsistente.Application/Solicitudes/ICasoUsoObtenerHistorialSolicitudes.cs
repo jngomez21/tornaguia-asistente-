@@ -15,5 +15,6 @@ public record HistorialSolicitudResponse(
     bool EsParaExportacion,
     DateTime FechaSolicitud,
     bool TieneDetalleGenerado,
-    bool TienePdf
+    bool TienePdf,
+    string? LoteNumeroSerie
 );

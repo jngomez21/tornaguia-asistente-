@@ -11,6 +11,7 @@ interface BuscadorProductoProps {
   nombreSeleccionado: string
   onChange: (id: number | undefined, nombre: string) => void
   disabled?: boolean
+  disponiblePorProducto?: Record<number, number>
 }
 
 export function BuscadorProducto({
@@ -19,6 +20,7 @@ export function BuscadorProducto({
   nombreSeleccionado,
   onChange,
   disabled,
+  disponiblePorProducto,
 }: BuscadorProductoProps) {
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
@@ -86,6 +88,9 @@ export function BuscadorProducto({
                 className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
               >
                 {p.nombre}
+                {disponiblePorProducto && (
+                  <span className="text-gray-400"> — disponible: {disponiblePorProducto[p.id] ?? 0}</span>
+                )}
               </button>
             </li>
           ))}

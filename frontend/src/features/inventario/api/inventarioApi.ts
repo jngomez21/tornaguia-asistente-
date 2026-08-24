@@ -17,6 +17,11 @@ export async function registrarEntrada(data: RegistrarEntradaRequest): Promise<I
   return response.data
 }
 
+export async function deshacerUltimaEntrada(productoId: number): Promise<InventarioItem> {
+  const response = await api.post<InventarioItem>(`/inventario/entradas/${productoId}/deshacer`)
+  return response.data
+}
+
 export async function getLotesDisponibles(): Promise<Lote[]> {
   const response = await api.get<Lote[]>('/inventario/lotes')
   return response.data

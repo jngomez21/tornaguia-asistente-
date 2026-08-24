@@ -12,6 +12,7 @@ interface LoteProductoFieldProps {
   errors: FieldErrors<LoteFormValues>['productos']
   productos: Producto[]
   productosCargando: boolean
+  disponiblePorProducto: Record<number, number>
   mostrarQuitar: boolean
   onQuitar: () => void
 }
@@ -24,6 +25,7 @@ export function LoteProductoField({
   errors,
   productos,
   productosCargando,
+  disponiblePorProducto,
   mostrarQuitar,
   onQuitar,
 }: LoteProductoFieldProps) {
@@ -41,6 +43,7 @@ export function LoteProductoField({
             value={field.value}
             nombreSeleccionado={nombreSeleccionado}
             disabled={productosCargando}
+            disponiblePorProducto={disponiblePorProducto}
             onChange={(id, nombre) => {
               field.onChange(id)
               setValue(`productos.${index}.productoNombre`, nombre)

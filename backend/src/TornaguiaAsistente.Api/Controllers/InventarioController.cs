@@ -17,6 +17,7 @@ public class InventarioController : ControllerBase
     private readonly ICasoUsoCrearLote _casoUsoCrearLote;
     private readonly ICasoUsoEditarLote _casoUsoEditarLote;
     private readonly ICasoUsoCancelarLote _casoUsoCancelarLote;
+    private readonly ICasoUsoDeshacerUltimaEntrada _casoUsoDeshacerUltimaEntrada;
 
     public InventarioController(
         ICasoUsoObtenerInventario casoUsoObtenerInventario,
@@ -24,7 +25,8 @@ public class InventarioController : ControllerBase
         ICasoUsoListarLotesDisponibles casoUsoListarLotesDisponibles,
         ICasoUsoCrearLote casoUsoCrearLote,
         ICasoUsoEditarLote casoUsoEditarLote,
-        ICasoUsoCancelarLote casoUsoCancelarLote)
+        ICasoUsoCancelarLote casoUsoCancelarLote,
+        ICasoUsoDeshacerUltimaEntrada casoUsoDeshacerUltimaEntrada)
     {
         _casoUsoObtenerInventario = casoUsoObtenerInventario;
         _casoUsoRegistrarEntrada = casoUsoRegistrarEntrada;
@@ -32,6 +34,7 @@ public class InventarioController : ControllerBase
         _casoUsoCrearLote = casoUsoCrearLote;
         _casoUsoEditarLote = casoUsoEditarLote;
         _casoUsoCancelarLote = casoUsoCancelarLote;
+        _casoUsoDeshacerUltimaEntrada = casoUsoDeshacerUltimaEntrada;
     }
 
     [HttpGet]
@@ -57,6 +60,25 @@ public class InventarioController : ControllerBase
         try
         {
             var resultado = await _casoUsoRegistrarEntrada.EjecutarAsync(requestConUsuarioReal);
+            return Ok(resultado);
+        }
+        catch (InventarioInvalidoException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+    }
+
+    [HttpPost("entradas/{productoId}/deshacer")]
+    public async Task<ActionResult<InventarioItemResponse>> DeshacerUltimaEntrada(int productoId)
+    {
+        var usuarioId = ObtenerUsuarioId();
+        if (usuarioId is null)
+            return Unauthorized();
+
+        try
+        {
+            var resultado = await _casoUsoDeshacerUltimaEntrada.EjecutarAsync(
+                new DeshacerUltimaEntradaRequest(usuarioId.Value, productoId));
             return Ok(resultado);
         }
         catch (InventarioInvalidoException ex)

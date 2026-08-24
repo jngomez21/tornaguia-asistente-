@@ -4,7 +4,6 @@ import { RegisterPage } from './features/auth/pages/RegisterPage'
 import { ForgotPasswordPage } from './features/auth/pages/ForgotPasswordPage'
 import { NuevaSolicitudPage } from './features/solicitudes/pages/NuevaSolicitudPage'
 import { HistorialPage } from './features/solicitudes/pages/HistorialPage'
-import { InventarioPage } from './features/inventario/pages/InventarioPage'
 import { LotesPage } from './features/inventario/pages/LotesPage'
 
 export const router = createBrowserRouter([
@@ -27,10 +26,6 @@ export const router = createBrowserRouter([
     {
         path: '/solicitudes/historial',
         element: <HistorialPage />,
-    },
-    {
-        path: '/inventario',
-        element: <InventarioPage />,
     },
     {
         path: '/inventario/lotes',

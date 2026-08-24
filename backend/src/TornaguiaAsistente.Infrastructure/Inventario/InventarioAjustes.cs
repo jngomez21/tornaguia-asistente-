@@ -60,9 +60,11 @@ internal static class InventarioAjustes
         }
     }
 
+    public static string NumeroSerie(int loteId) => $"LT-{loteId:D6}";
+
     public static LoteResponse AResponse(Lote lote) => new(
         LoteId: lote.Id,
-        NumeroSerie: $"LT-{lote.Id:D6}",
+        NumeroSerie: NumeroSerie(lote.Id),
         Estado: lote.Estado.ToString(),
         FechaCreacion: lote.FechaCreacion,
         Productos: lote.LoteProductos

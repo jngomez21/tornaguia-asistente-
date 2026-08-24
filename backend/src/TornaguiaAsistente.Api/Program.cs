@@ -69,6 +69,7 @@ builder.Services.AddScoped<ICasoUsoListarLotesDisponibles, CasoUsoListarLotesDis
 builder.Services.AddScoped<ICasoUsoCrearLote, CasoUsoCrearLote>();
 builder.Services.AddScoped<ICasoUsoEditarLote, CasoUsoEditarLote>();
 builder.Services.AddScoped<ICasoUsoCancelarLote, CasoUsoCancelarLote>();
+builder.Services.AddScoped<ICasoUsoDeshacerUltimaEntrada, CasoUsoDeshacerUltimaEntrada>();
 
 builder.Services.AddDbContext<TornaguiaDbContext>(options =>
     options.UseNpgsql(
@@ -79,7 +80,7 @@ builder.Services.AddDbContext<TornaguiaDbContext>(options =>
 {
     options.AddFixedWindowLimiter("fixed", opt =>
     {
-        opt.PermitLimit = 10;
+        opt.PermitLimit = 60;
         opt.Window = TimeSpan.FromMinutes(1);
         opt.QueueLimit = 0;
     });

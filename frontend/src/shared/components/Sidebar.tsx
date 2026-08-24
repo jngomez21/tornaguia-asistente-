@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
+import logoMarca from '../../assets/LogoMarca.png'
 
 export interface SidebarItem {
   key: string
@@ -26,9 +27,12 @@ export function Sidebar({ items }: SidebarProps) {
 
   return (
     <aside className="hidden sm:flex w-64 shrink-0 h-dvh sticky top-0 flex-col bg-marca-oscuro text-white">
-      <div className="px-6 py-6 border-b border-white/10">
-        <p className="text-lg font-bold leading-tight">TornaGuía</p>
-        <p className="text-xs text-white/60">Asistente de tornaguías</p>
+      <div className="px-6 py-6 border-b border-white/10 flex items-center gap-3">
+        <img src={logoMarca} alt="" className="w-9 h-9 shrink-0 object-contain" />
+        <div>
+          <p className="text-lg font-bold leading-tight">TornaGuía</p>
+          <p className="text-xs text-white/60">Asistente de tornaguías</p>
+        </div>
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1">

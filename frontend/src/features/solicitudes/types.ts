@@ -80,4 +80,5 @@ export interface HistorialSolicitud {
   fechaSolicitud: string
   tieneDetalleGenerado: boolean
   tienePdf: boolean
+  loteNumeroSerie: string | null
 }
