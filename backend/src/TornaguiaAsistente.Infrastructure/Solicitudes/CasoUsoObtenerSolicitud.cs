@@ -20,8 +20,7 @@ public class CasoUsoObtenerSolicitud : ICasoUsoObtenerSolicitud
             .FirstOrDefaultAsync(s => s.Id == solicitudId)
             ?? throw new SolicitudInvalidaException($"Solicitud {solicitudId} no encontrada.");
 
-        if (solicitud.UsuarioId != usuarioId)
-            throw new SolicitudInvalidaException("La solicitud no pertenece al usuario autenticado.");
+        SolicitudesAjustes.AsegurarPropietario(solicitud.UsuarioId, usuarioId, "La solicitud");
 
         IReadOnlyList<double[]>? geometria = null;
         if (solicitud.MunicipioDestinoId is not null)

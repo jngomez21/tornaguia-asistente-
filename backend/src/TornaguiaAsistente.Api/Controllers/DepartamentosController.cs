@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TornaguiaAsistente.Api.Dtos;
-using TornaguiaAsistente.Infrastructure.Persistence;
+using TornaguiaAsistente.Application.Catalogos;
 
 namespace TornaguiaAsistente.Api.Controllers;
 
@@ -9,21 +7,17 @@ namespace TornaguiaAsistente.Api.Controllers;
 [Route("api/[controller]")]
 public class DepartamentosController : ControllerBase
 {
-    private readonly TornaguiaDbContext _context;
+    private readonly ICasoUsoListarDepartamentos _casoUso;
 
-    public DepartamentosController(TornaguiaDbContext context)
+    public DepartamentosController(ICasoUsoListarDepartamentos casoUso)
     {
-        _context = context;
+        _casoUso = casoUso;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<DepartamentoDto>>> GetDepartamentos()
+    public async Task<ActionResult<IReadOnlyList<DepartamentoResponse>>> GetDepartamentos()
     {
-        var departamentos = await _context.Departamentos
-            .OrderBy(d => d.Nombre)
-            .Select(d => new DepartamentoDto(d.Id, d.Nombre, d.CodigoDane))
-            .ToListAsync();
-
+        var departamentos = await _casoUso.EjecutarAsync();
         return Ok(departamentos);
     }
 }

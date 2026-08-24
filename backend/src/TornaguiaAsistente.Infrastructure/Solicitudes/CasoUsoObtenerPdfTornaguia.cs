@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using TornaguiaAsistente.Application.Solicitudes;
 using TornaguiaAsistente.Infrastructure.Persistence;
 
@@ -15,14 +14,7 @@ public class CasoUsoObtenerPdfTornaguia : ICasoUsoObtenerPdfTornaguia
 
     public async Task<byte[]> EjecutarAsync(int solicitudId, int usuarioId)
     {
-        var detalle = await _context.SolicitudesDetalleTornaguia
-            .Include(d => d.Solicitud)
-            .FirstOrDefaultAsync(d => d.SolicitudId == solicitudId)
-            ?? throw new SolicitudInvalidaException(
-                $"La solicitud {solicitudId} no tiene un detalle de tornaguía generado.");
-
-        if (detalle.Solicitud.UsuarioId != usuarioId)
-            throw new SolicitudInvalidaException("La solicitud no pertenece al usuario autenticado.");
+        var detalle = await SolicitudesAjustes.ObtenerDetalleConSolicitudAsync(_context, solicitudId, usuarioId);
 
         if (detalle.PdfBytes is null)
             throw new SolicitudInvalidaException("El PDF de esta tornaguía aún no se ha generado.");

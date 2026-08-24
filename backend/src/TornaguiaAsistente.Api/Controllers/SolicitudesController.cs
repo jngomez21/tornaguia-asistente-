@@ -9,7 +9,7 @@ namespace TornaguiaAsistente.Api.Controllers;
 [Route("api/[controller]")]
 [EnableRateLimiting("fixed")]
 [Authorize]
-public class SolicitudesController : ControllerBase
+public class SolicitudesController : ApiControllerBase
 {
     private readonly ICasoUsoCrearSolicitud _casoUso;
     private readonly ICasoUsoGuardarDetalleTornaguia _casoUsoGuardarDetalle;
@@ -37,22 +37,14 @@ public class SolicitudesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<HistorialSolicitudResponse>>> Historial()
     {
-        var usuarioId = ObtenerUsuarioId();
-        if (usuarioId is null)
-            return Unauthorized();
-
-        var resultado = await _casoUsoHistorial.EjecutarAsync(usuarioId.Value);
+        var resultado = await _casoUsoHistorial.EjecutarAsync(UsuarioId);
         return Ok(resultado);
     }
 
     [HttpPost]
     public async Task<ActionResult<CrearSolicitudResponse>> Crear(CrearSolicitudRequest request)
     {
-        var usuarioId = ObtenerUsuarioId();
-        if (usuarioId is null)
-            return Unauthorized();
-
-        var requestConUsuarioReal = request with { UsuarioId = usuarioId.Value };
+        var requestConUsuarioReal = request with { UsuarioId = UsuarioId };
 
         try
         {
@@ -70,11 +62,7 @@ public class SolicitudesController : ControllerBase
         int id,
         GuardarDetalleTornaguiaRequest request)
     {
-        var usuarioId = ObtenerUsuarioId();
-        if (usuarioId is null)
-            return Unauthorized();
-
-        var requestConDatosReales = request with { SolicitudId = id, UsuarioId = usuarioId.Value };
+        var requestConDatosReales = request with { SolicitudId = id, UsuarioId = UsuarioId };
 
         try
         {
@@ -90,13 +78,9 @@ public class SolicitudesController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<CrearSolicitudResponse>> ObtenerSolicitud(int id)
     {
-        var usuarioId = ObtenerUsuarioId();
-        if (usuarioId is null)
-            return Unauthorized();
-
         try
         {
-            var resultado = await _casoUsoObtenerSolicitud.EjecutarAsync(id, usuarioId.Value);
+            var resultado = await _casoUsoObtenerSolicitud.EjecutarAsync(id, UsuarioId);
             return Ok(resultado);
         }
         catch (SolicitudInvalidaException ex)
@@ -108,11 +92,7 @@ public class SolicitudesController : ControllerBase
     [HttpPut("{id}/pdf")]
     public async Task<IActionResult> GuardarPdf(int id, GuardarPdfTornaguiaRequest request)
     {
-        var usuarioId = ObtenerUsuarioId();
-        if (usuarioId is null)
-            return Unauthorized();
-
-        var requestConDatosReales = request with { SolicitudId = id, UsuarioId = usuarioId.Value };
+        var requestConDatosReales = request with { SolicitudId = id, UsuarioId = UsuarioId };
 
         try
         {
@@ -128,24 +108,14 @@ public class SolicitudesController : ControllerBase
     [HttpGet("{id}/pdf")]
     public async Task<IActionResult> ObtenerPdf(int id)
     {
-        var usuarioId = ObtenerUsuarioId();
-        if (usuarioId is null)
-            return Unauthorized();
-
         try
         {
-            var pdfBytes = await _casoUsoObtenerPdf.EjecutarAsync(id, usuarioId.Value);
+            var pdfBytes = await _casoUsoObtenerPdf.EjecutarAsync(id, UsuarioId);
             return File(pdfBytes, "application/pdf", $"tornaguia-{id}.pdf");
         }
         catch (SolicitudInvalidaException ex)
         {
             return NotFound(new { mensaje = ex.Message });
         }
-    }
-
-    private int? ObtenerUsuarioId()
-    {
-        var usuarioIdClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
-        return usuarioIdClaim is not null && int.TryParse(usuarioIdClaim, out var usuarioId) ? usuarioId : null;
     }
 }

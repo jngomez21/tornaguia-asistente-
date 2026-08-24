@@ -21,8 +21,7 @@ public class CasoUsoGuardarDetalleTornaguia : ICasoUsoGuardarDetalleTornaguia
             .FirstOrDefaultAsync(s => s.Id == request.SolicitudId)
             ?? throw new SolicitudInvalidaException($"Solicitud {request.SolicitudId} no encontrada.");
 
-        if (solicitud.UsuarioId != request.UsuarioId)
-            throw new SolicitudInvalidaException("La solicitud no pertenece al usuario autenticado.");
+        SolicitudesAjustes.AsegurarPropietario(solicitud.UsuarioId, request.UsuarioId, "La solicitud");
 
         if (solicitud.DetalleTornaguia is not null)
             throw new SolicitudInvalidaException("Esta solicitud ya tiene un detalle de tornaguía generado.");
@@ -32,8 +31,7 @@ public class CasoUsoGuardarDetalleTornaguia : ICasoUsoGuardarDetalleTornaguia
             .FirstOrDefaultAsync(l => l.Id == request.LoteId)
             ?? throw new SolicitudInvalidaException($"Lote {request.LoteId} no encontrado.");
 
-        if (lote.UsuarioId != request.UsuarioId)
-            throw new SolicitudInvalidaException("El lote no pertenece al usuario autenticado.");
+        SolicitudesAjustes.AsegurarPropietario(lote.UsuarioId, request.UsuarioId, "El lote");
 
         if (lote.Estado != EstadoLote.Reservado)
             throw new SolicitudInvalidaException(

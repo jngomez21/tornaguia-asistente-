@@ -60,6 +60,28 @@ internal static class InventarioAjustes
         }
     }
 
+    public static void AsegurarPropietario(int propietarioReal, int usuarioId, string entidad)
+    {
+        if (propietarioReal != usuarioId)
+            throw new InventarioInvalidoException($"{entidad} no pertenece al usuario autenticado.");
+    }
+
+    public static async Task<Lote> ObtenerLoteReservadoAsync(
+        TornaguiaDbContext context, int loteId, int usuarioId, string accion)
+    {
+        var lote = await context.Lotes
+            .Include(l => l.LoteProductos)
+            .FirstOrDefaultAsync(l => l.Id == loteId)
+            ?? throw new InventarioInvalidoException($"Lote {loteId} no encontrado.");
+
+        AsegurarPropietario(lote.UsuarioId, usuarioId, "El lote");
+
+        if (lote.Estado != EstadoLote.Reservado)
+            throw new InventarioInvalidoException($"Solo se puede {accion} un lote en estado Reservado.");
+
+        return lote;
+    }
+
     public static string NumeroSerie(int loteId) => $"LT-{loteId:D6}";
 
     public static LoteResponse AResponse(Lote lote) => new(

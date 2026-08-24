@@ -9,7 +9,7 @@ namespace TornaguiaAsistente.Api.Controllers;
 [Route("api/[controller]")]
 [EnableRateLimiting("fixed")]
 [Authorize]
-public class InventarioController : ControllerBase
+public class InventarioController : ApiControllerBase
 {
     private readonly ICasoUsoObtenerInventario _casoUsoObtenerInventario;
     private readonly ICasoUsoRegistrarEntrada _casoUsoRegistrarEntrada;
@@ -40,22 +40,14 @@ public class InventarioController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<InventarioItemResponse>>> Obtener()
     {
-        var usuarioId = ObtenerUsuarioId();
-        if (usuarioId is null)
-            return Unauthorized();
-
-        var resultado = await _casoUsoObtenerInventario.EjecutarAsync(usuarioId.Value);
+        var resultado = await _casoUsoObtenerInventario.EjecutarAsync(UsuarioId);
         return Ok(resultado);
     }
 
     [HttpPost("entradas")]
     public async Task<ActionResult<InventarioItemResponse>> RegistrarEntrada(RegistrarEntradaRequest request)
     {
-        var usuarioId = ObtenerUsuarioId();
-        if (usuarioId is null)
-            return Unauthorized();
-
-        var requestConUsuarioReal = request with { UsuarioId = usuarioId.Value };
+        var requestConUsuarioReal = request with { UsuarioId = UsuarioId };
 
         try
         {
@@ -71,14 +63,10 @@ public class InventarioController : ControllerBase
     [HttpPost("entradas/{productoId}/deshacer")]
     public async Task<ActionResult<InventarioItemResponse>> DeshacerUltimaEntrada(int productoId)
     {
-        var usuarioId = ObtenerUsuarioId();
-        if (usuarioId is null)
-            return Unauthorized();
-
         try
         {
             var resultado = await _casoUsoDeshacerUltimaEntrada.EjecutarAsync(
-                new DeshacerUltimaEntradaRequest(usuarioId.Value, productoId));
+                new DeshacerUltimaEntradaRequest(UsuarioId, productoId));
             return Ok(resultado);
         }
         catch (InventarioInvalidoException ex)
@@ -90,22 +78,14 @@ public class InventarioController : ControllerBase
     [HttpGet("lotes")]
     public async Task<ActionResult<IReadOnlyList<LoteResponse>>> ListarLotesDisponibles()
     {
-        var usuarioId = ObtenerUsuarioId();
-        if (usuarioId is null)
-            return Unauthorized();
-
-        var resultado = await _casoUsoListarLotesDisponibles.EjecutarAsync(usuarioId.Value);
+        var resultado = await _casoUsoListarLotesDisponibles.EjecutarAsync(UsuarioId);
         return Ok(resultado);
     }
 
     [HttpPost("lotes")]
     public async Task<ActionResult<LoteResponse>> CrearLote(CrearLoteRequest request)
     {
-        var usuarioId = ObtenerUsuarioId();
-        if (usuarioId is null)
-            return Unauthorized();
-
-        var requestConUsuarioReal = request with { UsuarioId = usuarioId.Value };
+        var requestConUsuarioReal = request with { UsuarioId = UsuarioId };
 
         try
         {
@@ -121,11 +101,7 @@ public class InventarioController : ControllerBase
     [HttpPut("lotes/{id}")]
     public async Task<ActionResult<LoteResponse>> EditarLote(int id, EditarLoteRequest request)
     {
-        var usuarioId = ObtenerUsuarioId();
-        if (usuarioId is null)
-            return Unauthorized();
-
-        var requestConDatosReales = request with { LoteId = id, UsuarioId = usuarioId.Value };
+        var requestConDatosReales = request with { LoteId = id, UsuarioId = UsuarioId };
 
         try
         {
@@ -141,24 +117,14 @@ public class InventarioController : ControllerBase
     [HttpPost("lotes/{id}/cancelar")]
     public async Task<IActionResult> CancelarLote(int id)
     {
-        var usuarioId = ObtenerUsuarioId();
-        if (usuarioId is null)
-            return Unauthorized();
-
         try
         {
-            await _casoUsoCancelarLote.EjecutarAsync(new CancelarLoteRequest(id, usuarioId.Value));
+            await _casoUsoCancelarLote.EjecutarAsync(new CancelarLoteRequest(id, UsuarioId));
             return NoContent();
         }
         catch (InventarioInvalidoException ex)
         {
             return BadRequest(new { mensaje = ex.Message });
         }
-    }
-
-    private int? ObtenerUsuarioId()
-    {
-        var usuarioIdClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
-        return usuarioIdClaim is not null && int.TryParse(usuarioIdClaim, out var usuarioId) ? usuarioId : null;
     }
 }

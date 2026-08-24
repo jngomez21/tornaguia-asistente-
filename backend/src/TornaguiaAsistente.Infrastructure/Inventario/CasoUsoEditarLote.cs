@@ -16,16 +16,8 @@ public class CasoUsoEditarLote : ICasoUsoEditarLote
 
     public async Task<LoteResponse> EjecutarAsync(EditarLoteRequest request)
     {
-        var lote = await _context.Lotes
-            .Include(l => l.LoteProductos)
-            .FirstOrDefaultAsync(l => l.Id == request.LoteId)
-            ?? throw new InventarioInvalidoException($"Lote {request.LoteId} no encontrado.");
-
-        if (lote.UsuarioId != request.UsuarioId)
-            throw new InventarioInvalidoException("El lote no pertenece al usuario autenticado.");
-
-        if (lote.Estado != EstadoLote.Reservado)
-            throw new InventarioInvalidoException("Solo se puede editar un lote en estado Reservado.");
+        var lote = await InventarioAjustes.ObtenerLoteReservadoAsync(
+            _context, request.LoteId, request.UsuarioId, "editar");
 
         var cantidadesNuevas = InventarioAjustes.AgruparCantidades(request.Productos);
 

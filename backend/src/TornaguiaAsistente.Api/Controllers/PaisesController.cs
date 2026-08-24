@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TornaguiaAsistente.Api.Dtos;
-using TornaguiaAsistente.Infrastructure.Persistence;
+using TornaguiaAsistente.Application.Catalogos;
 
 namespace TornaguiaAsistente.Api.Controllers;
 
@@ -9,21 +7,17 @@ namespace TornaguiaAsistente.Api.Controllers;
 [Route("api/[controller]")]
 public class PaisesController : ControllerBase
 {
-    private readonly TornaguiaDbContext _context;
+    private readonly ICasoUsoListarPaises _casoUso;
 
-    public PaisesController(TornaguiaDbContext context)
+    public PaisesController(ICasoUsoListarPaises casoUso)
     {
-        _context = context;
+        _casoUso = casoUso;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<PaisDto>>> GetPaises()
+    public async Task<ActionResult<IReadOnlyList<PaisResponse>>> GetPaises()
     {
-        var paises = await _context.Paises
-            .OrderBy(p => p.Nombre)
-            .Select(p => new PaisDto(p.Id, p.Nombre, p.CodigoISO))
-            .ToListAsync();
-
+        var paises = await _casoUso.EjecutarAsync();
         return Ok(paises);
     }
 }
