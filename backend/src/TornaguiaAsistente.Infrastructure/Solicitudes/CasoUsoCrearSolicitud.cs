@@ -51,17 +51,25 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
 
             mismoDepartamento = origen.DepartamentoId == destinoMunicipio.DepartamentoId;
 
-            var ruta = await _motorGeografico.CalcularRutaAsync(origen.Id, destinoMunicipio.Id);
-            distanciaKm = ruta.DistanciaKm;
-            tiempoEstimado = ruta.TiempoEstimadoMinutos;
-            geometria = ruta.Geometria;
-
-            if (ruta.DepartamentosIntermedioIds.Count > 0)
+            try
             {
-                departamentosIntermedios = await _context.Departamentos
-                    .Where(d => ruta.DepartamentosIntermedioIds.Contains(d.Id))
-                    .Select(d => d.Nombre)
-                    .ToListAsync();
+                var ruta = await _motorGeografico.CalcularRutaAsync(origen.Id, destinoMunicipio.Id);
+                distanciaKm = ruta.DistanciaKm;
+                tiempoEstimado = ruta.TiempoEstimadoMinutos;
+                geometria = ruta.Geometria;
+
+                if (ruta.DepartamentosIntermedioIds.Count > 0)
+                {
+                    departamentosIntermedios = await _context.Departamentos
+                        .Where(d => ruta.DepartamentosIntermedioIds.Contains(d.Id))
+                        .Select(d => d.Nombre)
+                        .ToListAsync();
+                }
+            }
+            catch (SolicitudInvalidaException)
+            {
+                // No hay ruta terrestre calculable (ej. destinos sin conexión vial como Acandí).
+                // El tipo de tornaguía no depende de la ruta, así que se sigue sin distancia/mapa.
             }
         }
         else

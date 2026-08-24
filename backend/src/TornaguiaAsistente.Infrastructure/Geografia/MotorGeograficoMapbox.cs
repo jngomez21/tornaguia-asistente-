@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using NetTopologySuite.Geometries;
 using TornaguiaAsistente.Application.Geografia;
+using TornaguiaAsistente.Application.Solicitudes;
 using TornaguiaAsistente.Infrastructure.Persistence;
 
 namespace TornaguiaAsistente.Infrastructure.Geografia;
@@ -53,7 +54,14 @@ public class MotorGeograficoMapbox : IMotorGeografico
         }
         using var documento = JsonDocument.Parse(json);
 
-        var ruta = documento.RootElement.GetProperty("routes")[0];
+        var rutas = documento.RootElement.GetProperty("routes");
+        if (rutas.GetArrayLength() == 0)
+        {
+            throw new SolicitudInvalidaException(
+                $"No existe una ruta terrestre entre {origen.Nombre} y {destino.Nombre}.");
+        }
+
+        var ruta = rutas[0];
         var distanciaMetros = ruta.GetProperty("distance").GetDouble();
         var duracionSegundos = ruta.GetProperty("duration").GetDouble();
 

@@ -25,13 +25,13 @@ public class MotorGeograficoConCache : IMotorGeografico
                 r.MunicipioOrigenId == municipioOrigenId &&
                 r.MunicipioDestinoId == municipioDestinoId);
 
-        if (rutaCacheada is not null)
+        if (rutaCacheada is not null && rutaCacheada.Geometria is not null)
         {
             var departamentosCacheados = JsonSerializer.Deserialize<List<int>>(
                 rutaCacheada.DepartamentosIntermedios) ?? new List<int>();
-            var geometriaCacheada = rutaCacheada.Geometria?.Coordinates
+            var geometriaCacheada = rutaCacheada.Geometria.Coordinates
                 .Select(c => new[] { c.X, c.Y })
-                .ToList() ?? new List<double[]>();
+                .ToList();
 
             return new ResultadoRuta(
                 DistanciaKm: (double)rutaCacheada.DistanciaKm,
@@ -48,16 +48,27 @@ public class MotorGeograficoConCache : IMotorGeografico
             resultado.Geometria.Select(p => new Coordinate(p[0], p[1])).ToArray());
         lineaRuta.SRID = 4326;
 
-        _context.RutasCalculadas.Add(new RutaCalculada
+        if (rutaCacheada is not null)
         {
-            MunicipioOrigenId = municipioOrigenId,
-            MunicipioDestinoId = municipioDestinoId,
-            DepartamentosIntermedios = JsonSerializer.Serialize(resultado.DepartamentosIntermedioIds),
-            DistanciaKm = (decimal)resultado.DistanciaKm,
-            TiempoEstimadoMinutos = resultado.TiempoEstimadoMinutos,
-            FechaConsulta = DateTime.UtcNow,
-            Geometria = lineaRuta
-        });
+            rutaCacheada.DepartamentosIntermedios = JsonSerializer.Serialize(resultado.DepartamentosIntermedioIds);
+            rutaCacheada.DistanciaKm = (decimal)resultado.DistanciaKm;
+            rutaCacheada.TiempoEstimadoMinutos = resultado.TiempoEstimadoMinutos;
+            rutaCacheada.FechaConsulta = DateTime.UtcNow;
+            rutaCacheada.Geometria = lineaRuta;
+        }
+        else
+        {
+            _context.RutasCalculadas.Add(new RutaCalculada
+            {
+                MunicipioOrigenId = municipioOrigenId,
+                MunicipioDestinoId = municipioDestinoId,
+                DepartamentosIntermedios = JsonSerializer.Serialize(resultado.DepartamentosIntermedioIds),
+                DistanciaKm = (decimal)resultado.DistanciaKm,
+                TiempoEstimadoMinutos = resultado.TiempoEstimadoMinutos,
+                FechaConsulta = DateTime.UtcNow,
+                Geometria = lineaRuta
+            });
+        }
         await _context.SaveChangesAsync();
 
         return resultado;
