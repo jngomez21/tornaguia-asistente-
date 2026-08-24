@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { isAxiosError } from 'axios'
 import { Sidebar } from '../../../shared/components/Sidebar'
-import { inventarioSidebarItems } from '../sidebarItems'
+import { appSidebarItems } from '../../../shared/components/sidebarItems'
+import { formatearFecha } from '../../../shared/lib/formato'
+import { extraerMensajeAxios } from '../../../shared/lib/errores'
 import { getLotesDisponibles, crearLote, editarLote, cancelarLote } from '../api/inventarioApi'
 import { LoteForm } from '../components/LoteForm'
 import { EntradaForm } from '../components/EntradaForm'
 import { DisponibleTabla } from '../components/DisponibleTabla'
+import { productosParaRequest } from '../schemas'
 import type { LoteFormValues } from '../schemas'
 import type { Lote } from '../types'
 
@@ -18,16 +20,6 @@ function loteAValoresFormulario(lote: Lote): LoteFormValues {
       cantidad: p.cantidad,
     })),
   }
-}
-
-function formatearFecha(fechaIso: string) {
-  return new Date(fechaIso).toLocaleString('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 export function LotesPage() {
@@ -53,9 +45,7 @@ export function LotesPage() {
 
   const editarMutation = useMutation({
     mutationFn: ({ loteId, data }: { loteId: number; data: LoteFormValues }) =>
-      editarLote(loteId, {
-        productos: data.productos.map((p) => ({ productoId: p.productoId!, cantidad: p.cantidad })),
-      }),
+      editarLote(loteId, { productos: productosParaRequest(data) }),
     onSuccess: () => {
       invalidarListados()
       setEditandoId(null)
@@ -70,14 +60,14 @@ export function LotesPage() {
   })
 
   const mensajeError =
-    (isAxiosError<{ mensaje?: string }>(crearMutation.error) && crearMutation.error.response?.data?.mensaje) ||
-    (isAxiosError<{ mensaje?: string }>(editarMutation.error) && editarMutation.error.response?.data?.mensaje) ||
-    (isAxiosError<{ mensaje?: string }>(cancelarMutation.error) && cancelarMutation.error.response?.data?.mensaje) ||
+    extraerMensajeAxios(crearMutation.error) ??
+    extraerMensajeAxios(editarMutation.error) ??
+    extraerMensajeAxios(cancelarMutation.error) ??
     null
 
   return (
     <div className="min-h-dvh flex bg-gray-50">
-      <Sidebar items={inventarioSidebarItems} />
+      <Sidebar items={appSidebarItems} />
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-6xl mx-auto p-6 sm:p-10">
@@ -119,11 +109,7 @@ export function LotesPage() {
               <LoteForm
                 textoBoton="Crear lote"
                 guardando={crearMutation.isPending}
-                onGuardar={(values) =>
-                  crearMutation.mutate({
-                    productos: values.productos.map((p) => ({ productoId: p.productoId!, cantidad: p.cantidad })),
-                  })
-                }
+                onGuardar={(values) => crearMutation.mutate({ productos: productosParaRequest(values) })}
                 onCancelar={() => setCreando(false)}
               />
             </div>

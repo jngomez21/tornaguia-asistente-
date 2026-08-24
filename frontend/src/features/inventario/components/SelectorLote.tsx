@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { isAxiosError } from 'axios'
 import { getLotesDisponibles, crearLote } from '../api/inventarioApi'
 import { LoteForm } from './LoteForm'
+import { productosParaRequest } from '../schemas'
 import type { Lote } from '../types'
+import { extraerMensajeAxios } from '../../../shared/lib/errores'
 
 interface CapacidadPorProducto {
   productoId: number
@@ -55,11 +56,9 @@ export function SelectorLote({
 
   const loteSeleccionado = lotesQuery.data?.find((l) => l.loteId === loteId)
 
-  const mensajeErrorCrear = isAxiosError<{ mensaje?: string }>(crearLoteMutation.error)
-    ? crearLoteMutation.error.response?.data?.mensaje
-    : crearLoteMutation.error
-      ? 'No se pudo crear el lote.'
-      : null
+  const mensajeErrorCrear = crearLoteMutation.error
+    ? (extraerMensajeAxios(crearLoteMutation.error) ?? 'No se pudo crear el lote.')
+    : null
 
   return (
     <div>
@@ -116,9 +115,7 @@ export function SelectorLote({
             textoBoton="Crear lote"
             guardando={crearLoteMutation.isPending}
             onGuardar={(values) =>
-              crearLoteMutation.mutate({
-                productos: values.productos.map((p) => ({ productoId: p.productoId!, cantidad: p.cantidad })),
-              })
+              crearLoteMutation.mutate({ productos: productosParaRequest(values) })
             }
             onCancelar={() => setCreando(false)}
           />

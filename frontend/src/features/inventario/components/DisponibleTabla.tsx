@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { isAxiosError } from 'axios'
 import { getInventario, deshacerUltimaEntrada } from '../api/inventarioApi'
+import { extraerMensajeAxios } from '../../../shared/lib/errores'
 
 export function DisponibleTabla() {
   const queryClient = useQueryClient()
@@ -15,11 +15,9 @@ export function DisponibleTabla() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['inventario'] }),
   })
 
-  const mensajeError = isAxiosError<{ mensaje?: string }>(deshacerMutation.error)
-    ? deshacerMutation.error.response?.data?.mensaje
-    : deshacerMutation.error
-      ? 'No se pudo deshacer la entrada.'
-      : null
+  const mensajeError = deshacerMutation.error
+    ? (extraerMensajeAxios(deshacerMutation.error) ?? 'No se pudo deshacer la entrada.')
+    : null
 
   return (
     <div className="mb-6">

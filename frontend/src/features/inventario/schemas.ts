@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { LoteProductoRequest } from './types'
 
 const entradaBaseSchema = z.object({
   productoId: z.number().optional(),
@@ -53,4 +54,8 @@ export const loteProductoPorDefecto: LoteProductoFormValues = {
 
 export const loteFormPorDefecto: LoteFormValues = {
   productos: [loteProductoPorDefecto],
+}
+
+export function productosParaRequest(values: LoteFormValues): LoteProductoRequest[] {
+  return values.productos.map((p) => ({ productoId: p.productoId!, cantidad: p.cantidad }))
 }

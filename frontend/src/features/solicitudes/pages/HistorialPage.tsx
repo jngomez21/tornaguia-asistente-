@@ -1,27 +1,18 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { isAxiosError } from 'axios'
 import { getHistorialSolicitudes, getPdfTornaguia, getSolicitud, guardarDetalleTornaguia, guardarPdfTornaguia } from '../api/solicitudesApi'
 import { construirPdfTornaguia, descargarPdf, bytesABase64 } from '../lib/generarPdfTornaguia'
 import { mapearDetalleARequest } from '../lib/mapearDetalle'
 import { colorPorTipo } from '../lib/coloresTornaguia'
 import { ModalDetalleTornaguia } from '../components/ModalDetalleTornaguia'
 import { Sidebar } from '../../../shared/components/Sidebar'
-import { solicitudesSidebarItems } from '../sidebarItems'
+import { appSidebarItems } from '../../../shared/components/sidebarItems'
+import { formatearFecha } from '../../../shared/lib/formato'
+import { extraerMensajeAxios } from '../../../shared/lib/errores'
 import type { DetalleTornaguiaFormValues } from '../schemas'
 import type { CrearSolicitudResponse, HistorialSolicitud } from '../types'
 
 const TIPOS_TORNAGUIA = ['Movilización', 'Reenvío', 'Tránsito']
-
-function formatearFecha(fechaIso: string) {
-  return new Date(fechaIso).toLocaleString('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
 
 function destino(item: HistorialSolicitud) {
   return item.municipioDestinoNombre ?? item.paisDestinoNombre ?? '—'
@@ -126,17 +117,13 @@ export function HistorialPage() {
       queryClient.invalidateQueries({ queryKey: ['historial-solicitudes'] })
     },
     onError: (error) => {
-      setErrorAccion(
-        isAxiosError<{ mensaje?: string }>(error)
-          ? (error.response?.data?.mensaje ?? 'No se pudo generar la tornaguía.')
-          : 'No se pudo generar la tornaguía.',
-      )
+      setErrorAccion(extraerMensajeAxios(error) ?? 'No se pudo generar la tornaguía.')
     },
   })
 
   return (
     <div className="min-h-dvh flex bg-gray-50">
-      <Sidebar items={solicitudesSidebarItems} />
+      <Sidebar items={appSidebarItems} />
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-5xl mx-auto p-6 sm:p-10">

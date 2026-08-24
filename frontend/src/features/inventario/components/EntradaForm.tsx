@@ -1,12 +1,12 @@
 import { useForm, Controller, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { isAxiosError } from 'axios'
 import { getProductos } from '../../solicitudes/api/solicitudesApi'
 import { BuscadorProducto } from '../../solicitudes/components/BuscadorProducto'
 import { registrarEntrada } from '../api/inventarioApi'
 import { entradaSchema, entradaPorDefecto } from '../schemas'
 import type { EntradaFormValues } from '../schemas'
+import { extraerMensajeAxios } from '../../../shared/lib/errores'
 
 export function EntradaForm() {
   const queryClient = useQueryClient()
@@ -38,11 +38,9 @@ export function EntradaForm() {
     entradaMutation.mutate({ productoId: values.productoId!, cantidad: values.cantidad })
   }
 
-  const mensajeError = isAxiosError<{ mensaje?: string }>(entradaMutation.error)
-    ? entradaMutation.error.response?.data?.mensaje
-    : entradaMutation.error
-      ? 'No se pudo registrar la entrada.'
-      : null
+  const mensajeError = entradaMutation.error
+    ? (extraerMensajeAxios(entradaMutation.error) ?? 'No se pudo registrar la entrada.')
+    : null
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="bg-white border border-gray-200 rounded-xl p-4 mb-6">

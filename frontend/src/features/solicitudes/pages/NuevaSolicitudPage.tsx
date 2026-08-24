@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { isAxiosError } from 'axios'
 import { getMunicipios, getPaises, crearSolicitud, guardarDetalleTornaguia, guardarPdfTornaguia } from '../api/solicitudesApi'
 import { nuevaSolicitudFormSchema, solicitudItemPorDefecto } from '../schemas'
 import type { NuevaSolicitudFormValues, SolicitudItemFormValues, DetalleTornaguiaFormValues } from '../schemas'
@@ -14,7 +13,8 @@ import { ModalDetalleTornaguia } from '../components/ModalDetalleTornaguia'
 import { construirPdfTornaguia, descargarPdf, bytesABase64 } from '../lib/generarPdfTornaguia'
 import { mapearDetalleARequest } from '../lib/mapearDetalle'
 import { Sidebar } from '../../../shared/components/Sidebar'
-import { solicitudesSidebarItems } from '../sidebarItems'
+import { appSidebarItems } from '../../../shared/components/sidebarItems'
+import { extraerMensajeAxios } from '../../../shared/lib/errores'
 import type { CrearSolicitudResponse } from '../types'
 
 type ResultadoItem = { label: string } & (
@@ -74,9 +74,7 @@ export function NuevaSolicitudPage() {
       if (resultado.status === 'fulfilled') {
         return { label, ok: true, data: resultado.value }
       }
-      const mensaje = isAxiosError<{ mensaje?: string }>(resultado.reason)
-        ? (resultado.reason.response?.data?.mensaje ?? 'No se pudo procesar esta solicitud.')
-        : 'No se pudo procesar esta solicitud.'
+      const mensaje = extraerMensajeAxios(resultado.reason) ?? 'No se pudo procesar esta solicitud.'
       return { label, ok: false, mensaje }
     })
   }
@@ -165,11 +163,7 @@ export function NuevaSolicitudPage() {
         setGenerados((prev) => ({ ...prev, [solicitudId]: true }))
         cerrarModal()
       } catch (error) {
-        setErrorGeneracion(
-          isAxiosError<{ mensaje?: string }>(error)
-            ? (error.response?.data?.mensaje ?? 'No se pudo guardar el detalle de la tornaguía.')
-            : 'No se pudo guardar el detalle de la tornaguía.',
-        )
+        setErrorGeneracion(extraerMensajeAxios(error) ?? 'No se pudo guardar el detalle de la tornaguía.')
       }
       return
     }
@@ -238,7 +232,7 @@ export function NuevaSolicitudPage() {
 
   return (
     <div className="min-h-dvh flex bg-gray-50">
-      <Sidebar items={solicitudesSidebarItems} />
+      <Sidebar items={appSidebarItems} />
 
       <main className="flex-1 overflow-y-auto">
         <div className={`${esResultadoMultiple ? 'max-w-5xl' : 'max-w-2xl'} mx-auto p-6 sm:p-10`}>
