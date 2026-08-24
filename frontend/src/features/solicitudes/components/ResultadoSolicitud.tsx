@@ -1,5 +1,6 @@
 import type { CrearSolicitudResponse } from '../types'
 import { MapaRutasTornaguias } from './MapaRutasTornaguias'
+import { colorPorTipo } from '../lib/coloresTornaguia'
 
 export type EstadoTornaguiaPdf = 'pendiente' | 'en_carrito' | 'generado'
 
@@ -11,12 +12,7 @@ interface ResultadoSolicitudProps {
   onDescargarPdf?: () => void
   estadoPdf?: EstadoTornaguiaPdf
   mostrarMapa?: boolean
-}
-
-export const colorPorTipo: Record<string, string> = {
-  Movilización: 'bg-marca-medio',
-  Reenvío: 'bg-marca-verde',
-  Tránsito: 'bg-marca-oscuro',
+  onClickBadge?: () => void
 }
 
 const textoPorEstado: Record<EstadoTornaguiaPdf, { titulo: string; subtitulo: string }> = {
@@ -42,10 +38,12 @@ export function ResultadoSolicitud({
   onDescargarPdf,
   estadoPdf = 'pendiente',
   mostrarMapa = true,
+  onClickBadge,
 }: ResultadoSolicitudProps) {
   const colorBadge = colorPorTipo[resultado.tipoTornaguia] ?? 'bg-marca-oscuro'
   const tieneIntermedios = (resultado.departamentosIntermedios?.length ?? 0) > 0
   const textoBoton = textoPorEstado[estadoPdf]
+  const claseBadge = `inline-block self-start ${colorBadge} text-white text-xs font-semibold px-3 py-1 rounded-full mb-4`
 
   return (
     <div className="w-full h-full flex flex-col">
@@ -54,23 +52,28 @@ export function ResultadoSolicitud({
           {titulo}
         </p>
       )}
-      <span
-        className={`inline-block self-start ${colorBadge} text-white text-xs font-semibold px-3 py-1 rounded-full mb-4`}
-      >
-        Solicitud #{resultado.solicitudId}
-      </span>
+      {onClickBadge ? (
+        <button type="button" onClick={onClickBadge} className={`${claseBadge} hover:opacity-90 transition`}>
+          Solicitud #{resultado.solicitudId}
+        </button>
+      ) : (
+        <span className={claseBadge}>Solicitud #{resultado.solicitudId}</span>
+      )}
 
       <h1 className="text-2xl font-bold text-marca-oscuro mb-1">Tornaguía de {resultado.tipoTornaguia}</h1>
       <p className="text-sm text-gray-600 mb-6">{resultado.justificacion}</p>
 
       {mostrarMapa && resultado.geometria && resultado.geometria.length > 1 && (
         <MapaRutasTornaguias
+          animar
           rutas={[
             {
               solicitudId: resultado.solicitudId,
               geometria: resultado.geometria,
               tipoTornaguia: resultado.tipoTornaguia,
+              justificacion: resultado.justificacion,
               estadoPdf,
+              onSolicitarTornaguia,
               onDescargarPdf,
             },
           ]}

@@ -97,6 +97,7 @@ export function NuevaSolicitudPage() {
   const [pdfsGenerados, setPdfsGenerados] = useState<Record<number, Uint8Array>>({})
   const [solicitudModalAbierta, setSolicitudModalAbierta] = useState<number | null>(null)
   const [errorGeneracion, setErrorGeneracion] = useState<string | null>(null)
+  const [solicitudEnFoco, setSolicitudEnFoco] = useState<number | null>(null)
 
   function onNuevaConsulta() {
     mutation.reset()
@@ -106,6 +107,7 @@ export function NuevaSolicitudPage() {
     setPdfsGenerados({})
     setSolicitudModalAbierta(null)
     setErrorGeneracion(null)
+    setSolicitudEnFoco(null)
   }
 
   function descargarPdfSolicitud(solicitudId: number) {
@@ -253,6 +255,8 @@ export function NuevaSolicitudPage() {
 
               {esResultadoMultiple && (
                 <MapaRutasTornaguias
+                  rutaEnFocoId={solicitudEnFoco}
+                  onSalirFoco={() => setSolicitudEnFoco(null)}
                   rutas={resultados.flatMap((r) =>
                     r.ok && r.data.geometria && r.data.geometria.length > 1
                       ? [
@@ -260,7 +264,9 @@ export function NuevaSolicitudPage() {
                             solicitudId: r.data.solicitudId,
                             geometria: r.data.geometria,
                             tipoTornaguia: r.data.tipoTornaguia,
+                            justificacion: r.data.justificacion,
                             estadoPdf: estadoPdfDe(r.data.solicitudId),
+                            onSolicitarTornaguia: () => abrirModal(r.data.solicitudId),
                             onDescargarPdf: () => descargarPdfSolicitud(r.data.solicitudId),
                           },
                         ]
@@ -285,6 +291,9 @@ export function NuevaSolicitudPage() {
                         onSolicitarTornaguia={() => abrirModal(resultado.data.solicitudId)}
                         onDescargarPdf={() => descargarPdfSolicitud(resultado.data.solicitudId)}
                         mostrarMapa={!esResultadoMultiple}
+                        onClickBadge={
+                          esResultadoMultiple ? () => setSolicitudEnFoco(resultado.data.solicitudId) : undefined
+                        }
                       />
                     ) : (
                       <div className="h-full flex flex-col">
