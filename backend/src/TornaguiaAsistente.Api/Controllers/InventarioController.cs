@@ -17,7 +17,7 @@ public class InventarioController : ApiControllerBase
     private readonly ICasoUsoCrearLote _casoUsoCrearLote;
     private readonly ICasoUsoEditarLote _casoUsoEditarLote;
     private readonly ICasoUsoCancelarLote _casoUsoCancelarLote;
-    private readonly ICasoUsoDeshacerUltimaEntrada _casoUsoDeshacerUltimaEntrada;
+    private readonly ICasoUsoEditarInventario _casoUsoEditarInventario;
 
     public InventarioController(
         ICasoUsoObtenerInventario casoUsoObtenerInventario,
@@ -26,7 +26,7 @@ public class InventarioController : ApiControllerBase
         ICasoUsoCrearLote casoUsoCrearLote,
         ICasoUsoEditarLote casoUsoEditarLote,
         ICasoUsoCancelarLote casoUsoCancelarLote,
-        ICasoUsoDeshacerUltimaEntrada casoUsoDeshacerUltimaEntrada)
+        ICasoUsoEditarInventario casoUsoEditarInventario)
     {
         _casoUsoObtenerInventario = casoUsoObtenerInventario;
         _casoUsoRegistrarEntrada = casoUsoRegistrarEntrada;
@@ -34,7 +34,7 @@ public class InventarioController : ApiControllerBase
         _casoUsoCrearLote = casoUsoCrearLote;
         _casoUsoEditarLote = casoUsoEditarLote;
         _casoUsoCancelarLote = casoUsoCancelarLote;
-        _casoUsoDeshacerUltimaEntrada = casoUsoDeshacerUltimaEntrada;
+        _casoUsoEditarInventario = casoUsoEditarInventario;
     }
 
     [HttpGet]
@@ -60,13 +60,14 @@ public class InventarioController : ApiControllerBase
         }
     }
 
-    [HttpPost("entradas/{productoId}/deshacer")]
-    public async Task<ActionResult<InventarioItemResponse>> DeshacerUltimaEntrada(int productoId)
+    [HttpPut("{productoId}")]
+    public async Task<ActionResult<InventarioItemResponse>> EditarInventario(int productoId, EditarInventarioRequest request)
     {
+        var requestConDatosReales = request with { ProductoId = productoId, UsuarioId = UsuarioId };
+
         try
         {
-            var resultado = await _casoUsoDeshacerUltimaEntrada.EjecutarAsync(
-                new DeshacerUltimaEntradaRequest(UsuarioId, productoId));
+            var resultado = await _casoUsoEditarInventario.EjecutarAsync(requestConDatosReales);
             return Ok(resultado);
         }
         catch (InventarioInvalidoException ex)

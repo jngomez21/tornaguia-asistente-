@@ -2,6 +2,7 @@ import { api } from '../../../shared/lib/axios'
 import type {
   InventarioItem,
   RegistrarEntradaRequest,
+  EditarInventarioRequest,
   Lote,
   CrearLoteRequest,
   EditarLoteRequest,
@@ -17,8 +18,8 @@ export async function registrarEntrada(data: RegistrarEntradaRequest): Promise<I
   return response.data
 }
 
-export async function deshacerUltimaEntrada(productoId: number): Promise<InventarioItem> {
-  const response = await api.post<InventarioItem>(`/inventario/entradas/${productoId}/deshacer`)
+export async function editarInventario(productoId: number, data: EditarInventarioRequest): Promise<InventarioItem> {
+  const response = await api.put<InventarioItem>(`/inventario/${productoId}`, data)
   return response.data
 }
 

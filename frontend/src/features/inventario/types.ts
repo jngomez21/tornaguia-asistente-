@@ -9,6 +9,10 @@ export interface RegistrarEntradaRequest {
   cantidad: number
 }
 
+export interface EditarInventarioRequest {
+  cantidadDisponible: number
+}
+
 export interface LoteProductoRequest {
   productoId: number
   cantidad: number

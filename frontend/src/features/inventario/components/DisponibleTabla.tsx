@@ -1,23 +1,39 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { getInventario, deshacerUltimaEntrada } from '../api/inventarioApi'
+import { getInventario, editarInventario } from '../api/inventarioApi'
 import { extraerMensajeAxios } from '../../../shared/lib/errores'
+import type { InventarioItem } from '../types'
 
 export function DisponibleTabla() {
   const queryClient = useQueryClient()
   const inventarioQuery = useQuery({ queryKey: ['inventario'], queryFn: getInventario })
-  const [deshaciendoId, setDeshaciendoId] = useState<number | null>(null)
+  const [editandoId, setEditandoId] = useState<number | null>(null)
+  const [valorEditado, setValorEditado] = useState('')
 
-  const deshacerMutation = useMutation({
-    mutationFn: deshacerUltimaEntrada,
-    onMutate: (productoId: number) => setDeshaciendoId(productoId),
-    onSettled: () => setDeshaciendoId(null),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['inventario'] }),
+  const editarMutation = useMutation({
+    mutationFn: ({ productoId, cantidadDisponible }: { productoId: number; cantidadDisponible: number }) =>
+      editarInventario(productoId, { cantidadDisponible }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventario'] })
+      setEditandoId(null)
+    },
   })
 
-  const mensajeError = deshacerMutation.error
-    ? (extraerMensajeAxios(deshacerMutation.error) ?? 'No se pudo deshacer la entrada.')
+  const mensajeError = editarMutation.error
+    ? (extraerMensajeAxios(editarMutation.error) ?? 'No se pudo actualizar la cantidad.')
     : null
+
+  function iniciarEdicion(item: InventarioItem) {
+    editarMutation.reset()
+    setEditandoId(item.productoId)
+    setValorEditado(String(item.cantidadDisponible))
+  }
+
+  function guardarEdicion(productoId: number) {
+    const cantidad = Number(valorEditado)
+    if (Number.isNaN(cantidad) || cantidad < 0) return
+    editarMutation.mutate({ productoId, cantidadDisponible: cantidad })
+  }
 
   return (
     <div className="mb-6">
@@ -50,16 +66,49 @@ export function DisponibleTabla() {
             {inventarioQuery.data?.map((item) => (
               <tr key={item.productoId} className="border-t border-gray-100">
                 <td className="px-4 py-3">{item.productoNombre}</td>
-                <td className="px-4 py-3 text-right font-semibold">{item.cantidadDisponible}</td>
                 <td className="px-4 py-3 text-right">
-                  <button
-                    type="button"
-                    onClick={() => deshacerMutation.mutate(item.productoId)}
-                    disabled={deshaciendoId === item.productoId}
-                    className="text-xs font-semibold text-red-500 hover:underline disabled:opacity-50"
-                  >
-                    {deshaciendoId === item.productoId ? 'Deshaciendo...' : 'Deshacer última'}
-                  </button>
+                  {editandoId === item.productoId ? (
+                    <input
+                      type="number"
+                      step="any"
+                      min={0}
+                      value={valorEditado}
+                      onChange={(e) => setValorEditado(e.target.value)}
+                      autoFocus
+                      className="w-24 border border-gray-200 rounded-lg px-2 py-1 text-right focus:outline-none focus:ring-2 focus:ring-marca-medio"
+                    />
+                  ) : (
+                    <span className="font-semibold">{item.cantidadDisponible}</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  {editandoId === item.productoId ? (
+                    <div className="flex items-center justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => guardarEdicion(item.productoId)}
+                        disabled={editarMutation.isPending}
+                        className="text-xs font-semibold text-marca-medio hover:underline disabled:opacity-50"
+                      >
+                        {editarMutation.isPending ? 'Guardando...' : 'Guardar'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditandoId(null)}
+                        className="text-xs font-semibold text-gray-400 hover:underline"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => iniciarEdicion(item)}
+                      className="text-xs font-semibold text-marca-medio hover:underline"
+                    >
+                      Editar
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

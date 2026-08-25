@@ -17,7 +17,7 @@ export function LoginPage() {
       localStorage.setItem('token', data.token)
       localStorage.setItem('usuarioId', data.usuarioId.toString())
       localStorage.setItem('nombre', data.nombre)
-      navigate('/solicitudes/nueva')
+      navigate('/inicio')
     },
   })
 

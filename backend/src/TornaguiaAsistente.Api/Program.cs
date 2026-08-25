@@ -71,7 +71,7 @@ builder.Services.AddScoped<ICasoUsoListarLotesDisponibles, CasoUsoListarLotesDis
 builder.Services.AddScoped<ICasoUsoCrearLote, CasoUsoCrearLote>();
 builder.Services.AddScoped<ICasoUsoEditarLote, CasoUsoEditarLote>();
 builder.Services.AddScoped<ICasoUsoCancelarLote, CasoUsoCancelarLote>();
-builder.Services.AddScoped<ICasoUsoDeshacerUltimaEntrada, CasoUsoDeshacerUltimaEntrada>();
+builder.Services.AddScoped<ICasoUsoEditarInventario, CasoUsoEditarInventario>();
 builder.Services.AddScoped<ICasoUsoListarMunicipios, CasoUsoListarMunicipios>();
 builder.Services.AddScoped<ICasoUsoListarPaises, CasoUsoListarPaises>();
 builder.Services.AddScoped<ICasoUsoListarDepartamentos, CasoUsoListarDepartamentos>();

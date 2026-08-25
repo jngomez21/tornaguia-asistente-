@@ -1,4 +1,9 @@
 export const sidebarIconos = {
+  inicio: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+      <path d="M4 11l8-7 8 7M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
   nuevaSolicitud: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
       <path d="M12 5v14M5 12h14" strokeLinecap="round" />

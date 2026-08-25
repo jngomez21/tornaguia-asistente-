@@ -238,10 +238,10 @@ export function NuevaSolicitudPage() {
         <div className={`${esResultadoMultiple ? 'max-w-5xl' : 'max-w-2xl'} mx-auto p-6 sm:p-10`}>
           {resultados ? (
             <>
-              <h1 className="text-2xl font-bold text-marca-oscuro mb-1">
+              <h1 className="text-2xl font-bold text-marca-oscuro mb-1 text-center">
                 {esResultadoMultiple ? 'Resultado de las consultas' : 'Resultado de la consulta'}
               </h1>
-              <p className="text-sm text-gray-500 mb-8">
+              <p className="text-sm text-gray-500 mb-8 text-center">
                 {esResultadoMultiple
                   ? `Se procesaron ${resultados.length} tornaguías.`
                   : 'Este es el tipo de tornaguía que aplica.'}
@@ -334,8 +334,8 @@ export function NuevaSolicitudPage() {
             </>
           ) : (
             <>
-              <h1 className="text-2xl font-bold text-marca-oscuro mb-1">Nueva solicitud</h1>
-              <p className="text-sm text-gray-500 mb-6">
+              <h1 className="text-2xl font-bold text-marca-oscuro mb-1 text-center">Nueva solicitud</h1>
+              <p className="text-sm text-gray-500 mb-6 text-center">
                 Indica el origen y el destino del transporte para determinar el tipo de tornaguía.
               </p>
 
