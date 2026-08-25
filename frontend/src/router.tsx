@@ -5,6 +5,7 @@ import { ForgotPasswordPage } from './features/auth/pages/ForgotPasswordPage'
 import { NuevaSolicitudPage } from './features/solicitudes/pages/NuevaSolicitudPage'
 import { HistorialPage } from './features/solicitudes/pages/HistorialPage'
 import { LotesPage } from './features/inventario/pages/LotesPage'
+import { RutaProtegida } from './shared/components/RutaProtegida'
 
 export const router = createBrowserRouter([
     {
@@ -20,15 +21,20 @@ export const router = createBrowserRouter([
         element: <ForgotPasswordPage />,
     },
     {
-        path: '/solicitudes/nueva',
-        element: <NuevaSolicitudPage />,
-    },
-    {
-        path: '/solicitudes/historial',
-        element: <HistorialPage />,
-    },
-    {
-        path: '/inventario/lotes',
-        element: <LotesPage />,
+        element: <RutaProtegida />,
+        children: [
+            {
+                path: '/solicitudes/nueva',
+                element: <NuevaSolicitudPage />,
+            },
+            {
+                path: '/solicitudes/historial',
+                element: <HistorialPage />,
+            },
+            {
+                path: '/inventario/lotes',
+                element: <LotesPage />,
+            },
+        ],
     },
 ])
