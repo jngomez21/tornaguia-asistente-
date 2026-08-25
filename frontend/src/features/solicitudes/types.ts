@@ -18,6 +18,13 @@ export interface CrearSolicitudRequest {
   esParaExportacion: boolean
 }
 
+export interface RutaPreview {
+  distanciaKm: number
+  tiempoEstimadoMinutos: number
+  departamentosIntermedioIds: number[]
+  geometria: [number, number][]
+}
+
 export interface CrearSolicitudResponse {
   solicitudId: number
   tipoTornaguia: string

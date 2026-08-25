@@ -8,6 +8,7 @@ import type {
   GuardarDetalleTornaguiaRequest,
   DetalleTornaguiaResponse,
   HistorialSolicitud,
+  RutaPreview,
 } from '../types'
 
 export async function getMunicipios(): Promise<Municipio[]> {
@@ -22,6 +23,11 @@ export async function getPaises(): Promise<Pais[]> {
 
 export async function crearSolicitud(data: CrearSolicitudRequest): Promise<CrearSolicitudResponse> {
   const response = await api.post<CrearSolicitudResponse>('/solicitudes', data)
+  return response.data
+}
+
+export async function calcularRuta(origenId: number, destinoId: number): Promise<RutaPreview> {
+  const response = await api.get<RutaPreview>('/rutas/calcular', { params: { origenId, destinoId } })
   return response.data
 }
 

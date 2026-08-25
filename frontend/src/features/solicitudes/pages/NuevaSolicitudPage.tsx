@@ -1,21 +1,31 @@
 import { useState } from 'react'
-import { useForm, useFieldArray } from 'react-hook-form'
+import { useForm, useFieldArray, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { getMunicipios, getPaises, crearSolicitud, guardarDetalleTornaguia, guardarPdfTornaguia } from '../api/solicitudesApi'
+import {
+  getMunicipios,
+  getPaises,
+  crearSolicitud,
+  guardarDetalleTornaguia,
+  guardarPdfTornaguia,
+  calcularRuta,
+  getHistorialSolicitudes,
+} from '../api/solicitudesApi'
 import { nuevaSolicitudFormSchema, solicitudItemPorDefecto } from '../schemas'
 import type { NuevaSolicitudFormValues, SolicitudItemFormValues, DetalleTornaguiaFormValues } from '../schemas'
 import { ResultadoSolicitud } from '../components/ResultadoSolicitud'
 import type { EstadoTornaguiaPdf } from '../components/ResultadoSolicitud'
 import { MapaRutasTornaguias } from '../components/MapaRutasTornaguias'
 import { SolicitudFormItem } from '../components/SolicitudFormItem'
+import { ExplicacionTipoTornaguia } from '../components/ExplicacionTipoTornaguia'
 import { ModalDetalleTornaguia } from '../components/ModalDetalleTornaguia'
 import { construirPdfTornaguia, descargarPdf, bytesABase64 } from '../lib/generarPdfTornaguia'
 import { mapearDetalleARequest } from '../lib/mapearDetalle'
+import { colorPorTipo } from '../lib/coloresTornaguia'
 import { Sidebar } from '../../../shared/components/Sidebar'
 import { appSidebarItems } from '../../../shared/components/sidebarItems'
 import { extraerMensajeAxios } from '../../../shared/lib/errores'
-import type { CrearSolicitudResponse } from '../types'
+import type { CrearSolicitudResponse, HistorialSolicitud } from '../types'
 
 type ResultadoItem = { label: string } & (
   | { ok: true; data: CrearSolicitudResponse }
@@ -40,6 +50,46 @@ export function NuevaSolicitudPage() {
 
   const { fields, append, remove } = useFieldArray({ control, name: 'solicitudes' })
   const esMultiple = fields.length > 1
+
+  const primerItem = useWatch({ control, name: 'solicitudes.0' })
+
+  const rutaPreviewHabilitada =
+    !esMultiple &&
+    primerItem?.tipoDestino === 'municipio' &&
+    primerItem?.municipioOrigenId != null &&
+    primerItem?.municipioDestinoId != null &&
+    primerItem.municipioOrigenId !== primerItem.municipioDestinoId
+
+  const rutaPreviewQuery = useQuery({
+    queryKey: ['ruta-preview', primerItem?.municipioOrigenId, primerItem?.municipioDestinoId],
+    queryFn: () => calcularRuta(primerItem!.municipioOrigenId!, primerItem!.municipioDestinoId!),
+    enabled: rutaPreviewHabilitada,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const historialQuery = useQuery({ queryKey: ['historial-solicitudes'], queryFn: getHistorialSolicitudes })
+  const recientes = [...(historialQuery.data ?? [])]
+    .sort((a, b) => new Date(b.fechaSolicitud).getTime() - new Date(a.fechaSolicitud).getTime())
+    .slice(0, 3)
+
+  function aplicarAtajoReciente(item: HistorialSolicitud) {
+    const origenId = municipiosQuery.data?.find((m) => m.nombre === item.municipioOrigenNombre)?.id
+    if (origenId == null) return
+    setValue('solicitudes.0.municipioOrigenId', origenId)
+
+    if (item.municipioDestinoNombre) {
+      const destinoId = municipiosQuery.data?.find((m) => m.nombre === item.municipioDestinoNombre)?.id
+      setValue('solicitudes.0.tipoDestino', 'municipio')
+      setValue('solicitudes.0.municipioDestinoId', destinoId)
+    } else if (item.paisDestinoNombre) {
+      const paisId = paisesQuery.data?.find((p) => p.nombre === item.paisDestinoNombre)?.id
+      setValue('solicitudes.0.tipoDestino', 'pais')
+      setValue('solicitudes.0.paisDestinoId', paisId)
+    }
+
+    setValue('solicitudes.0.estaDeclarado', item.estaDeclarado)
+    setValue('solicitudes.0.esParaExportacion', item.esParaExportacion)
+  }
 
   function nombreMunicipio(id: number | undefined) {
     return municipiosQuery.data?.find((m) => m.id === id)?.nombre ?? '—'
@@ -96,6 +146,17 @@ export function NuevaSolicitudPage() {
   const [solicitudModalAbierta, setSolicitudModalAbierta] = useState<number | null>(null)
   const [errorGeneracion, setErrorGeneracion] = useState<string | null>(null)
   const [solicitudEnFoco, setSolicitudEnFoco] = useState<number | null>(null)
+  const [seleccionadoIndex, setSeleccionadoIndex] = useState(0)
+
+  const resultadoMostrado = resultados
+    ? resultados[esResultadoMultiple ? Math.min(seleccionadoIndex, resultados.length - 1) : 0]
+    : undefined
+
+  function seleccionarResultado(index: number) {
+    setSeleccionadoIndex(index)
+    const r = resultados?.[index]
+    if (r?.ok) setSolicitudEnFoco(r.data.solicitudId)
+  }
 
   function onNuevaConsulta() {
     mutation.reset()
@@ -106,6 +167,7 @@ export function NuevaSolicitudPage() {
     setSolicitudModalAbierta(null)
     setErrorGeneracion(null)
     setSolicitudEnFoco(null)
+    setSeleccionadoIndex(0)
   }
 
   function descargarPdfSolicitud(solicitudId: number) {
@@ -235,7 +297,11 @@ export function NuevaSolicitudPage() {
       <Sidebar items={appSidebarItems} />
 
       <main className="flex-1 overflow-y-auto">
-        <div className={`${esResultadoMultiple ? 'max-w-5xl' : 'max-w-2xl'} mx-auto p-6 sm:p-10`}>
+        <div
+          className={`${
+            resultados ? (esResultadoMultiple ? 'max-w-5xl' : 'max-w-2xl') : esMultiple ? 'max-w-6xl' : 'max-w-4xl'
+          } mx-auto p-6 sm:p-10`}
+        >
           {resultados ? (
             <>
               <h1 className="text-2xl font-bold text-marca-oscuro mb-1 text-center">
@@ -269,132 +335,379 @@ export function NuevaSolicitudPage() {
                 />
               )}
 
-              <div className={esResultadoMultiple ? 'grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8' : 'mb-8'}>
-                {resultados.map((resultado, i) => (
+              {esResultadoMultiple ? (
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8 items-start">
+                  <div className="lg:col-span-1 flex flex-col gap-2">
+                    {resultados.map((resultado, i) => {
+                      const activo = i === seleccionadoIndex
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => seleccionarResultado(i)}
+                          className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border text-xs font-medium text-left transition ${
+                            activo
+                              ? 'border-marca-oscuro bg-marca-oscuro text-white'
+                              : resultado.ok
+                                ? 'border-gray-200 bg-white text-gray-700 hover:border-marca-medio/40 hover:bg-marca-medio/5'
+                                : 'border-red-200 bg-red-50 text-red-700 hover:border-red-300'
+                          }`}
+                        >
+                          <span className="truncate">{resultado.label}</span>
+                          {resultado.ok ? (
+                            <span
+                              className={`shrink-0 inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full text-white ${
+                                activo
+                                  ? 'bg-white/25'
+                                  : colorPorTipo[resultado.data.tipoTornaguia] ?? 'bg-marca-oscuro'
+                              }`}
+                            >
+                              {resultado.data.tipoTornaguia}
+                            </span>
+                          ) : (
+                            <span
+                              className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                                activo ? 'bg-white/25 text-white' : 'bg-red-100 text-red-700'
+                              }`}
+                            >
+                              Error
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {resultadoMostrado && (
+                    <div
+                      className={`lg:col-span-3 rounded-xl border shadow-sm p-6 ${
+                        resultadoMostrado.ok ? 'bg-white border-gray-200' : 'bg-red-50 border-red-200'
+                      }`}
+                    >
+                      {resultadoMostrado.ok ? (
+                        <ResultadoSolicitud
+                          resultado={resultadoMostrado.data}
+                          titulo={resultadoMostrado.label}
+                          estadoPdf={estadoPdfDe(resultadoMostrado.data.solicitudId)}
+                          onSolicitarTornaguia={() => abrirModal(resultadoMostrado.data.solicitudId)}
+                          onDescargarPdf={() => descargarPdfSolicitud(resultadoMostrado.data.solicitudId)}
+                          mostrarMapa={false}
+                        />
+                      ) : (
+                        <div className="h-full flex flex-col">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-red-600 mb-3 pb-3 border-b border-red-100">
+                            {resultadoMostrado.label}
+                          </p>
+                          <p className="text-sm text-red-700">{resultadoMostrado.mensaje}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                resultadoMostrado && (
                   <div
-                    key={i}
-                    className={`h-full rounded-xl border shadow-sm p-6 ${
-                      resultado.ok ? 'bg-white border-gray-200' : 'bg-red-50 border-red-200'
-                    } ${esResultadoMultiple ? '' : 'max-w-md mx-auto'}`}
+                    className={`max-w-md mx-auto rounded-xl border shadow-sm p-6 mb-8 ${
+                      resultadoMostrado.ok ? 'bg-white border-gray-200' : 'bg-red-50 border-red-200'
+                    }`}
                   >
-                    {resultado.ok ? (
+                    {resultadoMostrado.ok ? (
                       <ResultadoSolicitud
-                        resultado={resultado.data}
-                        titulo={resultado.label}
-                        estadoPdf={estadoPdfDe(resultado.data.solicitudId)}
-                        onSolicitarTornaguia={() => abrirModal(resultado.data.solicitudId)}
-                        onDescargarPdf={() => descargarPdfSolicitud(resultado.data.solicitudId)}
-                        mostrarMapa={!esResultadoMultiple}
-                        onClickBadge={
-                          esResultadoMultiple ? () => setSolicitudEnFoco(resultado.data.solicitudId) : undefined
-                        }
+                        resultado={resultadoMostrado.data}
+                        titulo={resultadoMostrado.label}
+                        estadoPdf={estadoPdfDe(resultadoMostrado.data.solicitudId)}
+                        onSolicitarTornaguia={() => abrirModal(resultadoMostrado.data.solicitudId)}
+                        onDescargarPdf={() => descargarPdfSolicitud(resultadoMostrado.data.solicitudId)}
+                        mostrarMapa
                       />
                     ) : (
                       <div className="h-full flex flex-col">
                         <p className="text-xs font-semibold uppercase tracking-wide text-red-600 mb-3 pb-3 border-b border-red-100">
-                          {resultado.label}
+                          {resultadoMostrado.label}
                         </p>
-                        <p className="text-sm text-red-700">{resultado.mensaje}</p>
+                        <p className="text-sm text-red-700">{resultadoMostrado.mensaje}</p>
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
-
-              {errorGeneracion && (
-                <p className="w-full max-w-md mx-auto mb-4 text-sm text-red-600 text-center">{errorGeneracion}</p>
+                )
               )}
 
-              {esResultadoMultiple && solicitudesEnCarrito > 0 && (
-                <div className="w-full max-w-md mx-auto mb-4 flex items-center justify-between gap-3 border border-marca-medio/30 bg-marca-medio/5 rounded-lg px-4 py-3">
-                  <p className="text-sm text-marca-oscuro">
-                    {solicitudesEnCarrito} tornaguía{solicitudesEnCarrito > 1 ? 's' : ''} lista
-                    {solicitudesEnCarrito > 1 ? 's' : ''} para generar
-                  </p>
+              {esResultadoMultiple ? (
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                  <div className="lg:col-span-1">
+                    {solicitudesEnCarrito > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => generarLoteMutation.mutate()}
+                        disabled={generarLoteMutation.isPending}
+                        className="w-full bg-marca-oscuro text-white text-sm font-semibold px-4 py-4 rounded-lg hover:opacity-90 transition disabled:opacity-50"
+                      >
+                        {generarLoteMutation.isPending
+                          ? 'Generando...'
+                          : `Generar ${solicitudesEnCarrito} tornaguía${solicitudesEnCarrito > 1 ? 's' : ''}`}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="lg:col-span-3">
+                    {errorGeneracion && (
+                      <p className="w-full max-w-md mx-auto mb-4 text-sm text-red-600 text-center">
+                        {errorGeneracion}
+                      </p>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={onNuevaConsulta}
+                      className="w-full block bg-marca-oscuro text-white font-semibold text-base py-4 rounded-lg hover:opacity-90 transition"
+                    >
+                      Nueva consulta
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {errorGeneracion && (
+                    <p className="w-full max-w-md mx-auto mb-4 text-sm text-red-600 text-center">{errorGeneracion}</p>
+                  )}
+
                   <button
                     type="button"
-                    onClick={() => generarLoteMutation.mutate()}
-                    disabled={generarLoteMutation.isPending}
-                    className="shrink-0 bg-marca-oscuro text-white text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition disabled:opacity-50"
+                    onClick={onNuevaConsulta}
+                    className="w-full max-w-md mx-auto mt-2 block bg-marca-oscuro text-white font-semibold text-base py-4 rounded-lg hover:opacity-90 transition"
                   >
-                    {generarLoteMutation.isPending
-                      ? 'Generando...'
-                      : `Generar ${solicitudesEnCarrito} tornaguía${solicitudesEnCarrito > 1 ? 's' : ''}`}
+                    Nueva consulta
                   </button>
-                </div>
+                </>
               )}
-
-              <button
-                type="button"
-                onClick={onNuevaConsulta}
-                className="w-full max-w-md mx-auto mt-2 block bg-marca-oscuro text-white font-semibold py-3 rounded-lg hover:opacity-90 transition"
-              >
-                Nueva consulta
-              </button>
             </>
           ) : (
             <>
-              <h1 className="text-2xl font-bold text-marca-oscuro mb-1 text-center">Nueva solicitud</h1>
-              <p className="text-sm text-gray-500 mb-6 text-center">
-                Indica el origen y el destino del transporte para determinar el tipo de tornaguía.
-              </p>
+              <div className="animate-fade-slide-up mb-5 text-center">
+                <h1 className="text-2xl font-bold text-marca-oscuro mb-1">Nueva solicitud</h1>
+                <p className="text-sm text-gray-500">
+                  Indica el origen y el destino del transporte para determinar el tipo de tornaguía.
+                </p>
+              </div>
 
-              <label className="flex items-center gap-2 text-sm text-gray-700 mb-6">
-                <input
-                  type="checkbox"
-                  checked={esMultiple}
-                  onChange={(e) => {
-                    if (!e.target.checked && fields.length > 1) {
-                      for (let i = fields.length - 1; i > 0; i--) remove(i)
-                    } else if (e.target.checked) {
-                      append({ ...solicitudItemPorDefecto })
-                    }
-                  }}
-                />
-                Realizar más de 1 tornaguía
-              </label>
-
-              <form onSubmit={handleSubmit(onSubmit)}>
-                {fields.map((field, index) => (
-                  <SolicitudFormItem
-                    key={field.id}
-                    index={index}
-                    control={control}
-                    register={register}
-                    setValue={setValue}
-                    errors={errors.solicitudes}
-                    municipios={municipiosQuery.data ?? []}
-                    municipiosCargando={municipiosQuery.isLoading}
-                    paises={paisesQuery.data ?? []}
-                    paisesCargando={paisesQuery.isLoading}
-                    mostrarQuitar={esMultiple && fields.length > 1}
-                    onQuitar={() => remove(index)}
-                    titulo={fields.length > 1 ? `Tornaguía ${index + 1}` : ''}
-                  />
-                ))}
-
-                {esMultiple && (
-                  <button
-                    type="button"
-                    onClick={() => append({ ...solicitudItemPorDefecto })}
-                    className="w-full border border-dashed border-marca-medio text-marca-medio text-sm font-semibold py-2.5 rounded-lg hover:bg-marca-medio/5 transition mb-6"
-                  >
-                    + Agregar otra tornaguía
-                  </button>
-                )}
-
+              <div className="inline-flex mb-5 rounded-lg border border-gray-200 p-1 bg-white">
                 <button
-                  type="submit"
-                  disabled={mutation.isPending}
-                  className="w-full bg-marca-oscuro text-white font-semibold py-3 rounded-lg hover:opacity-90 transition disabled:opacity-50"
+                  type="button"
+                  onClick={() => {
+                    if (esMultiple) for (let i = fields.length - 1; i > 0; i--) remove(i)
+                  }}
+                  className={`px-4 py-1.5 rounded-md text-sm font-semibold transition ${
+                    !esMultiple ? 'bg-marca-oscuro text-white' : 'text-gray-500 hover:text-marca-oscuro'
+                  }`}
                 >
-                  {mutation.isPending
-                    ? 'Consultando...'
-                    : esMultiple
-                      ? `Consultar ${fields.length} tornaguías`
-                      : 'Consultar tipo de tornaguía'}
+                  Tornaguía
                 </button>
-              </form>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!esMultiple) append({ ...solicitudItemPorDefecto })
+                  }}
+                  className={`px-4 py-1.5 rounded-md text-sm font-semibold transition ${
+                    esMultiple ? 'bg-marca-oscuro text-white' : 'text-gray-500 hover:text-marca-oscuro'
+                  }`}
+                >
+                  Tornaguías
+                </button>
+              </div>
+
+              {esMultiple ? (
+                <>
+                  <div
+                    style={{ animationDelay: '140ms' }}
+                    className="animate-fade-slide-up flex flex-wrap items-start justify-between gap-4 mb-5"
+                  >
+                    <div className="w-full sm:w-auto sm:max-w-sm sm:flex-1">
+                      <ExplicacionTipoTornaguia />
+                    </div>
+                    {recientes.length > 0 && (
+                      <div className="w-full sm:w-auto flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide mr-1">
+                          Repetir:
+                        </span>
+                        {recientes.map((item) => (
+                          <button
+                            key={item.solicitudId}
+                            type="button"
+                            onClick={() => aplicarAtajoReciente(item)}
+                            className="flex items-center gap-1.5 text-xs text-gray-700 bg-white border border-gray-200 rounded-full pl-3 pr-2 py-1.5 hover:border-marca-medio/40 hover:bg-marca-medio/5 transition"
+                          >
+                            <span className="truncate max-w-[160px]">
+                              {item.municipioOrigenNombre} → {item.municipioDestinoNombre ?? item.paisDestinoNombre}
+                            </span>
+                            <span
+                              className={`shrink-0 inline-block ${
+                                colorPorTipo[item.tipoTornaguia] ?? 'bg-marca-oscuro'
+                              } text-white text-[10px] font-semibold px-2 py-0.5 rounded-full`}
+                            >
+                              {item.tipoTornaguia}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <form onSubmit={handleSubmit(onSubmit)}>
+                    <div
+                      style={{ animationDelay: '200ms' }}
+                      className="animate-fade-slide-up grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-6"
+                    >
+                      {fields.map((field, index) => (
+                        <SolicitudFormItem
+                          key={field.id}
+                          index={index}
+                          control={control}
+                          register={register}
+                          setValue={setValue}
+                          errors={errors.solicitudes}
+                          municipios={municipiosQuery.data ?? []}
+                          municipiosCargando={municipiosQuery.isLoading}
+                          paises={paisesQuery.data ?? []}
+                          paisesCargando={paisesQuery.isLoading}
+                          mostrarQuitar={fields.length > 1}
+                          onQuitar={() => remove(index)}
+                          titulo={`Tornaguía ${index + 1}`}
+                        />
+                      ))}
+
+                      <button
+                        type="button"
+                        onClick={() => append({ ...solicitudItemPorDefecto })}
+                        className="min-h-[220px] border-2 border-dashed border-marca-medio/50 text-marca-medio rounded-xl flex flex-col items-center justify-center gap-2 hover:bg-marca-medio/5 hover:border-marca-medio transition"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-6 h-6">
+                          <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+                        </svg>
+                        <span className="text-sm font-semibold">Agregar otra tornaguía</span>
+                      </button>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={mutation.isPending}
+                      className="w-full bg-marca-oscuro text-white font-semibold py-3 rounded-lg hover:opacity-90 transition disabled:opacity-50"
+                    >
+                      {mutation.isPending ? 'Consultando...' : `Consultar ${fields.length} tornaguías`}
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+                  <div style={{ animationDelay: '140ms' }} className="animate-fade-slide-up lg:col-span-3">
+                    <form onSubmit={handleSubmit(onSubmit)}>
+                      <div className="mb-4">
+                        <SolicitudFormItem
+                          index={0}
+                          control={control}
+                          register={register}
+                          setValue={setValue}
+                          errors={errors.solicitudes}
+                          municipios={municipiosQuery.data ?? []}
+                          municipiosCargando={municipiosQuery.isLoading}
+                          paises={paisesQuery.data ?? []}
+                          paisesCargando={paisesQuery.isLoading}
+                          mostrarQuitar={false}
+                          onQuitar={() => remove(0)}
+                          titulo=""
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={mutation.isPending}
+                        className="w-full bg-marca-oscuro text-white font-semibold py-3 rounded-lg hover:opacity-90 transition disabled:opacity-50"
+                      >
+                        {mutation.isPending ? 'Consultando...' : 'Consultar tipo de tornaguía'}
+                      </button>
+                    </form>
+                  </div>
+
+                  <div
+                    style={{ animationDelay: '200ms' }}
+                    className="animate-fade-slide-up lg:col-span-2 lg:sticky lg:top-10 flex flex-col gap-6"
+                  >
+                    <ExplicacionTipoTornaguia />
+
+                    {recientes.length > 0 && (
+                      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                          Repetir una reciente
+                        </p>
+                        <div className="flex flex-col gap-2">
+                          {recientes.map((item) => (
+                            <button
+                              key={item.solicitudId}
+                              type="button"
+                              onClick={() => aplicarAtajoReciente(item)}
+                              className="flex items-center justify-between gap-2 text-left px-3 py-2 rounded-lg border border-gray-100 hover:border-marca-medio/40 hover:bg-marca-medio/5 transition"
+                            >
+                              <span className="text-sm text-gray-700 truncate">
+                                {item.municipioOrigenNombre} →{' '}
+                                {item.municipioDestinoNombre ?? item.paisDestinoNombre}
+                              </span>
+                              <span
+                                className={`shrink-0 inline-block ${
+                                  colorPorTipo[item.tipoTornaguia] ?? 'bg-marca-oscuro'
+                                } text-white text-[10px] font-semibold px-2 py-0.5 rounded-full`}
+                              >
+                                {item.tipoTornaguia}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {rutaPreviewQuery.data && rutaPreviewQuery.data.geometria.length > 1 ? (
+                      <div>
+                        <MapaRutasTornaguias
+                          rutas={[
+                            {
+                              solicitudId: 0,
+                              geometria: rutaPreviewQuery.data.geometria,
+                              tipoTornaguia: 'Ruta',
+                              justificacion: 'Vista previa de la ruta.',
+                              estadoPdf: 'pendiente',
+                              interactiva: false,
+                            },
+                          ]}
+                        />
+                        <p className="text-xs text-gray-400">
+                          {rutaPreviewQuery.data.distanciaKm.toFixed(0)} km · ~
+                          {Math.round(rutaPreviewQuery.data.tiempoEstimadoMinutos / 60)} h estimadas
+                        </p>
+                      </div>
+                    ) : rutaPreviewQuery.isLoading ? (
+                      <div className="w-full h-80 rounded-xl bg-gray-100 animate-pulse" />
+                    ) : (
+                      <div className="w-full h-80 rounded-xl border border-gray-200 bg-white shadow-sm flex flex-col items-center justify-center text-center px-6">
+                        <div className="w-14 h-14 rounded-full bg-marca-medio/10 flex items-center justify-center text-marca-medio mb-4">
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={1.6}
+                            className="w-7 h-7"
+                          >
+                            <circle cx="6" cy="7" r="2" />
+                            <circle cx="18" cy="17" r="2" />
+                            <path d="M7.5 8.5l9 7" strokeDasharray="2 3" strokeLinecap="round" />
+                          </svg>
+                        </div>
+                        <p className="text-sm font-semibold text-marca-oscuro mb-1">La ruta aparecerá aquí</p>
+                        <p className="text-xs text-gray-500 max-w-[220px]">
+                          Elige el origen y el destino para ver el trayecto en el mapa.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

@@ -56,7 +56,7 @@ export function SolicitudFormItem({
   }, [municipioOrigenId, municipioDestinoId, index, setValue])
 
   return (
-    <div className="border border-gray-200 rounded-xl p-5 mb-4 bg-white/60">
+    <div className="h-full border border-gray-200 rounded-xl p-5 bg-white/60">
       {(titulo || mostrarQuitar) && (
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-marca-oscuro">{titulo}</h2>

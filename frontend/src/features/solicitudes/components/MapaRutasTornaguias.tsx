@@ -16,6 +16,8 @@ export interface RutaMapa {
   estadoPdf: EstadoTornaguiaPdf
   onSolicitarTornaguia?: () => void
   onDescargarPdf?: () => void
+  /** false = solo vista previa (aún no existe una solicitud creada): sin marcador de acciones. */
+  interactiva?: boolean
 }
 
 interface MapaRutasTornaguiasProps {
@@ -78,6 +80,7 @@ function RutaEnMapa({ ruta, animar, color }: { ruta: RutaMapa; animar: boolean; 
   const origen = ruta.geometria[0]
   const destino = ruta.geometria[ruta.geometria.length - 1]
   const listoParaDescargar = ruta.estadoPdf === 'generado'
+  const interactiva = ruta.interactiva ?? true
 
   const progreso = useProgresoAnimacion(animar)
   const animacionTerminada = !animar || progreso >= 1
@@ -115,7 +118,13 @@ function RutaEnMapa({ ruta, animar, color }: { ruta: RutaMapa; animar: boolean; 
         </Marker>
       )}
 
-      {animacionTerminada && (
+      {animacionTerminada && !interactiva && (
+        <Marker longitude={destino[0]} latitude={destino[1]} anchor="center">
+          <div className="w-3.5 h-3.5 rounded-full shadow-md" style={{ backgroundColor: color }} />
+        </Marker>
+      )}
+
+      {animacionTerminada && interactiva && (
         <Marker longitude={destino[0]} latitude={destino[1]} anchor="center">
           <button
             type="button"
@@ -128,7 +137,7 @@ function RutaEnMapa({ ruta, animar, color }: { ruta: RutaMapa; animar: boolean; 
         </Marker>
       )}
 
-      {animacionTerminada && popupAbierto && (
+      {animacionTerminada && interactiva && popupAbierto && (
         <Popup
           longitude={destino[0]}
           latitude={destino[1]}
