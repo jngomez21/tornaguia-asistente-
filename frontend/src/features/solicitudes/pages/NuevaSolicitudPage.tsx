@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm, useFieldArray, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation } from '@tanstack/react-query'
@@ -17,7 +17,10 @@ import { ResultadoSolicitud } from '../components/ResultadoSolicitud'
 import type { EstadoTornaguiaPdf } from '../components/ResultadoSolicitud'
 import { MapaRutasTornaguias } from '../components/MapaRutasTornaguias'
 import { SolicitudFormItem } from '../components/SolicitudFormItem'
-import { ExplicacionTipoTornaguia } from '../components/ExplicacionTipoTornaguia'
+import {
+  BotonExplicacionTipoTornaguia,
+  PanelExplicacionTipoTornaguia,
+} from '../components/ExplicacionTipoTornaguia'
 import { ModalDetalleTornaguia } from '../components/ModalDetalleTornaguia'
 import { construirPdfTornaguia, descargarPdf, bytesABase64 } from '../lib/generarPdfTornaguia'
 import { mapearDetalleARequest } from '../lib/mapearDetalle'
@@ -27,10 +30,11 @@ import { appSidebarItems } from '../../../shared/components/sidebarItems'
 import { extraerMensajeAxios } from '../../../shared/lib/errores'
 import type { CrearSolicitudResponse, HistorialSolicitud } from '../types'
 
-type ResultadoItem = { label: string } & (
-  | { ok: true; data: CrearSolicitudResponse }
-  | { ok: false; mensaje: string }
-)
+type ResultadoItem = {
+  label: string
+  tipoDestino: 'municipio' | 'pais'
+  esParaExportacion: boolean
+} & ({ ok: true; data: CrearSolicitudResponse } | { ok: false; mensaje: string })
 
 export function NuevaSolicitudPage() {
   const municipiosQuery = useQuery({ queryKey: ['municipios'], queryFn: getMunicipios })
@@ -51,6 +55,9 @@ export function NuevaSolicitudPage() {
   const { fields, append, remove } = useFieldArray({ control, name: 'solicitudes' })
   const esMultiple = fields.length > 1
 
+  const [tornaguiaActivaIndex, setTornaguiaActivaIndex] = useState(0)
+  const indiceActivo = Math.min(tornaguiaActivaIndex, fields.length - 1)
+
   const primerItem = useWatch({ control, name: 'solicitudes.0' })
 
   const rutaPreviewHabilitada =
@@ -67,28 +74,43 @@ export function NuevaSolicitudPage() {
     staleTime: 5 * 60 * 1000,
   })
 
+  // El centrado vertical de la página se desactiva permanentemente en cuanto se elige
+  // una ruta (aunque luego se borre): así el bloque nunca cambia de "centrado" a
+  // "arriba" de golpe justo cuando el mapa crece al cargar (lo que se veía como un salto).
+  const [huboSeleccionDeRuta, setHuboSeleccionDeRuta] = useState(false)
+  if (rutaPreviewHabilitada && !huboSeleccionDeRuta) {
+    setHuboSeleccionDeRuta(true)
+  }
+
   const historialQuery = useQuery({ queryKey: ['historial-solicitudes'], queryFn: getHistorialSolicitudes })
-  const recientes = [...(historialQuery.data ?? [])]
-    .sort((a, b) => new Date(b.fechaSolicitud).getTime() - new Date(a.fechaSolicitud).getTime())
-    .slice(0, 3)
+  const historialOrdenado = [...(historialQuery.data ?? [])].sort(
+    (a, b) => new Date(b.fechaSolicitud).getTime() - new Date(a.fechaSolicitud).getTime(),
+  )
+  // "Retomar tornaguía" prioriza las ya creadas a las que les falta generar el PDF;
+  // si no hay ninguna pendiente, cae a mostrar las más recientes sin importar su estado.
+  const pendientesDeGenerar = historialOrdenado.filter((item) => !item.tienePdf)
+  const historialParaRetomar = pendientesDeGenerar.length > 0 ? pendientesDeGenerar : historialOrdenado
+  const recientes = historialParaRetomar.slice(0, 4)
+  const recientesLote = historialParaRetomar.slice(0, 3)
 
   function aplicarAtajoReciente(item: HistorialSolicitud) {
     const origenId = municipiosQuery.data?.find((m) => m.nombre === item.municipioOrigenNombre)?.id
     if (origenId == null) return
-    setValue('solicitudes.0.municipioOrigenId', origenId)
+    const index = indiceActivo
+    setValue(`solicitudes.${index}.municipioOrigenId`, origenId)
 
     if (item.municipioDestinoNombre) {
       const destinoId = municipiosQuery.data?.find((m) => m.nombre === item.municipioDestinoNombre)?.id
-      setValue('solicitudes.0.tipoDestino', 'municipio')
-      setValue('solicitudes.0.municipioDestinoId', destinoId)
+      setValue(`solicitudes.${index}.tipoDestino`, 'municipio')
+      setValue(`solicitudes.${index}.municipioDestinoId`, destinoId)
     } else if (item.paisDestinoNombre) {
       const paisId = paisesQuery.data?.find((p) => p.nombre === item.paisDestinoNombre)?.id
-      setValue('solicitudes.0.tipoDestino', 'pais')
-      setValue('solicitudes.0.paisDestinoId', paisId)
+      setValue(`solicitudes.${index}.tipoDestino`, 'pais')
+      setValue(`solicitudes.${index}.paisDestinoId`, paisId)
     }
 
-    setValue('solicitudes.0.estaDeclarado', item.estaDeclarado)
-    setValue('solicitudes.0.esParaExportacion', item.esParaExportacion)
+    setValue(`solicitudes.${index}.estaDeclarado`, item.estaDeclarado)
+    setValue(`solicitudes.${index}.esParaExportacion`, item.esParaExportacion)
   }
 
   function nombreMunicipio(id: number | undefined) {
@@ -121,11 +143,12 @@ export function NuevaSolicitudPage() {
 
     return resultados.map((resultado, i) => {
       const label = etiquetaSolicitud(items[i])
+      const { tipoDestino, esParaExportacion } = items[i]
       if (resultado.status === 'fulfilled') {
-        return { label, ok: true, data: resultado.value }
+        return { label, tipoDestino, esParaExportacion, ok: true, data: resultado.value }
       }
       const mensaje = extraerMensajeAxios(resultado.reason) ?? 'No se pudo procesar esta solicitud.'
-      return { label, ok: false, mensaje }
+      return { label, tipoDestino, esParaExportacion, ok: false, mensaje }
     })
   }
 
@@ -147,6 +170,54 @@ export function NuevaSolicitudPage() {
   const [errorGeneracion, setErrorGeneracion] = useState<string | null>(null)
   const [solicitudEnFoco, setSolicitudEnFoco] = useState<number | null>(null)
   const [seleccionadoIndex, setSeleccionadoIndex] = useState(0)
+  const [explicacionAbierta, setExplicacionAbierta] = useState(false)
+
+  const formCardRef = useRef<HTMLDivElement>(null)
+  const [formCardHeight, setFormCardHeight] = useState<number>()
+  const mapaRef = useRef<HTMLDivElement>(null)
+  const [mapaHeight, setMapaHeight] = useState<number>()
+  const formYBotonRef = useRef<HTMLFormElement>(null)
+  const [formYBotonHeight, setFormYBotonHeight] = useState<number>()
+  const panelExplicacionRef = useRef<HTMLDivElement>(null)
+  const [panelExplicacionHeight, setPanelExplicacionHeight] = useState<number>()
+
+  useEffect(() => {
+    const el = formCardRef.current
+    if (!el) return
+    const observer = new ResizeObserver(() => setFormCardHeight(el.getBoundingClientRect().height))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [esMultiple])
+
+  useEffect(() => {
+    const el = mapaRef.current
+    if (!el) return
+    const observer = new ResizeObserver(() => setMapaHeight(el.getBoundingClientRect().height))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [esMultiple])
+
+  useEffect(() => {
+    const el = formYBotonRef.current
+    if (!el) return
+    const observer = new ResizeObserver(() => setFormYBotonHeight(el.getBoundingClientRect().height))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [esMultiple])
+
+  useEffect(() => {
+    const el = panelExplicacionRef.current
+    if (!el) return
+    const observer = new ResizeObserver(() => setPanelExplicacionHeight(el.getBoundingClientRect().height))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [esMultiple])
+
+  const MT_MAPA_PX = 24 // mt-6, separación entre el botón "Consultar" y el mapa
+  const mapaTopOffset = (formYBotonHeight ?? 0) + MT_MAPA_PX
+  const repetirMarginTop = explicacionAbierta ? Math.max(mapaTopOffset - (panelExplicacionHeight ?? 0), 0) : 0
+
+  const repetirCardHeight = explicacionAbierta ? mapaHeight : formCardHeight
 
   const resultadoMostrado = resultados
     ? resultados[esResultadoMultiple ? Math.min(seleccionadoIndex, resultados.length - 1) : 0]
@@ -168,12 +239,20 @@ export function NuevaSolicitudPage() {
     setErrorGeneracion(null)
     setSolicitudEnFoco(null)
     setSeleccionadoIndex(0)
+    setTornaguiaActivaIndex(0)
+    setHuboSeleccionDeRuta(false)
   }
 
   function descargarPdfSolicitud(solicitudId: number) {
     const bytes = pdfsGenerados[solicitudId]
     if (!bytes) return
     descargarPdf(bytes, `tornaguia-${solicitudId}.pdf`)
+  }
+
+  function descargarTodasLasGeneradas() {
+    Object.entries(pdfsGenerados).forEach(([solicitudId, bytes]) => {
+      descargarPdf(bytes, `tornaguia-${solicitudId}.pdf`)
+    })
   }
 
   function estadoPdfDe(solicitudId: number): EstadoTornaguiaPdf {
@@ -291,16 +370,21 @@ export function NuevaSolicitudPage() {
   })
 
   const solicitudesEnCarrito = Object.keys(carrito).length
+  const solicitudesGeneradas = Object.keys(generados).length
 
   return (
-    <div className="min-h-dvh flex bg-gray-50">
+    <div className="h-dvh flex bg-gray-50">
       <Sidebar items={appSidebarItems} />
 
-      <main className="flex-1 overflow-y-auto">
+      <main
+        className={`flex-1 overflow-y-auto flex flex-col ${
+          huboSeleccionDeRuta ? 'justify-start' : '[justify-content:safe_center]'
+        }`}
+      >
         <div
           className={`${
-            resultados ? (esResultadoMultiple ? 'max-w-5xl' : 'max-w-2xl') : esMultiple ? 'max-w-6xl' : 'max-w-4xl'
-          } mx-auto p-6 sm:p-10`}
+            resultados ? (esResultadoMultiple ? 'max-w-5xl' : 'max-w-2xl') : esMultiple ? 'max-w-6xl' : 'max-w-5xl'
+          } w-full mx-auto p-6 sm:p-10`}
         >
           {resultados ? (
             <>
@@ -326,6 +410,8 @@ export function NuevaSolicitudPage() {
                             tipoTornaguia: r.data.tipoTornaguia,
                             justificacion: r.data.justificacion,
                             estadoPdf: estadoPdfDe(r.data.solicitudId),
+                            tipoDestino: r.tipoDestino,
+                            esParaExportacion: r.esParaExportacion,
                             onSolicitarTornaguia: () => abrirModal(r.data.solicitudId),
                             onDescargarPdf: () => descargarPdfSolicitud(r.data.solicitudId),
                           },
@@ -392,6 +478,8 @@ export function NuevaSolicitudPage() {
                           onSolicitarTornaguia={() => abrirModal(resultadoMostrado.data.solicitudId)}
                           onDescargarPdf={() => descargarPdfSolicitud(resultadoMostrado.data.solicitudId)}
                           mostrarMapa={false}
+                          tipoDestino={resultadoMostrado.tipoDestino}
+                          esParaExportacion={resultadoMostrado.esParaExportacion}
                         />
                       ) : (
                         <div className="h-full flex flex-col">
@@ -419,6 +507,8 @@ export function NuevaSolicitudPage() {
                         onSolicitarTornaguia={() => abrirModal(resultadoMostrado.data.solicitudId)}
                         onDescargarPdf={() => descargarPdfSolicitud(resultadoMostrado.data.solicitudId)}
                         mostrarMapa
+                        tipoDestino={resultadoMostrado.tipoDestino}
+                        esParaExportacion={resultadoMostrado.esParaExportacion}
                       />
                     ) : (
                       <div className="h-full flex flex-col">
@@ -435,7 +525,7 @@ export function NuevaSolicitudPage() {
               {esResultadoMultiple ? (
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                   <div className="lg:col-span-1">
-                    {solicitudesEnCarrito > 0 && (
+                    {solicitudesEnCarrito > 0 ? (
                       <button
                         type="button"
                         onClick={() => generarLoteMutation.mutate()}
@@ -446,6 +536,16 @@ export function NuevaSolicitudPage() {
                           ? 'Generando...'
                           : `Generar ${solicitudesEnCarrito} tornaguía${solicitudesEnCarrito > 1 ? 's' : ''}`}
                       </button>
+                    ) : (
+                      solicitudesGeneradas > 0 && (
+                        <button
+                          type="button"
+                          onClick={descargarTodasLasGeneradas}
+                          className="w-full bg-marca-verde text-white text-sm font-semibold px-4 py-4 rounded-lg hover:opacity-90 transition"
+                        >
+                          {`Descargar ${solicitudesGeneradas} tornaguía${solicitudesGeneradas > 1 ? 's' : ''}`}
+                        </button>
+                      )
                     )}
                   </div>
 
@@ -490,46 +590,57 @@ export function NuevaSolicitudPage() {
                 </p>
               </div>
 
-              <div className="inline-flex mb-5 rounded-lg border border-gray-200 p-1 bg-white">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (esMultiple) for (let i = fields.length - 1; i > 0; i--) remove(i)
-                  }}
-                  className={`px-4 py-1.5 rounded-md text-sm font-semibold transition ${
-                    !esMultiple ? 'bg-marca-oscuro text-white' : 'text-gray-500 hover:text-marca-oscuro'
-                  }`}
-                >
-                  Tornaguía
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!esMultiple) append({ ...solicitudItemPorDefecto })
-                  }}
-                  className={`px-4 py-1.5 rounded-md text-sm font-semibold transition ${
-                    esMultiple ? 'bg-marca-oscuro text-white' : 'text-gray-500 hover:text-marca-oscuro'
-                  }`}
-                >
-                  Tornaguías
-                </button>
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-5 items-center">
+                <div className="lg:col-span-3">
+                  <div className="inline-flex shrink-0 rounded-lg border border-gray-200 p-1 bg-white">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (esMultiple) for (let i = fields.length - 1; i > 0; i--) remove(i)
+                      }}
+                      className={`px-4 py-1.5 rounded-md text-sm font-semibold transition ${
+                        !esMultiple ? 'bg-marca-oscuro text-white' : 'text-gray-500 hover:text-marca-oscuro'
+                      }`}
+                    >
+                      Tornaguía
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!esMultiple) append({ ...solicitudItemPorDefecto })
+                      }}
+                      className={`px-4 py-1.5 rounded-md text-sm font-semibold transition ${
+                        esMultiple ? 'bg-marca-oscuro text-white' : 'text-gray-500 hover:text-marca-oscuro'
+                      }`}
+                    >
+                      Tornaguías
+                    </button>
+                  </div>
+                </div>
+
+                {!esMultiple && (
+                  <div className="lg:col-span-2">
+                    <BotonExplicacionTipoTornaguia
+                      abierto={explicacionAbierta}
+                      onClick={() => setExplicacionAbierta((v) => !v)}
+                      compacto
+                    />
+                  </div>
+                )}
               </div>
 
               {esMultiple ? (
                 <>
-                  <div
-                    style={{ animationDelay: '140ms' }}
-                    className="animate-fade-slide-up flex flex-wrap items-start justify-between gap-4 mb-5"
-                  >
-                    <div className="w-full sm:w-auto sm:max-w-sm sm:flex-1">
-                      <ExplicacionTipoTornaguia />
-                    </div>
-                    {recientes.length > 0 && (
+                  {recientesLote.length > 0 && (
+                    <div
+                      style={{ animationDelay: '140ms' }}
+                      className="animate-fade-slide-up flex flex-wrap items-center justify-end gap-4 mb-5"
+                    >
                       <div className="w-full sm:w-auto flex flex-wrap items-center gap-2">
                         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide mr-1">
-                          Repetir:
+                          Retomar en Tornaguía {indiceActivo + 1}:
                         </span>
-                        {recientes.map((item) => (
+                        {recientesLote.map((item) => (
                           <button
                             key={item.solicitudId}
                             type="button"
@@ -549,8 +660,8 @@ export function NuevaSolicitudPage() {
                           </button>
                         ))}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   <form onSubmit={handleSubmit(onSubmit)}>
                     <div
@@ -572,6 +683,8 @@ export function NuevaSolicitudPage() {
                           mostrarQuitar={fields.length > 1}
                           onQuitar={() => remove(index)}
                           titulo={`Tornaguía ${index + 1}`}
+                          activa={index === indiceActivo}
+                          onActivar={() => setTornaguiaActivaIndex(index)}
                         />
                       ))}
 
@@ -599,8 +712,8 @@ export function NuevaSolicitudPage() {
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
                   <div style={{ animationDelay: '140ms' }} className="animate-fade-slide-up lg:col-span-3">
-                    <form onSubmit={handleSubmit(onSubmit)}>
-                      <div className="mb-4">
+                    <form ref={formYBotonRef} onSubmit={handleSubmit(onSubmit)}>
+                      <div className="mb-4" ref={formCardRef}>
                         <SolicitudFormItem
                           index={0}
                           control={control}
@@ -625,20 +738,74 @@ export function NuevaSolicitudPage() {
                         {mutation.isPending ? 'Consultando...' : 'Consultar tipo de tornaguía'}
                       </button>
                     </form>
+
+                    <div className="mt-6">
+                      <div ref={mapaRef}>
+                        {rutaPreviewQuery.data && rutaPreviewQuery.data.geometria.length > 1 ? (
+                          <MapaRutasTornaguias
+                            rutas={[
+                              {
+                                solicitudId: 0,
+                                geometria: rutaPreviewQuery.data.geometria,
+                                tipoTornaguia: 'Ruta',
+                                justificacion: 'Vista previa de la ruta.',
+                                estadoPdf: 'pendiente',
+                                interactiva: false,
+                              },
+                            ]}
+                          />
+                        ) : rutaPreviewQuery.isLoading ? (
+                          <div className="w-full h-80 rounded-xl bg-gray-100 animate-pulse" />
+                        ) : (
+                          <div className="w-full h-80 rounded-xl border border-gray-200 bg-white shadow-sm flex flex-col items-center justify-center text-center px-6">
+                            <div className="w-14 h-14 rounded-full bg-marca-medio/10 flex items-center justify-center text-marca-medio mb-4">
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={1.6}
+                                className="w-7 h-7"
+                              >
+                                <circle cx="6" cy="7" r="2" />
+                                <circle cx="18" cy="17" r="2" />
+                                <path d="M7.5 8.5l9 7" strokeDasharray="2 3" strokeLinecap="round" />
+                              </svg>
+                            </div>
+                            <p className="text-sm font-semibold text-marca-oscuro mb-1">La ruta aparecerá aquí</p>
+                            <p className="text-xs text-gray-500 max-w-[220px]">
+                              Elige el origen y el destino para ver el trayecto en el mapa.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {rutaPreviewQuery.data && rutaPreviewQuery.data.geometria.length > 1 && (
+                        <p className="text-xs text-gray-400">
+                          {rutaPreviewQuery.data.distanciaKm.toFixed(0)} km · ~
+                          {Math.round(rutaPreviewQuery.data.tiempoEstimadoMinutos / 60)} h estimadas
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   <div
                     style={{ animationDelay: '200ms' }}
-                    className="animate-fade-slide-up lg:col-span-2 lg:sticky lg:top-10 flex flex-col gap-6"
+                    className="animate-fade-slide-up lg:col-span-2 lg:sticky lg:top-10 flex flex-col"
                   >
-                    <ExplicacionTipoTornaguia />
+                    <PanelExplicacionTipoTornaguia abierto={explicacionAbierta} contenidoRef={panelExplicacionRef} />
 
                     {recientes.length > 0 && (
-                      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
+                      <div
+                        style={{
+                          marginTop: repetirMarginTop,
+                          ...(repetirCardHeight ? { height: repetirCardHeight } : {}),
+                        }}
+                        className="flex flex-col bg-white border border-gray-200 rounded-xl shadow-sm p-4 overflow-y-auto transition-all duration-300 ease-out"
+                      >
                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                          Repetir una reciente
+                          Retomar tornaguía
                         </p>
-                        <div className="flex flex-col gap-2">
+                        <div className="flex-1 flex flex-col justify-center gap-2">
                           {recientes.map((item) => (
                             <button
                               key={item.solicitudId}
@@ -660,49 +827,6 @@ export function NuevaSolicitudPage() {
                             </button>
                           ))}
                         </div>
-                      </div>
-                    )}
-
-                    {rutaPreviewQuery.data && rutaPreviewQuery.data.geometria.length > 1 ? (
-                      <div>
-                        <MapaRutasTornaguias
-                          rutas={[
-                            {
-                              solicitudId: 0,
-                              geometria: rutaPreviewQuery.data.geometria,
-                              tipoTornaguia: 'Ruta',
-                              justificacion: 'Vista previa de la ruta.',
-                              estadoPdf: 'pendiente',
-                              interactiva: false,
-                            },
-                          ]}
-                        />
-                        <p className="text-xs text-gray-400">
-                          {rutaPreviewQuery.data.distanciaKm.toFixed(0)} km · ~
-                          {Math.round(rutaPreviewQuery.data.tiempoEstimadoMinutos / 60)} h estimadas
-                        </p>
-                      </div>
-                    ) : rutaPreviewQuery.isLoading ? (
-                      <div className="w-full h-80 rounded-xl bg-gray-100 animate-pulse" />
-                    ) : (
-                      <div className="w-full h-80 rounded-xl border border-gray-200 bg-white shadow-sm flex flex-col items-center justify-center text-center px-6">
-                        <div className="w-14 h-14 rounded-full bg-marca-medio/10 flex items-center justify-center text-marca-medio mb-4">
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={1.6}
-                            className="w-7 h-7"
-                          >
-                            <circle cx="6" cy="7" r="2" />
-                            <circle cx="18" cy="17" r="2" />
-                            <path d="M7.5 8.5l9 7" strokeDasharray="2 3" strokeLinecap="round" />
-                          </svg>
-                        </div>
-                        <p className="text-sm font-semibold text-marca-oscuro mb-1">La ruta aparecerá aquí</p>
-                        <p className="text-xs text-gray-500 max-w-[220px]">
-                          Elige el origen y el destino para ver el trayecto en el mapa.
-                        </p>
                       </div>
                     )}
                   </div>

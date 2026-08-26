@@ -18,6 +18,8 @@ interface SolicitudFormItemProps {
   mostrarQuitar: boolean
   onQuitar: () => void
   titulo: string
+  activa?: boolean
+  onActivar?: () => void
 }
 
 export function SolicitudFormItem({
@@ -33,6 +35,8 @@ export function SolicitudFormItem({
   mostrarQuitar,
   onQuitar,
   titulo,
+  activa = false,
+  onActivar,
 }: SolicitudFormItemProps) {
   const tipoDestino = useWatch({ control, name: `solicitudes.${index}.tipoDestino` })
   const municipioOrigenId = useWatch({ control, name: `solicitudes.${index}.municipioOrigenId` })
@@ -56,10 +60,17 @@ export function SolicitudFormItem({
   }, [municipioOrigenId, municipioDestinoId, index, setValue])
 
   return (
-    <div className="h-full border border-gray-200 rounded-xl p-5 bg-white/60">
-      {(titulo || mostrarQuitar) && (
+    <div onClick={onActivar} className="h-full border border-gray-200 rounded-xl p-5 bg-white/60">
+      {(titulo || mostrarQuitar || onActivar) && (
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-marca-oscuro">{titulo}</h2>
+          <h2 className="text-sm font-semibold text-marca-oscuro flex items-center gap-2">
+            {titulo}
+            {activa && (
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-marca-medio bg-marca-medio/10 px-2 py-0.5 rounded-full">
+                Activa
+              </span>
+            )}
+          </h2>
           {mostrarQuitar && (
             <button
               type="button"

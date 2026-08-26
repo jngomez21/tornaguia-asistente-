@@ -3,6 +3,7 @@ import { Map, Marker, Popup, Source, Layer, NavigationControl, FullscreenControl
 import 'mapbox-gl/dist/mapbox-gl.css'
 import type { EstadoTornaguiaPdf } from './ResultadoSolicitud'
 import { colorPorTipo, colorHexPorTipo } from '../lib/coloresTornaguia'
+import { explicarResultado } from '../lib/tiposTornaguia'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined
 const DURACION_ANIMACION_MS = 1800
@@ -18,6 +19,9 @@ export interface RutaMapa {
   onDescargarPdf?: () => void
   /** false = solo vista previa (aún no existe una solicitud creada): sin marcador de acciones. */
   interactiva?: boolean
+  /** Contexto de la solicitud original, usado para distinguir los subcasos de Tránsito en la explicación. */
+  tipoDestino?: 'municipio' | 'pais'
+  esParaExportacion?: boolean
 }
 
 interface MapaRutasTornaguiasProps {
@@ -77,6 +81,10 @@ function useProgresoAnimacion(activa: boolean): number {
 
 function RutaEnMapa({ ruta, animar, color }: { ruta: RutaMapa; animar: boolean; color: string }) {
   const claseColor = colorPorTipo[ruta.tipoTornaguia] ?? 'bg-marca-oscuro'
+  const explicacion = explicarResultado(ruta.tipoTornaguia, {
+    tipoDestino: ruta.tipoDestino,
+    esParaExportacion: ruta.esParaExportacion,
+  })
   const origen = ruta.geometria[0]
   const destino = ruta.geometria[ruta.geometria.length - 1]
   const listoParaDescargar = ruta.estadoPdf === 'generado'
@@ -152,7 +160,7 @@ function RutaEnMapa({ ruta, animar, color }: { ruta: RutaMapa; animar: boolean; 
             >
               {ruta.tipoTornaguia}
             </span>
-            <p className="text-xs text-gray-700 mb-2">{ruta.justificacion}</p>
+            <p className="text-xs text-gray-700 mb-2">{explicacion}</p>
             {listoParaDescargar ? (
               <button
                 type="button"

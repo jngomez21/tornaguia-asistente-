@@ -13,6 +13,8 @@ interface ResultadoSolicitudProps {
   estadoPdf?: EstadoTornaguiaPdf
   mostrarMapa?: boolean
   onClickBadge?: () => void
+  tipoDestino?: 'municipio' | 'pais'
+  esParaExportacion?: boolean
 }
 
 const textoPorEstado: Record<EstadoTornaguiaPdf, { titulo: string; subtitulo: string }> = {
@@ -39,6 +41,8 @@ export function ResultadoSolicitud({
   estadoPdf = 'pendiente',
   mostrarMapa = true,
   onClickBadge,
+  tipoDestino,
+  esParaExportacion,
 }: ResultadoSolicitudProps) {
   const colorBadge = colorPorTipo[resultado.tipoTornaguia] ?? 'bg-marca-oscuro'
   const tieneIntermedios = (resultado.departamentosIntermedios?.length ?? 0) > 0
@@ -73,6 +77,8 @@ export function ResultadoSolicitud({
               tipoTornaguia: resultado.tipoTornaguia,
               justificacion: resultado.justificacion,
               estadoPdf,
+              tipoDestino,
+              esParaExportacion,
               onSolicitarTornaguia,
               onDescargarPdf,
             },

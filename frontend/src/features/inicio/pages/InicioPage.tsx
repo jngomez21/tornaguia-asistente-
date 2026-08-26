@@ -95,7 +95,7 @@ export function InicioPage() {
     if (!historialQuery.data) return []
     return [...historialQuery.data]
       .sort((a, b) => new Date(b.fechaSolicitud).getTime() - new Date(a.fechaSolicitud).getTime())
-      .slice(0, 3)
+      .slice(0, 6)
   }, [historialQuery.data])
 
   const ultimaGenerada = useMemo(() => {
