@@ -8,8 +8,8 @@ import type {
   EditarLoteRequest,
 } from '../types'
 
-export async function getInventario(): Promise<InventarioItem[]> {
-  const response = await api.get<InventarioItem[]>('/inventario')
+export async function getInventario(bodegaId: number): Promise<InventarioItem[]> {
+  const response = await api.get<InventarioItem[]>('/inventario', { params: { bodegaId } })
   return response.data
 }
 
@@ -23,8 +23,8 @@ export async function editarInventario(productoId: number, data: EditarInventari
   return response.data
 }
 
-export async function getLotesDisponibles(): Promise<Lote[]> {
-  const response = await api.get<Lote[]>('/inventario/lotes')
+export async function getLotesDisponibles(bodegaId?: number): Promise<Lote[]> {
+  const response = await api.get<Lote[]>('/inventario/lotes', { params: bodegaId != null ? { bodegaId } : undefined })
   return response.data
 }
 

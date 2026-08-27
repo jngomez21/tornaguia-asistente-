@@ -11,9 +11,11 @@ export interface Pais {
 }
 
 export interface CrearSolicitudRequest {
-  municipioOrigenId: number
+  municipioOrigenId?: number
   municipioDestinoId?: number
   paisDestinoId?: number
+  bodegaOrigenId?: number
+  bodegaDestinoId?: number
   estaDeclarado: boolean
   esParaExportacion: boolean
 }

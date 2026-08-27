@@ -7,21 +7,25 @@ import type { Lote } from '../types'
 import { extraerMensajeAxios } from '../../../shared/lib/errores'
 
 interface SelectorLoteProps {
+  bodegaId: number | undefined
   loteId: number | undefined
   onCambiar: (loteId: number | undefined) => void
   errorLoteId?: string
 }
 
-export function SelectorLote({ loteId, onCambiar, errorLoteId }: SelectorLoteProps) {
+export function SelectorLote({ bodegaId, loteId, onCambiar, errorLoteId }: SelectorLoteProps) {
   const queryClient = useQueryClient()
-  const lotesQuery = useQuery({ queryKey: ['lotes-disponibles'], queryFn: getLotesDisponibles })
+  const lotesQuery = useQuery({
+    queryKey: ['lotes-disponibles', bodegaId],
+    queryFn: () => getLotesDisponibles(bodegaId),
+  })
   const [creando, setCreando] = useState(false)
 
   const crearLoteMutation = useMutation({
     mutationFn: crearLote,
     onSuccess: (lote) => {
-      queryClient.invalidateQueries({ queryKey: ['lotes-disponibles'] })
-      queryClient.invalidateQueries({ queryKey: ['inventario'] })
+      queryClient.invalidateQueries({ queryKey: ['lotes-disponibles', bodegaId] })
+      queryClient.invalidateQueries({ queryKey: ['inventario', bodegaId] })
       seleccionarLote(lote)
       setCreando(false)
     },
@@ -71,26 +75,33 @@ export function SelectorLote({ loteId, onCambiar, errorLoteId }: SelectorLotePro
             ))}
           </div>
 
-          <button
-            type="button"
-            onClick={() => setCreando(true)}
-            className="text-sm text-marca-medio font-semibold hover:underline"
-          >
-            + Crear lote nuevo
-          </button>
+          {bodegaId != null ? (
+            <button
+              type="button"
+              onClick={() => setCreando(true)}
+              className="text-sm text-marca-medio font-semibold hover:underline"
+            >
+              + Crear lote nuevo
+            </button>
+          ) : (
+            <p className="text-xs text-gray-400">
+              Registra una bodega de origen para poder crear un lote nuevo.
+            </p>
+          )}
         </>
       )}
 
       {errorLoteId && <p className="text-xs text-red-600 mt-1">{errorLoteId}</p>}
 
-      {creando && (
+      {creando && bodegaId != null && (
         <div className="border border-gray-200 rounded-lg p-3 mt-2">
           <p className="text-sm font-semibold text-marca-oscuro mb-2">Nuevo lote</p>
           <LoteForm
+            bodegaId={bodegaId}
             textoBoton="Crear lote"
             guardando={crearLoteMutation.isPending}
             onGuardar={(values) =>
-              crearLoteMutation.mutate({ productos: productosParaRequest(values) })
+              crearLoteMutation.mutate({ bodegaId, productos: productosParaRequest(values) })
             }
             onCancelar={() => setCreando(false)}
           />

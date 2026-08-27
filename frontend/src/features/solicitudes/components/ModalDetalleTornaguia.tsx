@@ -7,6 +7,7 @@ import { SelectorLote } from '../../inventario/components/SelectorLote'
 
 interface ModalDetalleTornaguiaProps {
   titulo: string
+  bodegaOrigenId?: number
   valoresIniciales?: DetalleTornaguiaFormValues
   textoBotonPrincipal: string
   enviando?: boolean
@@ -16,6 +17,7 @@ interface ModalDetalleTornaguiaProps {
 
 export function ModalDetalleTornaguia({
   titulo,
+  bodegaOrigenId,
   valoresIniciales,
   textoBotonPrincipal,
   enviando,
@@ -151,6 +153,7 @@ export function ModalDetalleTornaguia({
 
           <div className="mb-6">
             <SelectorLote
+              bodegaId={bodegaOrigenId}
               loteId={loteId}
               onCambiar={(nuevoLoteId) => setValue('loteId', nuevoLoteId)}
               errorLoteId={errors.loteId?.message}

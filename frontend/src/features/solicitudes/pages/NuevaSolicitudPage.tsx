@@ -29,6 +29,7 @@ import { colorPorTipo } from '../lib/coloresTornaguia'
 import { Sidebar } from '../../../shared/components/Sidebar'
 import { appSidebarItems } from '../../../shared/components/sidebarItems'
 import { extraerMensajeAxios } from '../../../shared/lib/errores'
+import { getBodegas } from '../../bodegas/api/bodegasApi'
 import type { CrearSolicitudResponse, HistorialSolicitud } from '../types'
 
 type ResultadoItem = {
@@ -38,11 +39,13 @@ type ResultadoItem = {
   municipioOrigenId: number
   municipioDestinoId: number | undefined
   paisDestinoId: number | undefined
+  bodegaOrigenId: number | undefined
 } & ({ ok: true; data: CrearSolicitudResponse } | { ok: false; mensaje: string })
 
 export function NuevaSolicitudPage() {
   const municipiosQuery = useQuery({ queryKey: ['municipios'], queryFn: getMunicipios })
   const paisesQuery = useQuery({ queryKey: ['paises'], queryFn: getPaises })
+  const bodegasQuery = useQuery({ queryKey: ['bodegas'], queryFn: getBodegas })
 
   const {
     register,
@@ -153,9 +156,16 @@ export function NuevaSolicitudPage() {
     const resultados = await Promise.allSettled(
       items.map((item) =>
         crearSolicitud({
-          municipioOrigenId: item.municipioOrigenId!,
-          municipioDestinoId: item.tipoDestino === 'municipio' ? item.municipioDestinoId : undefined,
+          // municipioOrigenId/municipioDestinoId también quedan poblados cuando el origen/destino
+          // se eligió desde una bodega (para la vista previa de ruta); el backend trata
+          // bodega.../municipio... como alternativas excluyentes, así que solo se envía el
+          // municipio cuando NO viene de una bodega.
+          municipioOrigenId: item.bodegaOrigenId == null ? item.municipioOrigenId : undefined,
+          municipioDestinoId:
+            item.tipoDestino === 'municipio' && item.bodegaDestinoId == null ? item.municipioDestinoId : undefined,
           paisDestinoId: item.tipoDestino === 'pais' ? item.paisDestinoId : undefined,
+          bodegaOrigenId: item.bodegaOrigenId,
+          bodegaDestinoId: item.tipoDestino === 'municipio' ? item.bodegaDestinoId : undefined,
           estaDeclarado: item.estaDeclarado,
           esParaExportacion: item.esParaExportacion,
         }),
@@ -164,7 +174,8 @@ export function NuevaSolicitudPage() {
 
     return resultados.map((resultado, i) => {
       const label = etiquetaSolicitud(items[i])
-      const { tipoDestino, esParaExportacion, municipioOrigenId, municipioDestinoId, paisDestinoId } = items[i]
+      const { tipoDestino, esParaExportacion, municipioOrigenId, municipioDestinoId, paisDestinoId, bodegaOrigenId } =
+        items[i]
       const base = {
         label,
         tipoDestino,
@@ -172,6 +183,7 @@ export function NuevaSolicitudPage() {
         municipioOrigenId: municipioOrigenId!,
         municipioDestinoId,
         paisDestinoId,
+        bodegaOrigenId,
       }
       if (resultado.status === 'fulfilled') {
         return { ...base, ok: true, data: resultado.value }
@@ -709,6 +721,8 @@ export function NuevaSolicitudPage() {
                           municipiosCargando={municipiosQuery.isLoading}
                           paises={paisesQuery.data ?? []}
                           paisesCargando={paisesQuery.isLoading}
+                          bodegas={bodegasQuery.data ?? []}
+                          bodegasCargando={bodegasQuery.isLoading}
                           mostrarQuitar={fields.length > 1}
                           onQuitar={() => remove(index)}
                           titulo={`Tornaguía ${index + 1}`}
@@ -753,6 +767,8 @@ export function NuevaSolicitudPage() {
                           municipiosCargando={municipiosQuery.isLoading}
                           paises={paisesQuery.data ?? []}
                           paisesCargando={paisesQuery.isLoading}
+                          bodegas={bodegasQuery.data ?? []}
+                          bodegasCargando={bodegasQuery.isLoading}
                           mostrarQuitar={false}
                           onQuitar={() => remove(0)}
                           titulo=""
@@ -869,6 +885,7 @@ export function NuevaSolicitudPage() {
       {solicitudModalAbierta != null && (
         <ModalDetalleTornaguia
           titulo={resultadoOkPorId(solicitudModalAbierta)?.label ?? ''}
+          bodegaOrigenId={resultadoOkPorId(solicitudModalAbierta)?.bodegaOrigenId}
           valoresIniciales={carrito[solicitudModalAbierta]}
           textoBotonPrincipal={esResultadoMultiple ? 'Agregar al PDF' : 'Generar tornaguía'}
           enviando={!esResultadoMultiple && guardarDetalleMutation.isPending}

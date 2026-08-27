@@ -6,6 +6,7 @@ import { InicioPage } from './features/inicio/pages/InicioPage'
 import { NuevaSolicitudPage } from './features/solicitudes/pages/NuevaSolicitudPage'
 import { HistorialPage } from './features/solicitudes/pages/HistorialPage'
 import { LotesPage } from './features/inventario/pages/LotesPage'
+import { BodegasPage } from './features/bodegas/pages/BodegasPage'
 import { RutaProtegida } from './shared/components/RutaProtegida'
 
 export const router = createBrowserRouter([
@@ -39,6 +40,10 @@ export const router = createBrowserRouter([
             {
                 path: '/inventario/lotes',
                 element: <LotesPage />,
+            },
+            {
+                path: '/bodegas',
+                element: <BodegasPage />,
             },
         ],
     },

@@ -23,4 +23,10 @@ export const sidebarIconos = {
       <rect x="13" y="13" width="7" height="7" rx="1" />
     </svg>
   ),
+  bodegas: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+      <path d="M3 9l9-5 9 5v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 20v-6h8v6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
 }

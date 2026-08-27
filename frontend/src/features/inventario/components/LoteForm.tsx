@@ -9,6 +9,7 @@ import { LoteProductoField } from './LoteProductoField'
 import { LoteProductoResumen } from './LoteProductoResumen'
 
 interface LoteFormProps {
+  bodegaId: number
   valoresIniciales?: LoteFormValues
   textoBoton: string
   guardando?: boolean
@@ -16,9 +17,9 @@ interface LoteFormProps {
   onCancelar?: () => void
 }
 
-export function LoteForm({ valoresIniciales, textoBoton, guardando, onGuardar, onCancelar }: LoteFormProps) {
+export function LoteForm({ bodegaId, valoresIniciales, textoBoton, guardando, onGuardar, onCancelar }: LoteFormProps) {
   const productosQuery = useQuery({ queryKey: ['productos'], queryFn: getProductos })
-  const inventarioQuery = useQuery({ queryKey: ['inventario'], queryFn: getInventario })
+  const inventarioQuery = useQuery({ queryKey: ['inventario', bodegaId], queryFn: () => getInventario(bodegaId) })
 
   const disponiblePorProducto = Object.fromEntries(
     (inventarioQuery.data ?? []).map((i) => [i.productoId, i.cantidadDisponible]),

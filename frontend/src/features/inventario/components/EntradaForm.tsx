@@ -8,7 +8,11 @@ import { entradaSchema, entradaPorDefecto } from '../schemas'
 import type { EntradaFormValues } from '../schemas'
 import { extraerMensajeAxios } from '../../../shared/lib/errores'
 
-export function EntradaForm() {
+interface EntradaFormProps {
+  bodegaId: number
+}
+
+export function EntradaForm({ bodegaId }: EntradaFormProps) {
   const queryClient = useQueryClient()
   const productosQuery = useQuery({ queryKey: ['productos'], queryFn: getProductos })
 
@@ -29,13 +33,13 @@ export function EntradaForm() {
   const entradaMutation = useMutation({
     mutationFn: registrarEntrada,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['inventario'] })
+      queryClient.invalidateQueries({ queryKey: ['inventario', bodegaId] })
       reset(entradaPorDefecto)
     },
   })
 
   function onSubmit(values: EntradaFormValues) {
-    entradaMutation.mutate({ productoId: values.productoId!, cantidad: values.cantidad })
+    entradaMutation.mutate({ bodegaId, productoId: values.productoId!, cantidad: values.cantidad })
   }
 
   const mensajeError = entradaMutation.error

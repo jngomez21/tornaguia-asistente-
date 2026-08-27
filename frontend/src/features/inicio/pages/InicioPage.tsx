@@ -83,7 +83,7 @@ export function InicioPage() {
   const navigate = useNavigate()
   const nombre = localStorage.getItem('nombre')
 
-  const lotesQuery = useQuery({ queryKey: ['lotes-disponibles'], queryFn: getLotesDisponibles })
+  const lotesQuery = useQuery({ queryKey: ['lotes-disponibles'], queryFn: () => getLotesDisponibles() })
   const historialQuery = useQuery({ queryKey: ['historial-solicitudes'], queryFn: getHistorialSolicitudes })
 
   const solicitudesPendientes = useMemo(

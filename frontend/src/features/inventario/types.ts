@@ -5,11 +5,13 @@ export interface InventarioItem {
 }
 
 export interface RegistrarEntradaRequest {
+  bodegaId: number
   productoId: number
   cantidad: number
 }
 
 export interface EditarInventarioRequest {
+  bodegaId: number
   cantidadDisponible: number
 }
 
@@ -33,6 +35,7 @@ export interface Lote {
 }
 
 export interface CrearLoteRequest {
+  bodegaId: number
   productos: LoteProductoRequest[]
 }
 

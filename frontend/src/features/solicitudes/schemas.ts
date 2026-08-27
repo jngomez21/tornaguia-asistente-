@@ -3,8 +3,10 @@ import { z } from 'zod'
 export const solicitudItemSchema = z
   .object({
     municipioOrigenId: z.number().optional(),
+    bodegaOrigenId: z.number().optional(),
     tipoDestino: z.enum(['municipio', 'pais']),
     municipioDestinoId: z.number().optional(),
+    bodegaDestinoId: z.number().optional(),
     paisDestinoId: z.number().optional(),
     estaDeclarado: z.boolean(),
     esParaExportacion: z.boolean(),
@@ -50,8 +52,10 @@ export type NuevaSolicitudFormValues = z.infer<typeof nuevaSolicitudFormSchema>
 
 export const solicitudItemPorDefecto: SolicitudItemFormValues = {
   municipioOrigenId: undefined,
+  bodegaOrigenId: undefined,
   tipoDestino: 'municipio',
   municipioDestinoId: undefined,
+  bodegaDestinoId: undefined,
   paisDestinoId: undefined,
   estaDeclarado: false,
   esParaExportacion: false,

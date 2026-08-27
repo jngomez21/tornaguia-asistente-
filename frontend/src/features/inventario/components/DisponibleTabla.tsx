@@ -4,17 +4,21 @@ import { getInventario, editarInventario } from '../api/inventarioApi'
 import { extraerMensajeAxios } from '../../../shared/lib/errores'
 import type { InventarioItem } from '../types'
 
-export function DisponibleTabla() {
+interface DisponibleTablaProps {
+  bodegaId: number
+}
+
+export function DisponibleTabla({ bodegaId }: DisponibleTablaProps) {
   const queryClient = useQueryClient()
-  const inventarioQuery = useQuery({ queryKey: ['inventario'], queryFn: getInventario })
+  const inventarioQuery = useQuery({ queryKey: ['inventario', bodegaId], queryFn: () => getInventario(bodegaId) })
   const [editandoId, setEditandoId] = useState<number | null>(null)
   const [valorEditado, setValorEditado] = useState('')
 
   const editarMutation = useMutation({
     mutationFn: ({ productoId, cantidadDisponible }: { productoId: number; cantidadDisponible: number }) =>
-      editarInventario(productoId, { cantidadDisponible }),
+      editarInventario(productoId, { bodegaId, cantidadDisponible }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['inventario'] })
+      queryClient.invalidateQueries({ queryKey: ['inventario', bodegaId] })
       setEditandoId(null)
     },
   })

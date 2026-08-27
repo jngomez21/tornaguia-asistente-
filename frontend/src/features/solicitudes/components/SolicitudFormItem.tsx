@@ -4,6 +4,7 @@ import type { Control, UseFormRegister, UseFormSetValue, FieldErrors } from 'rea
 import { BuscadorMunicipio } from './BuscadorMunicipio'
 import type { NuevaSolicitudFormValues } from '../schemas'
 import type { Municipio, Pais } from '../types'
+import type { Bodega } from '../../bodegas/types'
 
 interface SolicitudFormItemProps {
   index: number
@@ -15,6 +16,8 @@ interface SolicitudFormItemProps {
   municipiosCargando: boolean
   paises: Pais[]
   paisesCargando: boolean
+  bodegas: Bodega[]
+  bodegasCargando: boolean
   mostrarQuitar: boolean
   onQuitar: () => void
   titulo: string
@@ -32,6 +35,8 @@ export function SolicitudFormItem({
   municipiosCargando,
   paises,
   paisesCargando,
+  bodegas,
+  bodegasCargando,
   mostrarQuitar,
   onQuitar,
   titulo,
@@ -41,13 +46,18 @@ export function SolicitudFormItem({
   const tipoDestino = useWatch({ control, name: `solicitudes.${index}.tipoDestino` })
   const municipioOrigenId = useWatch({ control, name: `solicitudes.${index}.municipioOrigenId` })
   const municipioDestinoId = useWatch({ control, name: `solicitudes.${index}.municipioDestinoId` })
+  const bodegaOrigenId = useWatch({ control, name: `solicitudes.${index}.bodegaOrigenId` })
+  const bodegaDestinoId = useWatch({ control, name: `solicitudes.${index}.bodegaDestinoId` })
 
   const errorItem = errors?.[index]
+  const tieneBodegas = bodegas.length > 0
+  const bodegasDestinoDisponibles = bodegas.filter((b) => b.id !== bodegaOrigenId)
 
   useEffect(() => {
     if (tipoDestino === 'pais') {
       setValue(`solicitudes.${index}.esParaExportacion`, true)
       setValue(`solicitudes.${index}.municipioDestinoId`, undefined)
+      setValue(`solicitudes.${index}.bodegaDestinoId`, undefined)
     } else {
       setValue(`solicitudes.${index}.paisDestinoId`, undefined)
     }
@@ -56,8 +66,21 @@ export function SolicitudFormItem({
   useEffect(() => {
     if (municipioDestinoId != null && municipioDestinoId === municipioOrigenId) {
       setValue(`solicitudes.${index}.municipioDestinoId`, undefined)
+      setValue(`solicitudes.${index}.bodegaDestinoId`, undefined)
     }
   }, [municipioOrigenId, municipioDestinoId, index, setValue])
+
+  function elegirBodegaOrigen(bodegaId: number | undefined) {
+    const bodega = bodegas.find((b) => b.id === bodegaId)
+    setValue(`solicitudes.${index}.bodegaOrigenId`, bodegaId)
+    setValue(`solicitudes.${index}.municipioOrigenId`, bodega?.municipioId)
+  }
+
+  function elegirBodegaDestino(bodegaId: number | undefined) {
+    const bodega = bodegas.find((b) => b.id === bodegaId)
+    setValue(`solicitudes.${index}.bodegaDestinoId`, bodegaId)
+    setValue(`solicitudes.${index}.municipioDestinoId`, bodega?.municipioId)
+  }
 
   return (
     <div onClick={onActivar} className="h-full border border-gray-200 rounded-xl p-5 bg-white/60">
@@ -83,20 +106,41 @@ export function SolicitudFormItem({
         </div>
       )}
 
-      <label className="block text-sm text-gray-600 mb-1">Municipio de origen</label>
-      <Controller
-        control={control}
-        name={`solicitudes.${index}.municipioOrigenId`}
-        render={({ field }) => (
-          <BuscadorMunicipio
-            municipios={municipios}
-            value={field.value}
-            onChange={field.onChange}
-            disabled={municipiosCargando}
-            placeholder={municipiosCargando ? 'Cargando municipios...' : 'Busca un municipio'}
+      {tieneBodegas ? (
+        <>
+          <label className="block text-sm text-gray-600 mb-1">Bodega de origen</label>
+          <select
+            value={bodegaOrigenId ?? ''}
+            onChange={(e) => elegirBodegaOrigen(e.target.value === '' ? undefined : Number(e.target.value))}
+            disabled={bodegasCargando}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 mb-1 focus:outline-none focus:ring-2 focus:ring-marca-medio"
+          >
+            <option value="">{bodegasCargando ? 'Cargando bodegas...' : 'Selecciona una bodega'}</option>
+            {bodegas.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.nombre} — {b.municipioNombre}
+              </option>
+            ))}
+          </select>
+        </>
+      ) : (
+        <>
+          <label className="block text-sm text-gray-600 mb-1">Municipio de origen</label>
+          <Controller
+            control={control}
+            name={`solicitudes.${index}.municipioOrigenId`}
+            render={({ field }) => (
+              <BuscadorMunicipio
+                municipios={municipios}
+                value={field.value}
+                onChange={field.onChange}
+                disabled={municipiosCargando}
+                placeholder={municipiosCargando ? 'Cargando municipios...' : 'Busca un municipio'}
+              />
+            )}
           />
-        )}
-      />
+        </>
+      )}
       {errorItem?.municipioOrigenId && (
         <p className="text-sm text-red-600 mb-3">{errorItem.municipioOrigenId.message}</p>
       )}
@@ -115,21 +159,63 @@ export function SolicitudFormItem({
 
       {tipoDestino === 'municipio' ? (
         <>
-          <label className="block text-sm text-gray-600 mb-1">Municipio de destino</label>
-          <Controller
-            control={control}
-            name={`solicitudes.${index}.municipioDestinoId`}
-            render={({ field }) => (
-              <BuscadorMunicipio
-                municipios={municipios}
-                value={field.value}
-                onChange={field.onChange}
-                excludeId={municipioOrigenId}
-                disabled={municipiosCargando}
-                placeholder={municipiosCargando ? 'Cargando municipios...' : 'Busca un municipio'}
+          {bodegasDestinoDisponibles.length > 0 && (
+            <div className="inline-flex rounded-lg border border-gray-200 p-0.5 mb-2 text-xs">
+              <button
+                type="button"
+                onClick={() => elegirBodegaDestino(undefined)}
+                className={`px-3 py-1 rounded-md font-semibold transition ${
+                  bodegaDestinoId == null ? 'bg-marca-oscuro text-white' : 'text-gray-500 hover:text-marca-oscuro'
+                }`}
+              >
+                Otro municipio
+              </button>
+              <button
+                type="button"
+                onClick={() => elegirBodegaDestino(bodegaDestinoId ?? bodegasDestinoDisponibles[0].id)}
+                className={`px-3 py-1 rounded-md font-semibold transition ${
+                  bodegaDestinoId != null ? 'bg-marca-oscuro text-white' : 'text-gray-500 hover:text-marca-oscuro'
+                }`}
+              >
+                Bodega propia
+              </button>
+            </div>
+          )}
+
+          {bodegaDestinoId != null ? (
+            <>
+              <label className="block text-sm text-gray-600 mb-1">Bodega de destino</label>
+              <select
+                value={bodegaDestinoId}
+                onChange={(e) => elegirBodegaDestino(Number(e.target.value))}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 mb-1 focus:outline-none focus:ring-2 focus:ring-marca-medio"
+              >
+                {bodegasDestinoDisponibles.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.nombre} — {b.municipioNombre}
+                  </option>
+                ))}
+              </select>
+            </>
+          ) : (
+            <>
+              <label className="block text-sm text-gray-600 mb-1">Municipio de destino</label>
+              <Controller
+                control={control}
+                name={`solicitudes.${index}.municipioDestinoId`}
+                render={({ field }) => (
+                  <BuscadorMunicipio
+                    municipios={municipios}
+                    value={field.value}
+                    onChange={field.onChange}
+                    excludeId={municipioOrigenId}
+                    disabled={municipiosCargando}
+                    placeholder={municipiosCargando ? 'Cargando municipios...' : 'Busca un municipio'}
+                  />
+                )}
               />
-            )}
-          />
+            </>
+          )}
           {errorItem?.municipioDestinoId && (
             <p className="text-sm text-red-600 mb-3">{errorItem.municipioDestinoId.message}</p>
           )}
