@@ -1,7 +1,15 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { getHistorialSolicitudes, getPdfTornaguia, getSolicitud, guardarDetalleTornaguia, guardarPdfTornaguia } from '../api/solicitudesApi'
+import {
+  getHistorialSolicitudes,
+  getMunicipios,
+  getPdfTornaguia,
+  getSolicitud,
+  guardarDetalleTornaguia,
+  guardarPdfTornaguia,
+} from '../api/solicitudesApi'
 import { construirPdfTornaguia, descargarPdf, bytesABase64 } from '../lib/generarPdfTornaguia'
+import type { DatosRutaTornaguia } from '../lib/generarPdfTornaguia'
 import { mapearDetalleARequest } from '../lib/mapearDetalle'
 import { colorPorTipo } from '../lib/coloresTornaguia'
 import { ModalDetalleTornaguia } from '../components/ModalDetalleTornaguia'
@@ -22,11 +30,13 @@ interface SolicitudEnRetomada {
   solicitudId: number
   etiqueta: string
   resultado: CrearSolicitudResponse
+  ruta: DatosRutaTornaguia
 }
 
 export function HistorialPage() {
   const queryClient = useQueryClient()
   const historialQuery = useQuery({ queryKey: ['historial-solicitudes'], queryFn: getHistorialSolicitudes })
+  const municipiosQuery = useQuery({ queryKey: ['municipios'], queryFn: getMunicipios })
 
   const [busqueda, setBusqueda] = useState('')
   const [tipoFiltro, setTipoFiltro] = useState('')
@@ -86,6 +96,11 @@ export function HistorialPage() {
     }
   }
 
+  function departamentoDeMunicipio(nombre: string | null) {
+    if (!nombre) return null
+    return municipiosQuery.data?.find((m) => m.nombre === nombre)?.departamentoNombre ?? '—'
+  }
+
   async function retomarSolicitud(item: HistorialSolicitud) {
     setErrorAccion(null)
     setCargandoRetomarId(item.solicitudId)
@@ -95,6 +110,13 @@ export function HistorialPage() {
         solicitudId: item.solicitudId,
         etiqueta: `${item.municipioOrigenNombre} → ${destino(item)}`,
         resultado,
+        ruta: {
+          origenDepartamento: departamentoDeMunicipio(item.municipioOrigenNombre) ?? '—',
+          origenMunicipio: item.municipioOrigenNombre,
+          destinoDepartamento: departamentoDeMunicipio(item.municipioDestinoNombre),
+          destinoMunicipio: destino(item),
+          departamentosIntermedios: resultado.departamentosIntermedios ?? [],
+        },
       })
     } catch {
       setErrorAccion('No se pudo cargar la solicitud pendiente.')
@@ -107,7 +129,7 @@ export function HistorialPage() {
     mutationFn: async (values: DetalleTornaguiaFormValues) => {
       if (!solicitudARetomar) throw new Error('No hay solicitud en proceso.')
       const detalle = await guardarDetalleTornaguia(solicitudARetomar.solicitudId, mapearDetalleARequest(values))
-      const bytes = await construirPdfTornaguia(solicitudARetomar.resultado, detalle, solicitudARetomar.etiqueta)
+      const bytes = await construirPdfTornaguia(solicitudARetomar.resultado, detalle, solicitudARetomar.ruta)
       await guardarPdfTornaguia(solicitudARetomar.solicitudId, bytesABase64(bytes))
       return bytes
     },

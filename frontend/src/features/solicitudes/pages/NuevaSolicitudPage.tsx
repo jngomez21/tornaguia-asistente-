@@ -93,14 +93,13 @@ export function NuevaSolicitudPage() {
   const historialOrdenado = [...(historialQuery.data ?? [])].sort(
     (a, b) => new Date(b.fechaSolicitud).getTime() - new Date(a.fechaSolicitud).getTime(),
   )
-  // "Retomar tornaguía" prioriza las ya creadas a las que les falta generar el PDF;
-  // si no hay ninguna pendiente, cae a mostrar las más recientes sin importar su estado.
-  const pendientesDeGenerar = historialOrdenado.filter((item) => !item.tienePdf)
-  const historialParaRetomar = pendientesDeGenerar.length > 0 ? pendientesDeGenerar : historialOrdenado
-  const recientes = historialParaRetomar.slice(0, 4)
-  const recientesLote = historialParaRetomar.slice(0, 3)
+  // "Generar un nuevo envío" siempre crea una solicitud nueva reutilizando origen/destino
+  // de una solicitud pasada (tenga o no PDF generado); por eso se muestran las más
+  // recientes sin importar su estado.
+  const recientes = historialOrdenado.slice(0, 5)
+  const recientesLote = historialOrdenado.slice(0, 3)
 
-  function aplicarAtajoReciente(item: HistorialSolicitud) {
+  function aplicarEnvioReciente(item: HistorialSolicitud) {
     const origenId = municipiosQuery.data?.find((m) => m.nombre === item.municipioOrigenNombre)?.id
     if (origenId == null) return
     const index = indiceActivo
@@ -679,13 +678,13 @@ export function NuevaSolicitudPage() {
                     >
                       <div className="w-full sm:w-auto flex flex-wrap items-center gap-2">
                         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide mr-1">
-                          Retomar en Tornaguía {indiceActivo + 1}:
+                          Generar nuevo envío en Tornaguía {indiceActivo + 1}:
                         </span>
                         {recientesLote.map((item) => (
                           <button
                             key={item.solicitudId}
                             type="button"
-                            onClick={() => aplicarAtajoReciente(item)}
+                            onClick={() => aplicarEnvioReciente(item)}
                             className="flex items-center gap-1.5 text-xs text-gray-700 bg-white border border-gray-200 rounded-full pl-3 pr-2 py-1.5 hover:border-marca-medio/40 hover:bg-marca-medio/5 transition"
                           >
                             <span className="truncate max-w-[160px]">
@@ -848,14 +847,14 @@ export function NuevaSolicitudPage() {
                         className="flex flex-col bg-white border border-gray-200 rounded-xl shadow-sm p-4 overflow-y-auto transition-all duration-300 ease-out"
                       >
                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                          Retomar tornaguía
+                          Generar un nuevo envío
                         </p>
                         <div className="flex-1 flex flex-col justify-center gap-2">
                           {recientes.map((item) => (
                             <button
                               key={item.solicitudId}
                               type="button"
-                              onClick={() => aplicarAtajoReciente(item)}
+                              onClick={() => aplicarEnvioReciente(item)}
                               className="flex items-center justify-between gap-2 text-left px-3 py-2 rounded-lg border border-gray-100 hover:border-marca-medio/40 hover:bg-marca-medio/5 transition"
                             >
                               <span className="text-sm text-gray-700 truncate">
