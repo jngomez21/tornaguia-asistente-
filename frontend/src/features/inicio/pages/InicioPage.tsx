@@ -5,10 +5,12 @@ import { useNavigate } from 'react-router-dom'
 import { Sidebar } from '../../../shared/components/Sidebar'
 import { appSidebarItems } from '../../../shared/components/sidebarItems'
 import { formatearFecha } from '../../../shared/lib/formato'
+import { getBodegas } from '../../bodegas/api/bodegasApi'
 import { getLotesDisponibles } from '../../inventario/api/inventarioApi'
 import { getHistorialSolicitudes } from '../../solicitudes/api/solicitudesApi'
 import { colorPorTipo } from '../../solicitudes/lib/coloresTornaguia'
 import type { HistorialSolicitud } from '../../solicitudes/types'
+import { BloqueBodegasLotes } from '../components/BloqueBodegasLotes'
 
 interface OpcionInicio {
   titulo: string
@@ -18,6 +20,17 @@ interface OpcionInicio {
 }
 
 const opciones: OpcionInicio[] = [
+  {
+    titulo: 'Gestionar bodegas',
+    descripcion: 'Registra y consulta las bodegas donde tienes mercancía almacenada.',
+    ruta: '/bodegas',
+    icono: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-7 h-7">
+        <path d="M3 9l9-5 9 5v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9Z" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M8 20v-6h8v6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
   {
     titulo: 'Crear lote',
     descripcion: 'Agrupa la mercancía que vas a movilizar antes de solicitar una tornaguía.',
@@ -83,6 +96,7 @@ export function InicioPage() {
   const navigate = useNavigate()
   const nombre = localStorage.getItem('nombre')
 
+  const bodegasQuery = useQuery({ queryKey: ['bodegas'], queryFn: getBodegas })
   const lotesQuery = useQuery({ queryKey: ['lotes-disponibles'], queryFn: () => getLotesDisponibles() })
   const historialQuery = useQuery({ queryKey: ['historial-solicitudes'], queryFn: getHistorialSolicitudes })
 
@@ -105,6 +119,7 @@ export function InicioPage() {
   }, [historialQuery.data])
 
   const stats = [
+    { label: 'Bodegas', valor: bodegasQuery.data?.length, ruta: '/bodegas' },
     { label: 'Lotes disponibles', valor: lotesQuery.data?.length, ruta: '/inventario/lotes' },
     { label: 'Solicitudes totales', valor: historialQuery.data?.length, ruta: '/solicitudes/historial' },
     { label: 'Pendientes de generar', valor: solicitudesPendientes, ruta: '/solicitudes/historial' },
@@ -128,19 +143,19 @@ export function InicioPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {stats.map((stat, i) => (
               <StatCard key={stat.label} {...stat} delayMs={80 + i * 70} onSeleccionar={navigate} />
             ))}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
             {opciones.map((opcion, i) => (
               <button
                 key={opcion.ruta}
                 type="button"
                 onClick={() => navigate(opcion.ruta)}
-                style={{ animationDelay: `${300 + i * 70}ms` }}
+                style={{ animationDelay: `${360 + i * 70}ms` }}
                 className="animate-fade-slide-up text-center bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md hover:border-marca-medio/50 transition"
               >
                 <div className="w-12 h-12 mx-auto rounded-lg bg-marca-medio/10 flex items-center justify-center text-marca-medio mb-4">
@@ -152,8 +167,10 @@ export function InicioPage() {
             ))}
           </div>
 
+          <BloqueBodegasLotes delayMs={600} />
+
           <div
-            style={{ animationDelay: '440ms' }}
+            style={{ animationDelay: '680ms' }}
             className="animate-fade-slide-up bg-white border border-gray-200 rounded-xl shadow-sm"
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Sidebar } from '../../../shared/components/Sidebar'
 import { appSidebarItems } from '../../../shared/components/sidebarItems'
@@ -38,10 +39,15 @@ export function BodegasPage() {
   const queryClient = useQueryClient()
   const bodegasQuery = useQuery({ queryKey: ['bodegas'], queryFn: getBodegas })
 
+  const [searchParams] = useSearchParams()
+
   const [creando, setCreando] = useState(false)
   const [editandoId, setEditandoId] = useState<number | null>(null)
   const [eliminandoId, setEliminandoId] = useState<number | null>(null)
-  const [bodegaSeleccionadaId, setBodegaSeleccionadaId] = useState<number | null>(null)
+  const [bodegaSeleccionadaId, setBodegaSeleccionadaId] = useState<number | null>(() => {
+    const idDesdeUrl = Number(searchParams.get('bodegaId'))
+    return idDesdeUrl > 0 ? idDesdeUrl : null
+  })
 
   function invalidarListado() {
     queryClient.invalidateQueries({ queryKey: ['bodegas'] })
