@@ -36,6 +36,6 @@ public class CasoUsoCrearBodega : ICasoUsoCrearBodega
         await _context.Entry(bodega).Reference(b => b.Municipio).LoadAsync();
         await _context.Entry(bodega.Municipio).Reference(m => m.Departamento).LoadAsync();
 
-        return BodegasAjustes.AResponse(bodega);
+        return BodegasAjustes.AResponse(bodega, lotesActivos: 0, productosDistintos: 0);
     }
 }

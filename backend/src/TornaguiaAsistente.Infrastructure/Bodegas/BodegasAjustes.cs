@@ -11,13 +11,15 @@ internal static class BodegasAjustes
             throw new BodegaInvalidaException("La bodega no pertenece al usuario autenticado.");
     }
 
-    public static BodegaResponse AResponse(Bodega bodega) => new(
+    public static BodegaResponse AResponse(Bodega bodega, int lotesActivos, int productosDistintos) => new(
         Id: bodega.Id,
         Nombre: bodega.Nombre,
         MunicipioId: bodega.MunicipioId,
         MunicipioNombre: bodega.Municipio.Nombre,
         DepartamentoNombre: bodega.Municipio.Departamento.Nombre,
         Latitud: bodega.Municipio.Ubicacion?.Y,
-        Longitud: bodega.Municipio.Ubicacion?.X
+        Longitud: bodega.Municipio.Ubicacion?.X,
+        LotesActivos: lotesActivos,
+        ProductosDistintos: productosDistintos
     );
 }

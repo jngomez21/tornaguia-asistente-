@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TornaguiaAsistente.Application.Bodegas;
+using TornaguiaAsistente.Domain.Entities;
 using TornaguiaAsistente.Infrastructure.Persistence;
 
 namespace TornaguiaAsistente.Infrastructure.Bodegas;
@@ -19,8 +20,16 @@ public class CasoUsoListarBodegas : ICasoUsoListarBodegas
             .Include(b => b.Municipio).ThenInclude(m => m.Departamento)
             .Where(b => b.UsuarioId == usuarioId)
             .OrderBy(b => b.Nombre)
+            .Select(b => new
+            {
+                Bodega = b,
+                LotesActivos = b.Lotes.Count(l => l.Estado == EstadoLote.Reservado),
+                ProductosDistintos = b.InventarioProductos.Count(i => i.CantidadDisponible > 0),
+            })
             .ToListAsync();
 
-        return bodegas.Select(BodegasAjustes.AResponse).ToList();
+        return bodegas
+            .Select(x => BodegasAjustes.AResponse(x.Bodega, x.LotesActivos, x.ProductosDistintos))
+            .ToList();
     }
 }

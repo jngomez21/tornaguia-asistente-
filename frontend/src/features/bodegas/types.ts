@@ -6,6 +6,8 @@ export interface Bodega {
   departamentoNombre: string
   latitud: number | null
   longitud: number | null
+  lotesActivos: number
+  productosDistintos: number
 }
 
 export interface CrearBodegaRequest {

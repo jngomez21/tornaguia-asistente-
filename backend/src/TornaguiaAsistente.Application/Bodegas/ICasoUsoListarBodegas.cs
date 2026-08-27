@@ -12,7 +12,9 @@ public record BodegaResponse(
     string MunicipioNombre,
     string DepartamentoNombre,
     double? Latitud,
-    double? Longitud
+    double? Longitud,
+    int LotesActivos,
+    int ProductosDistintos
 );
 
 public class BodegaInvalidaException : Exception

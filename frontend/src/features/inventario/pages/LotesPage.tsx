@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Sidebar } from '../../../shared/components/Sidebar'
 import { appSidebarItems } from '../../../shared/components/sidebarItems'
@@ -28,8 +28,11 @@ export function LotesPage() {
   const queryClient = useQueryClient()
   const bodegasQuery = useQuery({ queryKey: ['bodegas'], queryFn: getBodegas })
 
+  const [searchParams] = useSearchParams()
+  const bodegaIdDesdeUrl = Number(searchParams.get('bodegaId')) || null
+
   const [bodegaSeleccionadaId, setBodegaSeleccionadaId] = useState<number | null>(null)
-  const bodegaActivaId = bodegaSeleccionadaId ?? bodegasQuery.data?.[0]?.id ?? null
+  const bodegaActivaId = bodegaSeleccionadaId ?? bodegaIdDesdeUrl ?? bodegasQuery.data?.[0]?.id ?? null
 
   const lotesQuery = useQuery({
     queryKey: ['lotes-disponibles', bodegaActivaId],

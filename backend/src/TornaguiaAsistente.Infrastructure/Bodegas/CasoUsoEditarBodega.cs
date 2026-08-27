@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TornaguiaAsistente.Application.Bodegas;
+using TornaguiaAsistente.Domain.Entities;
 using TornaguiaAsistente.Infrastructure.Persistence;
 
 namespace TornaguiaAsistente.Infrastructure.Bodegas;
@@ -42,6 +43,9 @@ public class CasoUsoEditarBodega : ICasoUsoEditarBodega
             await _context.SaveChangesAsync();
         }
 
-        return BodegasAjustes.AResponse(bodega);
+        var lotesActivos = await _context.Lotes.CountAsync(l => l.BodegaId == bodega.Id && l.Estado == EstadoLote.Reservado);
+        var productosDistintos = await _context.InventarioProductos.CountAsync(i => i.BodegaId == bodega.Id && i.CantidadDisponible > 0);
+
+        return BodegasAjustes.AResponse(bodega, lotesActivos, productosDistintos);
     }
 }
