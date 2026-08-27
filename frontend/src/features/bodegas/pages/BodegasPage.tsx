@@ -98,7 +98,7 @@ export function BodegasPage() {
       <Sidebar items={appSidebarItems} />
 
       <main className="flex-1 overflow-y-auto">
-        <div className={`${bodegaSeleccionada ? 'max-w-6xl' : 'max-w-4xl'} mx-auto p-6 sm:p-10`}>
+        <div className="max-w-7xl mx-auto p-6 sm:p-10">
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
               <h1 className="text-2xl font-bold text-marca-oscuro mb-1">Bodegas</h1>
@@ -150,7 +150,9 @@ export function BodegasPage() {
                 <p className="text-sm text-gray-400">No tienes bodegas registradas todavía.</p>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div
+                className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${bodegaSeleccionada ? '' : 'lg:grid-cols-3'}`}
+              >
                 {bodegasQuery.data?.map((bodega) => {
                   const seleccionada = bodega.id === bodegaSeleccionadaId
                   return (

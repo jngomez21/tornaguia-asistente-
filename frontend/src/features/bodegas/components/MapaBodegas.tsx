@@ -61,7 +61,7 @@ export function MapaBodegas({ bodegas, bodegaSeleccionadaId, onSeleccionar }: Ma
 
   if (bodegasConUbicacion.length === 0) {
     return (
-      <div className="w-full h-72 rounded-xl bg-gray-100 flex items-center justify-center text-xs text-gray-400 mb-6">
+      <div className="w-full h-80 rounded-xl bg-gray-100 flex items-center justify-center text-xs text-gray-400 mb-6">
         Crea una bodega para verla en el mapa.
       </div>
     )
@@ -69,7 +69,7 @@ export function MapaBodegas({ bodegas, bodegaSeleccionadaId, onSeleccionar }: Ma
 
   if (!MAPBOX_TOKEN) {
     return (
-      <div className="w-full h-72 rounded-xl bg-gray-100 flex items-center justify-center text-xs text-gray-400 mb-6">
+      <div className="w-full h-80 rounded-xl bg-gray-100 flex items-center justify-center text-xs text-gray-400 mb-6">
         Mapa no disponible (falta configurar VITE_MAPBOX_TOKEN)
       </div>
     )
@@ -78,7 +78,7 @@ export function MapaBodegas({ bodegas, bodegaSeleccionadaId, onSeleccionar }: Ma
   const centro = bounds![0]
 
   return (
-    <div className="relative w-full h-72 rounded-xl overflow-hidden mb-6 border border-gray-100">
+    <div className="relative w-full h-80 rounded-xl overflow-hidden mb-6 border border-gray-100">
       <Map
         ref={mapRef}
         mapboxAccessToken={MAPBOX_TOKEN}
