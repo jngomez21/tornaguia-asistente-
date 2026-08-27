@@ -11,6 +11,5 @@ export function mapearDetalleARequest(values: DetalleTornaguiaFormValues): Guard
     transportadorIdentificacion: values.transportadorIdentificacion,
     placaVehiculo: values.placaVehiculo,
     loteId: values.loteId!,
-    capacidades: values.capacidades.map((c) => ({ productoId: c.productoId, capacidad: c.capacidad })),
   }
 }

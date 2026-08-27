@@ -6,26 +6,13 @@ import { productosParaRequest } from '../schemas'
 import type { Lote } from '../types'
 import { extraerMensajeAxios } from '../../../shared/lib/errores'
 
-interface CapacidadPorProducto {
-  productoId: number
-  capacidad: number
-}
-
 interface SelectorLoteProps {
   loteId: number | undefined
-  capacidades: CapacidadPorProducto[]
-  onCambiar: (loteId: number | undefined, capacidades: CapacidadPorProducto[]) => void
+  onCambiar: (loteId: number | undefined) => void
   errorLoteId?: string
-  hayErroresCapacidad?: boolean
 }
 
-export function SelectorLote({
-  loteId,
-  capacidades,
-  onCambiar,
-  errorLoteId,
-  hayErroresCapacidad,
-}: SelectorLoteProps) {
+export function SelectorLote({ loteId, onCambiar, errorLoteId }: SelectorLoteProps) {
   const queryClient = useQueryClient()
   const lotesQuery = useQuery({ queryKey: ['lotes-disponibles'], queryFn: getLotesDisponibles })
   const [creando, setCreando] = useState(false)
@@ -41,20 +28,8 @@ export function SelectorLote({
   })
 
   function seleccionarLote(lote: Lote) {
-    onCambiar(
-      lote.loteId,
-      lote.productos.map((p) => ({ productoId: p.productoId, capacidad: NaN })),
-    )
+    onCambiar(lote.loteId)
   }
-
-  function actualizarCapacidad(productoId: number, capacidad: number) {
-    onCambiar(
-      loteId,
-      capacidades.map((c) => (c.productoId === productoId ? { ...c, capacidad } : c)),
-    )
-  }
-
-  const loteSeleccionado = lotesQuery.data?.find((l) => l.loteId === loteId)
 
   const mensajeErrorCrear = crearLoteMutation.error
     ? (extraerMensajeAxios(crearLoteMutation.error) ?? 'No se pudo crear el lote.')
@@ -120,32 +95,6 @@ export function SelectorLote({
             onCancelar={() => setCreando(false)}
           />
           {mensajeErrorCrear && <p className="text-xs text-red-600 mt-2">{mensajeErrorCrear}</p>}
-        </div>
-      )}
-
-      {loteSeleccionado && !creando && (
-        <div className="border border-gray-200 rounded-lg p-3 mt-3">
-          <p className="text-xs text-gray-500 mb-2">Capacidad del vehículo por producto</p>
-          {loteSeleccionado.productos.map((p) => {
-            const capacidadActual = capacidades.find((c) => c.productoId === p.productoId)?.capacidad
-            return (
-              <div key={p.productoId} className="grid grid-cols-2 gap-3 items-center mb-2">
-                <span className="text-sm">
-                  {p.productoNombre} (cant. {p.cantidad})
-                </span>
-                <input
-                  type="number"
-                  step="any"
-                  value={Number.isFinite(capacidadActual) ? capacidadActual : ''}
-                  onChange={(e) => actualizarCapacidad(p.productoId, e.target.valueAsNumber)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marca-medio"
-                />
-              </div>
-            )
-          })}
-          {hayErroresCapacidad && (
-            <p className="text-xs text-red-600 mt-1">Todas las capacidades deben ser mayores a 0.</p>
-          )}
         </div>
       )}
     </div>

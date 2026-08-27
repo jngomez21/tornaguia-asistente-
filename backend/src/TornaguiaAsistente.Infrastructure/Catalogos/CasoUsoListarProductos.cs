@@ -17,7 +17,7 @@ public class CasoUsoListarProductos : ICasoUsoListarProductos
     {
         return await _context.Productos
             .OrderBy(p => p.Nombre)
-            .Select(p => new ProductoResponse(p.Id, p.Nombre))
+            .Select(p => new ProductoResponse(p.Id, p.Nombre, p.Capacidad))
             .ToListAsync();
     }
 }

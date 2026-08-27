@@ -38,16 +38,18 @@ export interface CrearSolicitudResponse {
 export interface Producto {
   id: number
   nombre: string
-}
-
-export interface ProductoTransportadoResponse {
-  productoNombre: string
-  cantidad: number
   capacidad: number
 }
 
-export interface CapacidadPorProductoRequest {
-  productoId: number
+export interface CrearProductoRequest {
+  nombre: string
+  capacidad: number
+}
+
+export interface ProductoTransportadoResponse {
+  productoCodigo: string
+  productoNombre: string
+  cantidad: number
   capacidad: number
 }
 
@@ -60,7 +62,6 @@ export interface GuardarDetalleTornaguiaRequest {
   transportadorIdentificacion: string
   placaVehiculo: string
   loteId: number
-  capacidades: CapacidadPorProductoRequest[]
 }
 
 export interface DetalleTornaguiaResponse {

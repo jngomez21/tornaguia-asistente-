@@ -1,3 +1,3 @@
 namespace TornaguiaAsistente.Api.Dtos;
 
-public record CrearProductoRequest(string Nombre);
+public record CrearProductoRequest(string Nombre, decimal Capacidad);

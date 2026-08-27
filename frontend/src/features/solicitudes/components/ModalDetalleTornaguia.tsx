@@ -34,7 +34,6 @@ export function ModalDetalleTornaguia({
   })
 
   const loteId = useWatch({ control, name: 'loteId' })
-  const capacidades = useWatch({ control, name: 'capacidades' }) ?? []
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -153,13 +152,8 @@ export function ModalDetalleTornaguia({
           <div className="mb-6">
             <SelectorLote
               loteId={loteId}
-              capacidades={capacidades}
-              onCambiar={(nuevoLoteId, nuevasCapacidades) => {
-                setValue('loteId', nuevoLoteId)
-                setValue('capacidades', nuevasCapacidades)
-              }}
+              onCambiar={(nuevoLoteId) => setValue('loteId', nuevoLoteId)}
               errorLoteId={errors.loteId?.message}
-              hayErroresCapacidad={Boolean(errors.capacidades)}
             />
           </div>
 

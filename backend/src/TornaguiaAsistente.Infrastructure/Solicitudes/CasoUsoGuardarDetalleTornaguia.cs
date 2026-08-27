@@ -39,15 +39,6 @@ public class CasoUsoGuardarDetalleTornaguia : ICasoUsoGuardarDetalleTornaguia
                     ? "Este lote ya fue vinculado a otra solicitud."
                     : "Este lote fue cancelado.");
 
-        var capacidadesPorProducto = request.Capacidades.ToDictionary(c => c.ProductoId, c => c.Capacidad);
-
-        foreach (var loteProducto in lote.LoteProductos)
-        {
-            if (!capacidadesPorProducto.ContainsKey(loteProducto.ProductoId))
-                throw new SolicitudInvalidaException(
-                    $"Debe indicar la capacidad para {loteProducto.Producto.Nombre}.");
-        }
-
         var detalle = new SolicitudDetalleTornaguia
         {
             SolicitudId = solicitud.Id,
@@ -70,7 +61,6 @@ public class CasoUsoGuardarDetalleTornaguia : ICasoUsoGuardarDetalleTornaguia
                 SolicitudId = solicitud.Id,
                 ProductoId = loteProducto.ProductoId,
                 Cantidad = loteProducto.Cantidad,
-                Capacidad = capacidadesPorProducto[loteProducto.ProductoId],
             });
         }
 
@@ -91,7 +81,7 @@ public class CasoUsoGuardarDetalleTornaguia : ICasoUsoGuardarDetalleTornaguia
             FechaGeneracion: detalle.FechaGeneracion,
             Productos: lote.LoteProductos
                 .Select(lp => new ProductoTransportadoResponse(
-                    lp.Producto.Nombre, lp.Cantidad, capacidadesPorProducto[lp.ProductoId]))
+                    lp.Producto.CodigoUnico, lp.Producto.Nombre, lp.Cantidad, lp.Producto.Capacidad))
                 .ToList());
     }
 }

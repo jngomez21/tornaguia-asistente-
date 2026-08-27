@@ -31,7 +31,7 @@ public class ProductosController : ControllerBase
     {
         try
         {
-            var producto = await _casoUsoCrear.EjecutarAsync(request.Nombre);
+            var producto = await _casoUsoCrear.EjecutarAsync(request.Nombre, request.Capacidad);
             return Ok(producto);
         }
         catch (ProductoInvalidoException ex)

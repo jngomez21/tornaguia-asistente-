@@ -11,5 +11,4 @@ public class SolicitudProducto
     public Producto Producto { get; set; } = null!;
 
     public decimal Cantidad { get; set; }
-    public decimal Capacidad { get; set; }
 }

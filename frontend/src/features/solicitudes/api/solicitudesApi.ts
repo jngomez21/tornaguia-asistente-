@@ -3,6 +3,7 @@ import type {
   Municipio,
   Pais,
   Producto,
+  CrearProductoRequest,
   CrearSolicitudRequest,
   CrearSolicitudResponse,
   GuardarDetalleTornaguiaRequest,
@@ -36,8 +37,8 @@ export async function getProductos(): Promise<Producto[]> {
   return response.data
 }
 
-export async function crearProducto(nombre: string): Promise<Producto> {
-  const response = await api.post<Producto>('/productos', { nombre })
+export async function crearProducto(data: CrearProductoRequest): Promise<Producto> {
+  const response = await api.post<Producto>('/productos', data)
   return response.data
 }
 

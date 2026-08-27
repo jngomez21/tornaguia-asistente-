@@ -23,6 +23,7 @@ import {
 } from '../components/ExplicacionTipoTornaguia'
 import { ModalDetalleTornaguia } from '../components/ModalDetalleTornaguia'
 import { construirPdfTornaguia, descargarPdf, bytesABase64 } from '../lib/generarPdfTornaguia'
+import type { DatosRutaTornaguia } from '../lib/generarPdfTornaguia'
 import { mapearDetalleARequest } from '../lib/mapearDetalle'
 import { colorPorTipo } from '../lib/coloresTornaguia'
 import { Sidebar } from '../../../shared/components/Sidebar'
@@ -34,6 +35,9 @@ type ResultadoItem = {
   label: string
   tipoDestino: 'municipio' | 'pais'
   esParaExportacion: boolean
+  municipioOrigenId: number
+  municipioDestinoId: number | undefined
+  paisDestinoId: number | undefined
 } & ({ ok: true; data: CrearSolicitudResponse } | { ok: false; mensaje: string })
 
 export function NuevaSolicitudPage() {
@@ -128,6 +132,23 @@ export function NuevaSolicitudPage() {
     return `${origen} → ${destino}`
   }
 
+  function construirRutaInfo(item: ResultadoItem & { ok: true }): DatosRutaTornaguia {
+    const origen = municipiosQuery.data?.find((m) => m.id === item.municipioOrigenId)
+    const destinoMunicipio =
+      item.tipoDestino === 'municipio'
+        ? municipiosQuery.data?.find((m) => m.id === item.municipioDestinoId)
+        : undefined
+    const destinoPais = item.tipoDestino === 'pais' ? paisesQuery.data?.find((p) => p.id === item.paisDestinoId) : undefined
+
+    return {
+      origenDepartamento: origen?.departamentoNombre ?? '—',
+      origenMunicipio: origen?.nombre ?? '—',
+      destinoDepartamento: destinoMunicipio?.departamentoNombre ?? null,
+      destinoMunicipio: destinoMunicipio?.nombre ?? destinoPais?.nombre ?? '—',
+      departamentosIntermedios: item.data.departamentosIntermedios ?? [],
+    }
+  }
+
   async function enviarSolicitudes(items: SolicitudItemFormValues[]): Promise<ResultadoItem[]> {
     const resultados = await Promise.allSettled(
       items.map((item) =>
@@ -143,12 +164,20 @@ export function NuevaSolicitudPage() {
 
     return resultados.map((resultado, i) => {
       const label = etiquetaSolicitud(items[i])
-      const { tipoDestino, esParaExportacion } = items[i]
+      const { tipoDestino, esParaExportacion, municipioOrigenId, municipioDestinoId, paisDestinoId } = items[i]
+      const base = {
+        label,
+        tipoDestino,
+        esParaExportacion,
+        municipioOrigenId: municipioOrigenId!,
+        municipioDestinoId,
+        paisDestinoId,
+      }
       if (resultado.status === 'fulfilled') {
-        return { label, tipoDestino, esParaExportacion, ok: true, data: resultado.value }
+        return { ...base, ok: true, data: resultado.value }
       }
       const mensaje = extraerMensajeAxios(resultado.reason) ?? 'No se pudo procesar esta solicitud.'
-      return { label, tipoDestino, esParaExportacion, ok: false, mensaje }
+      return { ...base, ok: false, mensaje }
     })
   }
 
@@ -298,7 +327,7 @@ export function NuevaSolicitudPage() {
 
       try {
         const detalle = await guardarDetalleMutation.mutateAsync({ solicitudId, values })
-        const bytes = await construirPdfTornaguia(resultadoItem.data, detalle, resultadoItem.label)
+        const bytes = await construirPdfTornaguia(resultadoItem.data, detalle, construirRutaInfo(resultadoItem))
         await subirPdf(solicitudId, bytes)
         setPdfsGenerados((prev) => ({ ...prev, [solicitudId]: bytes }))
         setGenerados((prev) => ({ ...prev, [solicitudId]: true }))
@@ -322,7 +351,7 @@ export function NuevaSolicitudPage() {
           const detalle = await guardarDetalleMutation.mutateAsync({ solicitudId, values })
           const resultadoItem = resultadoOkPorId(solicitudId)
           const bytes = resultadoItem
-            ? await construirPdfTornaguia(resultadoItem.data, detalle, resultadoItem.label)
+            ? await construirPdfTornaguia(resultadoItem.data, detalle, construirRutaInfo(resultadoItem))
             : null
           if (bytes) await subirPdf(solicitudId, bytes)
           return { solicitudId, bytes }

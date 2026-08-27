@@ -17,29 +17,33 @@ public class CasoUsoCrearProducto : ICasoUsoCrearProducto
         _context = context;
     }
 
-    public async Task<ProductoResponse> EjecutarAsync(string nombre)
+    public async Task<ProductoResponse> EjecutarAsync(string nombre, decimal capacidad)
     {
         var nombreLimpio = nombre.Trim();
         if (nombreLimpio.Length == 0)
             throw new ProductoInvalidoException("El nombre del producto es obligatorio.");
 
+        if (capacidad <= 0)
+            throw new ProductoInvalidoException("La capacidad debe ser mayor a 0.");
+
         var existente = await _context.Productos
             .FirstOrDefaultAsync(p => p.Nombre.ToUpper() == nombreLimpio.ToUpper());
 
         if (existente is not null)
-            return new ProductoResponse(existente.Id, existente.Nombre);
+            return new ProductoResponse(existente.Id, existente.Nombre, existente.Capacidad);
 
         var producto = new Producto
         {
             Nombre = nombreLimpio,
             CodigoUnico = GenerarCodigoUnico(nombreLimpio),
             EsNacional = true,
+            Capacidad = capacidad,
         };
 
         _context.Productos.Add(producto);
         await _context.SaveChangesAsync();
 
-        return new ProductoResponse(producto.Id, producto.Nombre);
+        return new ProductoResponse(producto.Id, producto.Nombre, producto.Capacidad);
     }
 
     private static string GenerarCodigoUnico(string nombre)

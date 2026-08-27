@@ -5,4 +5,4 @@ public interface ICasoUsoListarProductos
     Task<IReadOnlyList<ProductoResponse>> EjecutarAsync();
 }
 
-public record ProductoResponse(int Id, string Nombre);
+public record ProductoResponse(int Id, string Nombre, decimal Capacidad);

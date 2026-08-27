@@ -57,11 +57,6 @@ export const solicitudItemPorDefecto: SolicitudItemFormValues = {
   esParaExportacion: false,
 }
 
-const capacidadPorProductoSchema = z.object({
-  productoId: z.number(),
-  capacidad: z.number(),
-})
-
 export const detalleTornaguiaSchema = z
   .object({
     remitenteNombre: z.string().min(1, 'Campo requerido.'),
@@ -72,22 +67,11 @@ export const detalleTornaguiaSchema = z
     transportadorIdentificacion: z.string().min(1, 'Campo requerido.'),
     placaVehiculo: z.string().min(1, 'Campo requerido.'),
     loteId: z.number().optional(),
-    capacidades: z.array(capacidadPorProductoSchema),
   })
   .superRefine((data, ctx) => {
     if (!data.loteId) {
       ctx.addIssue({ code: 'custom', path: ['loteId'], message: 'Selecciona o crea un lote.' })
-      return
     }
-    data.capacidades.forEach((c, index) => {
-      if (!Number.isFinite(c.capacidad) || c.capacidad <= 0) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['capacidades', index, 'capacidad'],
-          message: 'La capacidad debe ser mayor a 0.',
-        })
-      }
-    })
   })
 
 export type DetalleTornaguiaFormValues = z.infer<typeof detalleTornaguiaSchema>
@@ -101,5 +85,4 @@ export const detalleTornaguiaPorDefecto: DetalleTornaguiaFormValues = {
   transportadorIdentificacion: '',
   placaVehiculo: '',
   loteId: undefined,
-  capacidades: [],
 }
