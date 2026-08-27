@@ -18,6 +18,7 @@ public class TornaguiaDbContext : DbContext
     public DbSet<ExcepcionTransitoLocal> ExcepcionesTransitoLocal => Set<ExcepcionTransitoLocal>();
     public DbSet<RutaCalculada> RutasCalculadas => Set<RutaCalculada>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
+    public DbSet<Bodega> Bodegas => Set<Bodega>();
     public DbSet<Solicitud> Solicitudes => Set<Solicitud>();
     public DbSet<SolicitudProducto> SolicitudesProductos => Set<SolicitudProducto>();
     public DbSet<SolicitudDetalleTornaguia> SolicitudesDetalleTornaguia => Set<SolicitudDetalleTornaguia>();

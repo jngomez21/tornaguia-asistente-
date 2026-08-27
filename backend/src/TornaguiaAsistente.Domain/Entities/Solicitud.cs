@@ -16,6 +16,12 @@ public class Solicitud
     public int? MunicipioDestinoId { get; set; }
     public Municipio? MunicipioDestino { get; set; }
 
+    public int? BodegaOrigenId { get; set; }
+    public Bodega? BodegaOrigen { get; set; }
+
+    public int? BodegaDestinoId { get; set; }
+    public Bodega? BodegaDestino { get; set; }
+
     public int? PaisDestinoId { get; set; }
     public Pais? PaisDestino { get; set; }
 

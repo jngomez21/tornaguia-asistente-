@@ -14,11 +14,13 @@ public class CasoUsoListarLotesDisponibles : ICasoUsoListarLotesDisponibles
         _context = context;
     }
 
-    public async Task<IReadOnlyList<LoteResponse>> EjecutarAsync(int usuarioId)
+    public async Task<IReadOnlyList<LoteResponse>> EjecutarAsync(int usuarioId, int? bodegaId = null)
     {
         var lotes = await _context.Lotes
             .Include(l => l.LoteProductos).ThenInclude(lp => lp.Producto)
-            .Where(l => l.UsuarioId == usuarioId && l.Estado == EstadoLote.Reservado)
+            .Include(l => l.Bodega)
+            .Where(l => l.Bodega != null && l.Bodega.UsuarioId == usuarioId && l.Estado == EstadoLote.Reservado)
+            .Where(l => bodegaId == null || l.BodegaId == bodegaId)
             .OrderByDescending(l => l.FechaCreacion)
             .ToListAsync();
 

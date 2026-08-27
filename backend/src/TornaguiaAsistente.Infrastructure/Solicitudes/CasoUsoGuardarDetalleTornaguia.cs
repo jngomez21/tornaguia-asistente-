@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TornaguiaAsistente.Application.Solicitudes;
 using TornaguiaAsistente.Domain.Entities;
+using TornaguiaAsistente.Infrastructure.Inventario;
 using TornaguiaAsistente.Infrastructure.Persistence;
 
 namespace TornaguiaAsistente.Infrastructure.Solicitudes;
@@ -28,10 +29,11 @@ public class CasoUsoGuardarDetalleTornaguia : ICasoUsoGuardarDetalleTornaguia
 
         var lote = await _context.Lotes
             .Include(l => l.LoteProductos).ThenInclude(lp => lp.Producto)
+            .Include(l => l.Bodega)
             .FirstOrDefaultAsync(l => l.Id == request.LoteId)
             ?? throw new SolicitudInvalidaException($"Lote {request.LoteId} no encontrado.");
 
-        SolicitudesAjustes.AsegurarPropietario(lote.UsuarioId, request.UsuarioId, "El lote");
+        SolicitudesAjustes.AsegurarPropietario(lote.Bodega!.UsuarioId, request.UsuarioId, "El lote");
 
         if (lote.Estado != EstadoLote.Reservado)
             throw new SolicitudInvalidaException(
@@ -66,6 +68,12 @@ public class CasoUsoGuardarDetalleTornaguia : ICasoUsoGuardarDetalleTornaguia
 
         solicitud.LoteId = lote.Id;
         lote.Estado = EstadoLote.Vinculado;
+
+        if (solicitud.BodegaDestinoId is not null)
+        {
+            await InventarioAjustes.RegistrarEntradaPorTrasladoAsync(
+                _context, solicitud.BodegaDestinoId.Value, lote.LoteProductos);
+        }
 
         await _context.SaveChangesAsync();
 

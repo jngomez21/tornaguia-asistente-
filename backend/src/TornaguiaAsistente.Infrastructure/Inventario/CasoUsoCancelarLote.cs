@@ -18,7 +18,7 @@ public class CasoUsoCancelarLote : ICasoUsoCancelarLote
         var lote = await InventarioAjustes.ObtenerLoteReservadoAsync(
             _context, request.LoteId, request.UsuarioId, "cancelar");
 
-        await InventarioAjustes.ReponerAsync(_context, request.UsuarioId, lote.LoteProductos);
+        await InventarioAjustes.ReponerAsync(_context, lote.BodegaId!.Value, lote.LoteProductos);
         lote.Estado = EstadoLote.Cancelado;
 
         await _context.SaveChangesAsync();

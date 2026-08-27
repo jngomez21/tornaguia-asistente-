@@ -25,14 +25,43 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
 
     public async Task<CrearSolicitudResponse> EjecutarAsync(CrearSolicitudRequest request)
     {
-        if (request.MunicipioDestinoId is null && request.PaisDestinoId is null)
-            throw new SolicitudInvalidaException("Debe indicar un municipio o un país de destino.");
-        if (request.MunicipioDestinoId is not null && request.PaisDestinoId is not null)
-            throw new SolicitudInvalidaException("No puede indicar municipio y país de destino al mismo tiempo.");
+        var entradasDestino = new[]
+        {
+            request.MunicipioDestinoId is not null,
+            request.PaisDestinoId is not null,
+            request.BodegaDestinoId is not null,
+        }.Count(esInformado => esInformado);
 
-        var origen = await _context.Municipios.FindAsync(request.MunicipioOrigenId)
-            ?? throw new SolicitudInvalidaException($"Municipio de origen {request.MunicipioOrigenId} no encontrado.");
+        if (entradasDestino == 0)
+            throw new SolicitudInvalidaException("Debe indicar un municipio, país o bodega propia de destino.");
+        if (entradasDestino > 1)
+            throw new SolicitudInvalidaException("Solo puede indicar un tipo de destino.");
 
+        if (request.MunicipioOrigenId is null && request.BodegaOrigenId is null)
+            throw new SolicitudInvalidaException("Debe indicar un municipio o una bodega de origen.");
+
+        int? bodegaOrigenUsuarioId = null;
+        int municipioOrigenId;
+
+        if (request.BodegaOrigenId is not null)
+        {
+            var bodegaOrigen = await _context.Bodegas.FindAsync(request.BodegaOrigenId.Value)
+                ?? throw new SolicitudInvalidaException($"Bodega de origen {request.BodegaOrigenId} no encontrada.");
+            if (bodegaOrigen.UsuarioId != request.UsuarioId)
+                throw new SolicitudInvalidaException("La bodega de origen no pertenece al usuario autenticado.");
+
+            bodegaOrigenUsuarioId = bodegaOrigen.Id;
+            municipioOrigenId = bodegaOrigen.MunicipioId;
+        }
+        else
+        {
+            municipioOrigenId = request.MunicipioOrigenId!.Value;
+        }
+
+        var origen = await _context.Municipios.FindAsync(municipioOrigenId)
+            ?? throw new SolicitudInvalidaException($"Municipio de origen {municipioOrigenId} no encontrado.");
+
+        int? bodegaDestinoId = null;
         Municipio? destinoMunicipio = null;
         Pais? destinoPais = null;
         var mismoDepartamento = false;
@@ -40,6 +69,20 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
         int? tiempoEstimado = null;
         List<string>? departamentosIntermedios = null;
         IReadOnlyList<double[]>? geometria = null;
+
+        if (request.BodegaDestinoId is not null)
+        {
+            if (request.BodegaDestinoId == bodegaOrigenUsuarioId)
+                throw new SolicitudInvalidaException("La bodega de destino no puede ser la misma que la de origen.");
+
+            var bodegaDestino = await _context.Bodegas.FindAsync(request.BodegaDestinoId.Value)
+                ?? throw new SolicitudInvalidaException($"Bodega de destino {request.BodegaDestinoId} no encontrada.");
+            if (bodegaDestino.UsuarioId != request.UsuarioId)
+                throw new SolicitudInvalidaException("La bodega de destino no pertenece al usuario autenticado.");
+
+            bodegaDestinoId = bodegaDestino.Id;
+            request = request with { MunicipioDestinoId = bodegaDestino.MunicipioId };
+        }
 
         if (request.MunicipioDestinoId is not null)
         {
@@ -101,6 +144,8 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
             MunicipioOrigenId = origen.Id,
             MunicipioDestinoId = destinoMunicipio?.Id,
             PaisDestinoId = destinoPais?.Id,
+            BodegaOrigenId = bodegaOrigenUsuarioId,
+            BodegaDestinoId = bodegaDestinoId,
             EstaDeclarado = request.EstaDeclarado,
             EsParaExportacion = request.EsParaExportacion,
             FechaSolicitud = DateTime.UtcNow,

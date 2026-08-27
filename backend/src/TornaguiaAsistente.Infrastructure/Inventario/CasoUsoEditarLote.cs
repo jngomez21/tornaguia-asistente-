@@ -21,8 +21,8 @@ public class CasoUsoEditarLote : ICasoUsoEditarLote
 
         var cantidadesNuevas = InventarioAjustes.AgruparCantidades(request.Productos);
 
-        await InventarioAjustes.ReponerAsync(_context, request.UsuarioId, lote.LoteProductos);
-        await InventarioAjustes.DescontarAsync(_context, request.UsuarioId, cantidadesNuevas);
+        await InventarioAjustes.ReponerAsync(_context, lote.BodegaId!.Value, lote.LoteProductos);
+        await InventarioAjustes.DescontarAsync(_context, lote.BodegaId!.Value, cantidadesNuevas);
 
         _context.LotesProductos.RemoveRange(lote.LoteProductos);
         lote.LoteProductos.Clear();

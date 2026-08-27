@@ -5,7 +5,7 @@ public interface ICasoUsoRegistrarEntrada
     Task<InventarioItemResponse> EjecutarAsync(RegistrarEntradaRequest request);
 }
 
-public record RegistrarEntradaRequest(int UsuarioId, int ProductoId, decimal Cantidad);
+public record RegistrarEntradaRequest(int BodegaId, int UsuarioId, int ProductoId, decimal Cantidad);
 
 public record InventarioItemResponse(int ProductoId, string ProductoNombre, decimal CantidadDisponible);
 

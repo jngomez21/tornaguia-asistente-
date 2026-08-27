@@ -38,10 +38,17 @@ public class InventarioController : ApiControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<InventarioItemResponse>>> Obtener()
+    public async Task<ActionResult<IReadOnlyList<InventarioItemResponse>>> Obtener([FromQuery] int bodegaId)
     {
-        var resultado = await _casoUsoObtenerInventario.EjecutarAsync(UsuarioId);
-        return Ok(resultado);
+        try
+        {
+            var resultado = await _casoUsoObtenerInventario.EjecutarAsync(bodegaId, UsuarioId);
+            return Ok(resultado);
+        }
+        catch (InventarioInvalidoException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
     }
 
     [HttpPost("entradas")]
@@ -77,9 +84,9 @@ public class InventarioController : ApiControllerBase
     }
 
     [HttpGet("lotes")]
-    public async Task<ActionResult<IReadOnlyList<LoteResponse>>> ListarLotesDisponibles()
+    public async Task<ActionResult<IReadOnlyList<LoteResponse>>> ListarLotesDisponibles([FromQuery] int? bodegaId)
     {
-        var resultado = await _casoUsoListarLotesDisponibles.EjecutarAsync(UsuarioId);
+        var resultado = await _casoUsoListarLotesDisponibles.EjecutarAsync(UsuarioId, bodegaId);
         return Ok(resultado);
     }
 

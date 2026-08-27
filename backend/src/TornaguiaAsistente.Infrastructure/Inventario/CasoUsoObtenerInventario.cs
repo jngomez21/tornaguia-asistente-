@@ -13,10 +13,12 @@ public class CasoUsoObtenerInventario : ICasoUsoObtenerInventario
         _context = context;
     }
 
-    public async Task<IReadOnlyList<InventarioItemResponse>> EjecutarAsync(int usuarioId)
+    public async Task<IReadOnlyList<InventarioItemResponse>> EjecutarAsync(int bodegaId, int usuarioId)
     {
+        await InventarioAjustes.ObtenerBodegaPropiaAsync(_context, bodegaId, usuarioId);
+
         return await _context.InventarioProductos
-            .Where(i => i.UsuarioId == usuarioId)
+            .Where(i => i.BodegaId == bodegaId)
             .OrderBy(i => i.Producto.Nombre)
             .Select(i => new InventarioItemResponse(i.ProductoId, i.Producto.Nombre, i.CantidadDisponible))
             .ToListAsync();

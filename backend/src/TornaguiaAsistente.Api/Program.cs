@@ -16,6 +16,8 @@ using TornaguiaAsistente.Application.Inventario;
 using TornaguiaAsistente.Infrastructure.Inventario;
 using TornaguiaAsistente.Application.Catalogos;
 using TornaguiaAsistente.Infrastructure.Catalogos;
+using TornaguiaAsistente.Application.Bodegas;
+using TornaguiaAsistente.Infrastructure.Bodegas;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -77,6 +79,10 @@ builder.Services.AddScoped<ICasoUsoListarPaises, CasoUsoListarPaises>();
 builder.Services.AddScoped<ICasoUsoListarDepartamentos, CasoUsoListarDepartamentos>();
 builder.Services.AddScoped<ICasoUsoListarProductos, CasoUsoListarProductos>();
 builder.Services.AddScoped<ICasoUsoCrearProducto, CasoUsoCrearProducto>();
+builder.Services.AddScoped<ICasoUsoListarBodegas, CasoUsoListarBodegas>();
+builder.Services.AddScoped<ICasoUsoCrearBodega, CasoUsoCrearBodega>();
+builder.Services.AddScoped<ICasoUsoEditarBodega, CasoUsoEditarBodega>();
+builder.Services.AddScoped<ICasoUsoEliminarBodega, CasoUsoEliminarBodega>();
 
 builder.Services.AddDbContext<TornaguiaDbContext>(options =>
     options.UseNpgsql(

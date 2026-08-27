@@ -5,7 +5,7 @@ public interface ICasoUsoCrearLote
     Task<LoteResponse> EjecutarAsync(CrearLoteRequest request);
 }
 
-public record CrearLoteRequest(int UsuarioId, IReadOnlyList<LoteProductoRequest> Productos);
+public record CrearLoteRequest(int BodegaId, int UsuarioId, IReadOnlyList<LoteProductoRequest> Productos);
 
 public record LoteProductoRequest(int ProductoId, decimal Cantidad);
 

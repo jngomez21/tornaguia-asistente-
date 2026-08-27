@@ -8,6 +8,6 @@ public class InventarioProductoConfiguration : IEntityTypeConfiguration<Inventar
 {
     public void Configure(EntityTypeBuilder<InventarioProducto> builder)
     {
-        builder.HasIndex(i => new { i.UsuarioId, i.ProductoId }).IsUnique();
+        builder.HasIndex(i => new { i.BodegaId, i.ProductoId }).IsUnique();
     }
 }

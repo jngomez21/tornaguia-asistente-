@@ -15,12 +15,14 @@ public class CasoUsoCrearLote : ICasoUsoCrearLote
 
     public async Task<LoteResponse> EjecutarAsync(CrearLoteRequest request)
     {
+        await InventarioAjustes.ObtenerBodegaPropiaAsync(_context, request.BodegaId, request.UsuarioId);
+
         var cantidades = InventarioAjustes.AgruparCantidades(request.Productos);
-        await InventarioAjustes.DescontarAsync(_context, request.UsuarioId, cantidades);
+        await InventarioAjustes.DescontarAsync(_context, request.BodegaId, cantidades);
 
         var lote = new Lote
         {
-            UsuarioId = request.UsuarioId,
+            BodegaId = request.BodegaId,
             Estado = EstadoLote.Reservado,
             FechaCreacion = DateTime.UtcNow,
         };

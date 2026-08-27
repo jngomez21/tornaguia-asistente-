@@ -10,4 +10,5 @@ public class Usuario
     public string RespuestaSeguridadHash { get; set; } = string.Empty;
 
     public ICollection<Solicitud> Solicitudes { get; set; } = new List<Solicitud>();
+    public ICollection<Bodega> Bodegas { get; set; } = new List<Bodega>();
 }

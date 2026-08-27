@@ -25,12 +25,12 @@ internal static class InventarioAjustes
     }
 
     public static async Task DescontarAsync(
-        TornaguiaDbContext context, int usuarioId, IReadOnlyDictionary<int, decimal> cantidades)
+        TornaguiaDbContext context, int bodegaId, IReadOnlyDictionary<int, decimal> cantidades)
     {
         foreach (var (productoId, cantidad) in cantidades)
         {
             var inventario = await context.InventarioProductos
-                .FirstOrDefaultAsync(i => i.UsuarioId == usuarioId && i.ProductoId == productoId)
+                .FirstOrDefaultAsync(i => i.BodegaId == bodegaId && i.ProductoId == productoId)
                 ?? throw new InventarioInvalidoException(
                     $"No hay inventario registrado para el producto {productoId}.");
 
@@ -47,16 +47,49 @@ internal static class InventarioAjustes
     }
 
     public static async Task ReponerAsync(
-        TornaguiaDbContext context, int usuarioId, IEnumerable<LoteProducto> loteProductos)
+        TornaguiaDbContext context, int bodegaId, IEnumerable<LoteProducto> loteProductos)
     {
         foreach (var lp in loteProductos)
         {
             var inventario = await context.InventarioProductos
-                .FirstOrDefaultAsync(i => i.UsuarioId == usuarioId && i.ProductoId == lp.ProductoId)
+                .FirstOrDefaultAsync(i => i.BodegaId == bodegaId && i.ProductoId == lp.ProductoId)
                 ?? throw new InvalidOperationException(
                     $"Inventario no encontrado para el producto {lp.ProductoId}.");
 
             inventario.CantidadDisponible += lp.Cantidad;
+        }
+    }
+
+    public static async Task RegistrarEntradaPorTrasladoAsync(
+        TornaguiaDbContext context, int bodegaDestinoId, IEnumerable<LoteProducto> loteProductos)
+    {
+        foreach (var lp in loteProductos)
+        {
+            var inventario = await context.InventarioProductos
+                .FirstOrDefaultAsync(i => i.BodegaId == bodegaDestinoId && i.ProductoId == lp.ProductoId);
+
+            if (inventario is null)
+            {
+                inventario = new InventarioProducto
+                {
+                    BodegaId = bodegaDestinoId,
+                    ProductoId = lp.ProductoId,
+                    CantidadDisponible = lp.Cantidad,
+                };
+                context.InventarioProductos.Add(inventario);
+            }
+            else
+            {
+                inventario.CantidadDisponible += lp.Cantidad;
+            }
+
+            context.EntradasInventario.Add(new EntradaInventario
+            {
+                BodegaId = bodegaDestinoId,
+                ProductoId = lp.ProductoId,
+                Cantidad = lp.Cantidad,
+                Fecha = DateTime.UtcNow,
+            });
         }
     }
 
@@ -66,15 +99,26 @@ internal static class InventarioAjustes
             throw new InventarioInvalidoException($"{entidad} no pertenece al usuario autenticado.");
     }
 
+    public static async Task<Bodega> ObtenerBodegaPropiaAsync(TornaguiaDbContext context, int bodegaId, int usuarioId)
+    {
+        var bodega = await context.Bodegas.FirstOrDefaultAsync(b => b.Id == bodegaId)
+            ?? throw new InventarioInvalidoException($"Bodega {bodegaId} no encontrada.");
+
+        AsegurarPropietario(bodega.UsuarioId, usuarioId, "La bodega");
+
+        return bodega;
+    }
+
     public static async Task<Lote> ObtenerLoteReservadoAsync(
         TornaguiaDbContext context, int loteId, int usuarioId, string accion)
     {
         var lote = await context.Lotes
             .Include(l => l.LoteProductos)
+            .Include(l => l.Bodega)
             .FirstOrDefaultAsync(l => l.Id == loteId)
             ?? throw new InventarioInvalidoException($"Lote {loteId} no encontrado.");
 
-        AsegurarPropietario(lote.UsuarioId, usuarioId, "El lote");
+        AsegurarPropietario(lote.Bodega!.UsuarioId, usuarioId, "El lote");
 
         if (lote.Estado != EstadoLote.Reservado)
             throw new InventarioInvalidoException($"Solo se puede {accion} un lote en estado Reservado.");

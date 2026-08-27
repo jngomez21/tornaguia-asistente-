@@ -7,9 +7,11 @@ public interface ICasoUsoCrearSolicitud
 
 public record CrearSolicitudRequest(
     int UsuarioId,
-    int MunicipioOrigenId,
+    int? MunicipioOrigenId,
     int? MunicipioDestinoId,
     int? PaisDestinoId,
+    int? BodegaOrigenId,
+    int? BodegaDestinoId,
     bool EstaDeclarado,
     bool EsParaExportacion
 );

@@ -19,17 +19,19 @@ public class CasoUsoRegistrarEntrada : ICasoUsoRegistrarEntrada
         if (request.Cantidad <= 0)
             throw new InventarioInvalidoException("La cantidad debe ser mayor que cero.");
 
+        await InventarioAjustes.ObtenerBodegaPropiaAsync(_context, request.BodegaId, request.UsuarioId);
+
         var producto = await _context.Productos.FindAsync(request.ProductoId)
             ?? throw new InventarioInvalidoException($"Producto {request.ProductoId} no encontrado.");
 
         var inventario = await _context.InventarioProductos
-            .FirstOrDefaultAsync(i => i.UsuarioId == request.UsuarioId && i.ProductoId == request.ProductoId);
+            .FirstOrDefaultAsync(i => i.BodegaId == request.BodegaId && i.ProductoId == request.ProductoId);
 
         if (inventario is null)
         {
             inventario = new InventarioProducto
             {
-                UsuarioId = request.UsuarioId,
+                BodegaId = request.BodegaId,
                 ProductoId = request.ProductoId,
                 CantidadDisponible = request.Cantidad,
             };
@@ -42,7 +44,7 @@ public class CasoUsoRegistrarEntrada : ICasoUsoRegistrarEntrada
 
         _context.EntradasInventario.Add(new EntradaInventario
         {
-            UsuarioId = request.UsuarioId,
+            BodegaId = request.BodegaId,
             ProductoId = request.ProductoId,
             Cantidad = request.Cantidad,
             Fecha = DateTime.UtcNow,

@@ -4,8 +4,8 @@ public class Lote
 {
     public int Id { get; set; }
 
-    public int UsuarioId { get; set; }
-    public Usuario Usuario { get; set; } = null!;
+    public int? BodegaId { get; set; }
+    public Bodega? Bodega { get; set; }
 
     public EstadoLote Estado { get; set; }
     public DateTime FechaCreacion { get; set; }
