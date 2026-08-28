@@ -28,15 +28,37 @@ mercancías con impuesto al consumo (licores, cigarrillos, cervezas).
 
 ## ⚖️ Motor de reglas
 
-Dado el origen, el destino y si la mercancía ya fue declarada, el motor
-determina cuál de los tres tipos de tornaguía aplica:
+Solo existen 3 tipos legales de tornaguía (Decreto 1625/2016, art. 2.2.1.3.3).
+El motor los determina a partir de 3 variables booleanas: si el traslado es
+para exportación, si origen y destino están en el mismo departamento, y si el
+producto ya fue declarado (causó el impuesto):
 
-- 🏠 **Movilización** — traslado dentro del mismo departamento.
-- 🔁 **Reenvío** — la mercancía ya cuenta con tornaguía y se reenvía a otro destino.
-- 🛣️ **Tránsito** — traslado que solo atraviesa un departamento sin destino en él.
+- 📦 **Movilización** — traslado interdepartamental de un producto que
+  **aún no** ha causado el impuesto al consumo en el origen.
+- 🔁 **Reenvío** — traslado interdepartamental de un producto que **ya fue
+  declarado/causado** en el departamento de origen.
+- 🛣️ **Tránsito** — traslado dentro de la misma entidad territorial (aunque la
+  ruta física cruce otro departamento de paso), o con destino a exportación /
+  otro país.
 
 El árbol de decisión vive completo en `Domain`, sin dependencias externas
-(`IMotorReglas`). Diagrama: [`docs/diagramas/arbol-decision-motor-reglas.svg`](docs/diagramas/arbol-decision-motor-reglas.svg).
+(`IMotorReglas`). Detalle normativo: [`docs/negocio/tornaguias-analisis-normativo.md`](docs/negocio/tornaguias-analisis-normativo.md).
+Diagrama: [`docs/diagramas/arbol-decision-motor-reglas.svg`](docs/diagramas/arbol-decision-motor-reglas.svg).
+
+## 🧭 Funcionamiento
+
+Flujo típico de una solicitud de envío, de principio a fin:
+
+1. 🔐 **Inicio de sesión** — el usuario se autentica (JWT).
+2. 🏭 **Selecciona la bodega de origen** — con su inventario de lotes y productos disponibles.
+3. 🔎 **Busca destino y producto** — municipio/país de destino y producto a movilizar.
+4. ✅ **Indica el estado de declaración** — si el producto ya causó el impuesto al consumo.
+5. 🗺️ **El backend calcula la ruta** — vía Mapbox/PostGIS, determinando si origen y destino
+   comparten departamento y qué departamentos intermedios atraviesa.
+6. ⚖️ **El motor de reglas resuelve el tipo de tornaguía** — Movilización, Reenvío o
+   Tránsito, con la explicación del porqué (`ExplicacionTipoTornaguia`).
+7. 📄 **Se genera y guarda el PDF de la tornaguía** — con el detalle de la solicitud y el
+   resultado, consultable después desde el historial.
 
 ## 🧱 Arquitectura
 
