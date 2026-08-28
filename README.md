@@ -4,7 +4,6 @@ Asistente que determina el tipo de tornaguía (certificado tributario de
 transporte en Colombia) según origen, destino y estado de declaración de
 mercancías con impuesto al consumo (licores, cigarrillos, cervezas).
 
-> 🎓 Proyecto académico de desarrollador único, en desarrollo activo.
 
 <p>
   <img alt=".NET 10" src="https://img.shields.io/badge/.NET-10-512BD4?style=for-the-badge&logo=dotnet&logoColor=white">
