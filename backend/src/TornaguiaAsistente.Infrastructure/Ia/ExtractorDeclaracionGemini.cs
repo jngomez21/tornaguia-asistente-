@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using TornaguiaAsistente.Application.Ia;
@@ -11,15 +13,34 @@ public class ExtractorDeclaracionGemini : IExtractorDeclaracion
 {
     private const string Modelo = "gemini-3.6-flash";
 
-    private const string Prompt =
-        "Estas leyendo una declaracion departamental de impuesto al consumo (Colombia), " +
-        "en PDF o foto de celular. Extrae UNICAMENTE estos campos, ignorando cualquier otro " +
-        "texto del documento (membretes, texto legal, sellos, etc.): numero de declaracion o " +
-        "folio, nombre del departamento donde se declaro, periodo declarado, nombre del " +
-        "remitente/declarante, numero de identificacion (NIT) del remitente, y la lista de " +
-        "productos declarados con su cantidad y, si aparece, la capacidad o presentacion en " +
-        "mililitros de cada uno. Si un campo no aparece en el documento, dejalo vacio. No " +
-        "inventes datos que no esten en el documento.";
+    private const string Prompt = """
+        Estas leyendo una declaracion departamental de impuesto al consumo (Colombia), en PDF
+        o foto de celular. Ignora membretes, texto legal y sellos. Extrae estos campos:
+
+        - numeroDeclaracion: numero de declaracion o folio.
+        - departamento: nombre del departamento donde se declaro.
+        - periodo: periodo declarado.
+        - remitenteNombre: nombre del remitente/declarante.
+        - remitenteIdentificacion: NIT del remitente.
+        - productos: lista de productos declarados. Para cada uno:
+          - nombre: nombre del producto.
+          - cantidad: cantidad declarada.
+          - capacidadMl: la presentacion del producto en mililitros. Puede aparecer en una
+            columna separada, como parte del texto del nombre del producto, o con otras
+            palabras (contenido, volumen, c.c., presentacion). Si esta en litros, conviertela
+            a mililitros. Para cigarrillos u otros productos que se declaran por unidades o
+            cajetillas y no tienen volumen en mililitros, OMITE este campo (no escribas 0).
+            Escribe SOLO el numero, sin la unidad: si el documento dice "250 ml" o "250cc",
+            escribe 250 (no "250 ml" ni "250cc").
+
+        Ejemplos:
+        - "Ron Medellin 750ml x 120 unidades" -> nombre="Ron Medellin", cantidad=120, capacidadMl=750.
+        - "Cigarrillos Marlboro x 40 cajetillas" -> nombre="Cigarrillos Marlboro", cantidad=40, sin capacidadMl.
+
+        Si un campo no aparece en el documento o no puedes determinarlo con certeza, dejalo
+        vacio (o, en el caso de capacidadMl, omitelo). No inventes datos que no esten en el
+        documento.
+        """;
 
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
@@ -111,7 +132,7 @@ public class ExtractorDeclaracionGemini : IExtractorDeclaracion
         _ => "No se pudo leer el documento automáticamente. Puedes completar los datos manualmente.",
     };
 
-    private static DeclaracionDetectada InterpretarRespuesta(string json)
+    private DeclaracionDetectada InterpretarRespuesta(string json)
     {
         using var documento = JsonDocument.Parse(json);
         var texto = documento.RootElement
@@ -127,6 +148,8 @@ public class ExtractorDeclaracionGemini : IExtractorDeclaracion
                 "No se pudo interpretar el documento. Intenta con otra copia o completa los datos manualmente.");
         }
 
+        _logger.LogInformation("Gemini extrajo (JSON crudo): {Texto}", texto);
+
         using var extraido = JsonDocument.Parse(texto);
         var raiz = extraido.RootElement;
 
@@ -135,9 +158,7 @@ public class ExtractorDeclaracionGemini : IExtractorDeclaracion
                 .Select(p => new ProductoDetectado(
                     NombreDetectado: p.GetProperty("nombre").GetString() ?? string.Empty,
                     Cantidad: p.GetProperty("cantidad").GetDecimal(),
-                    Capacidad: p.TryGetProperty("capacidadMl", out var cap) && cap.ValueKind == JsonValueKind.Number
-                        ? cap.GetDecimal()
-                        : null))
+                    Capacidad: LeerCapacidadOpcional(p)))
                 .Where(p => p.NombreDetectado.Length > 0)
                 .ToList()
             : new List<ProductoDetectado>();
@@ -160,6 +181,29 @@ public class ExtractorDeclaracionGemini : IExtractorDeclaracion
         return string.IsNullOrWhiteSpace(texto) ? null : texto;
     }
 
+    private static decimal? LeerCapacidadOpcional(JsonElement producto)
+    {
+        if (!producto.TryGetProperty("capacidadMl", out var cap))
+            return null;
+
+        // Caso normal: Gemini respeta el esquema y devuelve un numero puro.
+        if (cap.ValueKind == JsonValueKind.Number)
+            return cap.GetDecimal() is > 0 and var valor ? valor : null;
+
+        // Respaldo: si el modelo devuelve el valor como texto (p. ej. "250 ml"),
+        // se extrae la parte numerica en vez de descartar el dato completo.
+        if (cap.ValueKind == JsonValueKind.String)
+        {
+            var coincidencia = Regex.Match(cap.GetString() ?? string.Empty, @"[\d.,]+");
+            if (coincidencia.Success &&
+                decimal.TryParse(coincidencia.Value.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out var extraido) &&
+                extraido > 0)
+                return extraido;
+        }
+
+        return null;
+    }
+
     private static readonly object EsquemaRespuesta = new
     {
         type = "OBJECT",
@@ -180,7 +224,7 @@ public class ExtractorDeclaracionGemini : IExtractorDeclaracion
                     {
                         nombre = new { type = "STRING" },
                         cantidad = new { type = "NUMBER" },
-                        capacidadMl = new { type = "NUMBER" },
+                        capacidadMl = new { type = "NUMBER", nullable = true },
                     },
                     required = new[] { "nombre", "cantidad" },
                 },

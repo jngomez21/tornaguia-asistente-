@@ -54,7 +54,10 @@ export function LotesPage() {
   }
 
   async function descargarDeclaracionPrueba() {
-    const { bytes, numeroDeclaracion } = await construirDeclaracionPruebaPdf()
+    const bodegaActiva = bodegasQuery.data?.find((b) => b.id === bodegaActivaId)
+    if (!bodegaActiva) return
+
+    const { bytes, numeroDeclaracion } = await construirDeclaracionPruebaPdf(bodegaActiva.departamentoNombre)
     descargarPdf(bytes, `${numeroDeclaracion}.pdf`)
   }
 

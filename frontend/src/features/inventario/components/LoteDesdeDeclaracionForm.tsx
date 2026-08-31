@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -19,6 +19,97 @@ interface LoteDesdeDeclaracionFormProps {
   bodegaId: number
   onGuardado: (lote: Lote) => void
   onCancelar: () => void
+}
+
+const MENSAJES_LECTURA = ['Leyendo el documento...', 'Detectando productos...', 'Verificando datos...']
+
+function useMensajeLecturaRotativo(activo: boolean, intervaloMs = 1800): string {
+  const [indice, setIndice] = useState(0)
+
+  useEffect(() => {
+    if (!activo) {
+      setIndice(0)
+      return
+    }
+    const id = setInterval(() => setIndice((i) => (i + 1) % MENSAJES_LECTURA.length), intervaloMs)
+    return () => clearInterval(id)
+  }, [activo, intervaloMs])
+
+  return MENSAJES_LECTURA[indice]
+}
+
+function CampoSkeleton({
+  anchoEtiqueta = 'w-20',
+  anchoValor = 'w-full',
+}: {
+  anchoEtiqueta?: string
+  anchoValor?: string
+}) {
+  return (
+    <div>
+      <div className={`h-3 ${anchoEtiqueta} rounded mb-1 animate-shimmer`} />
+      <div className={`h-9 ${anchoValor} rounded-lg animate-shimmer`} />
+    </div>
+  )
+}
+
+function DeclaracionSkeleton() {
+  return (
+    <div className="mt-4">
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <CampoSkeleton anchoEtiqueta="w-36" anchoValor="w-2/3" />
+        <CampoSkeleton anchoEtiqueta="w-24" anchoValor="w-full" />
+      </div>
+
+      <div className="mb-3">
+        <CampoSkeleton anchoEtiqueta="w-14" anchoValor="w-1/3 sm:w-1/4" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <CampoSkeleton anchoEtiqueta="w-20" anchoValor="w-full" />
+        <CampoSkeleton anchoEtiqueta="w-40" anchoValor="w-2/3" />
+      </div>
+
+      <div className="h-3 w-32 rounded mb-2 animate-shimmer" />
+      <div className="border border-gray-100 rounded-lg p-3">
+        <div className="grid grid-cols-3 gap-2">
+          <CampoSkeleton anchoEtiqueta="w-16" anchoValor="w-5/6" />
+          <CampoSkeleton anchoEtiqueta="w-20" anchoValor="w-1/2" />
+          <CampoSkeleton anchoEtiqueta="w-16" anchoValor="w-1/2" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const LADO_MAXIMO_IMAGEN_PX = 1800
+
+async function comprimirImagenSiAplica(archivo: File): Promise<{ buffer: ArrayBuffer; contentType: string }> {
+  if (!archivo.type.startsWith('image/')) {
+    return { buffer: await archivo.arrayBuffer(), contentType: archivo.type }
+  }
+
+  try {
+    const bitmap = await createImageBitmap(archivo)
+    const escala = Math.min(1, LADO_MAXIMO_IMAGEN_PX / Math.max(bitmap.width, bitmap.height))
+    const ancho = Math.round(bitmap.width * escala)
+    const alto = Math.round(bitmap.height * escala)
+
+    const canvas = document.createElement('canvas')
+    canvas.width = ancho
+    canvas.height = alto
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Canvas no disponible.')
+    ctx.drawImage(bitmap, 0, 0, ancho, alto)
+
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85))
+    if (!blob) throw new Error('No se pudo comprimir la imagen.')
+
+    return { buffer: await blob.arrayBuffer(), contentType: 'image/jpeg' }
+  } catch {
+    // Si la compresion falla (formato no soportado, etc.), se envia el archivo original.
+    return { buffer: await archivo.arrayBuffer(), contentType: archivo.type }
+  }
 }
 
 export function LoteDesdeDeclaracionForm({ bodegaId, onGuardado, onCancelar }: LoteDesdeDeclaracionFormProps) {
@@ -48,16 +139,18 @@ export function LoteDesdeDeclaracionForm({ bodegaId, onGuardado, onCancelar }: L
     onSuccess: (propuesta) => reset(propuestaAValoresFormulario(propuesta)),
   })
 
+  const mensajeLectura = useMensajeLecturaRotativo(proponerMutation.isPending)
+
   const crearMutation = useMutation({
     mutationFn: crearLoteDesdeDeclaracion,
     onSuccess: onGuardado,
   })
 
   async function onArchivoSeleccionado(archivo: File) {
-    const buffer = await archivo.arrayBuffer()
+    const { buffer, contentType } = await comprimirImagenSiAplica(archivo)
     const bytes = bytesABase64(new Uint8Array(buffer))
-    setDocumento({ bytes, nombreArchivo: archivo.name, contentType: archivo.type })
-    proponerMutation.mutate({ documentoBytes: bytes, documentoContentType: archivo.type })
+    setDocumento({ bytes, nombreArchivo: archivo.name, contentType })
+    proponerMutation.mutate({ documentoBytes: bytes, documentoContentType: contentType })
   }
 
   function onConfirmar(values: DeclaracionFormValues) {
@@ -99,7 +192,16 @@ export function LoteDesdeDeclaracionForm({ bodegaId, onGuardado, onCancelar }: L
       )}
 
       {proponerMutation.isPending && (
-        <p className="text-sm text-gray-400 text-center mt-4">Leyendo el documento...</p>
+        <div>
+          <p className="text-sm text-gray-400 text-center mt-4">{mensajeLectura}</p>
+          <div className="relative overflow-hidden rounded-lg">
+            <DeclaracionSkeleton />
+            <div
+              className="absolute inset-x-0 h-12 animate-scan-line pointer-events-none"
+              style={{ background: 'linear-gradient(180deg, transparent, rgba(30,136,199,0.22), transparent)' }}
+            />
+          </div>
+        </div>
       )}
 
       {mensajeError && (
@@ -199,7 +301,7 @@ export function LoteDesdeDeclaracionForm({ bodegaId, onGuardado, onCancelar }: L
                     )}
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Capacidad (ml)</label>
+                    <label className="block text-xs text-gray-500 mb-1">Presentación</label>
                     <input
                       type="number"
                       step="any"

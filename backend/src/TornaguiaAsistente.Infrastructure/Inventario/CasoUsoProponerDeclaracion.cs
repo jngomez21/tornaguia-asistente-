@@ -42,7 +42,9 @@ public class CasoUsoProponerDeclaracion : ICasoUsoProponerDeclaracion
             productos.Add(new ProductoPropuesto(
                 NombreDetectado: productoDetectado.NombreDetectado,
                 ProductoIdCoincidente: coincidencia?.Id,
-                CapacidadCoincidente: coincidencia?.Capacidad,
+                // Un producto del catalogo con Capacidad <= 0 es un dato faltante, no un
+                // valor real: no debe pisar lo que la IA haya detectado en el documento.
+                CapacidadCoincidente: coincidencia is { Capacidad: > 0 } ? coincidencia.Capacidad : null,
                 Cantidad: productoDetectado.Cantidad,
                 CapacidadDetectada: productoDetectado.Capacidad));
         }
