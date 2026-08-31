@@ -10,6 +10,9 @@ public class Lote
     public EstadoLote Estado { get; set; }
     public DateTime FechaCreacion { get; set; }
 
+    public int? DeclaracionDepartamentalId { get; set; }
+    public DeclaracionDepartamental? DeclaracionDepartamental { get; set; }
+
     public ICollection<LoteProducto> LoteProductos { get; set; } = new List<LoteProducto>();
     public Solicitud? Solicitud { get; set; }
 }

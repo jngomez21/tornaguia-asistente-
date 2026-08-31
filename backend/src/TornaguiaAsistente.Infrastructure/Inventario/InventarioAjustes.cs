@@ -93,6 +93,23 @@ internal static class InventarioAjustes
         }
     }
 
+    public static Lote CrearLoteReservado(
+        TornaguiaDbContext context, int bodegaId, IReadOnlyDictionary<int, decimal> cantidades)
+    {
+        var lote = new Lote
+        {
+            BodegaId = bodegaId,
+            Estado = EstadoLote.Reservado,
+            FechaCreacion = DateTime.UtcNow,
+        };
+
+        foreach (var (productoId, cantidad) in cantidades)
+            lote.LoteProductos.Add(new LoteProducto { ProductoId = productoId, Cantidad = cantidad });
+
+        context.Lotes.Add(lote);
+        return lote;
+    }
+
     public static void AsegurarPropietario(int propietarioReal, int usuarioId, string entidad)
     {
         if (propietarioReal != usuarioId)
@@ -135,13 +152,20 @@ internal static class InventarioAjustes
         FechaCreacion: lote.FechaCreacion,
         Productos: lote.LoteProductos
             .Select(lp => new LoteProductoResponse(lp.ProductoId, lp.Producto.Nombre, lp.Cantidad))
-            .ToList()
+            .ToList(),
+        Declaracion: lote.DeclaracionDepartamental is null
+            ? null
+            : new DeclaracionResumen(
+                lote.DeclaracionDepartamental.NumeroDeclaracion,
+                lote.DeclaracionDepartamental.RemitenteNombre,
+                lote.DeclaracionDepartamental.RemitenteIdentificacion)
     );
 
     public static async Task<LoteResponse> ObtenerRespuestaAsync(TornaguiaDbContext context, int loteId)
     {
         var lote = await context.Lotes
             .Include(l => l.LoteProductos).ThenInclude(lp => lp.Producto)
+            .Include(l => l.DeclaracionDepartamental)
             .FirstAsync(l => l.Id == loteId);
 
         return AResponse(lote);

@@ -304,6 +304,7 @@ export function HistorialPage() {
       {solicitudARetomar && (
         <ModalDetalleTornaguia
           titulo={solicitudARetomar.etiqueta}
+          tipoTornaguia={solicitudARetomar.resultado.tipoTornaguia}
           textoBotonPrincipal="Generar tornaguía"
           enviando={retomarMutation.isPending}
           onCerrar={() => setSolicitudARetomar(null)}

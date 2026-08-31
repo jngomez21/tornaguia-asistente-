@@ -10,6 +10,12 @@ export interface Pais {
   codigoISO: string
 }
 
+export interface Departamento {
+  id: number
+  nombre: string
+  codigoDane: string
+}
+
 export interface CrearSolicitudRequest {
   municipioOrigenId?: number
   municipioDestinoId?: number

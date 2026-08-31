@@ -1,13 +1,16 @@
 import { useEffect } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useQuery } from '@tanstack/react-query'
 import { detalleTornaguiaSchema, detalleTornaguiaPorDefecto } from '../schemas'
 import type { DetalleTornaguiaFormValues } from '../schemas'
 import { SelectorLote } from '../../inventario/components/SelectorLote'
+import { getLotesDisponibles } from '../../inventario/api/inventarioApi'
 
 interface ModalDetalleTornaguiaProps {
   titulo: string
   bodegaOrigenId?: number
+  tipoTornaguia?: string
   valoresIniciales?: DetalleTornaguiaFormValues
   textoBotonPrincipal: string
   enviando?: boolean
@@ -18,6 +21,7 @@ interface ModalDetalleTornaguiaProps {
 export function ModalDetalleTornaguia({
   titulo,
   bodegaOrigenId,
+  tipoTornaguia,
   valoresIniciales,
   textoBotonPrincipal,
   enviando,
@@ -36,6 +40,21 @@ export function ModalDetalleTornaguia({
   })
 
   const loteId = useWatch({ control, name: 'loteId' })
+
+  const lotesQuery = useQuery({
+    queryKey: ['lotes-disponibles', bodegaOrigenId],
+    queryFn: () => getLotesDisponibles(bodegaOrigenId),
+  })
+
+  useEffect(() => {
+    if (tipoTornaguia !== 'Reenvío') return
+
+    const lote = lotesQuery.data?.find((l) => l.loteId === loteId)
+    if (!lote?.declaracion) return
+
+    setValue('remitenteNombre', lote.declaracion.remitenteNombre)
+    setValue('remitenteIdentificacion', lote.declaracion.remitenteIdentificacion)
+  }, [loteId, tipoTornaguia, lotesQuery.data, setValue])
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -155,6 +174,7 @@ export function ModalDetalleTornaguia({
             <SelectorLote
               bodegaId={bodegaOrigenId}
               loteId={loteId}
+              tipoTornaguia={tipoTornaguia}
               onCambiar={(nuevoLoteId) => setValue('loteId', nuevoLoteId)}
               errorLoteId={errors.loteId?.message}
             />

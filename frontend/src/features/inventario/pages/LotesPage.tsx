@@ -8,9 +8,12 @@ import { extraerMensajeAxios } from '../../../shared/lib/errores'
 import { getBodegas } from '../../bodegas/api/bodegasApi'
 import { getLotesDisponibles, crearLote, editarLote, cancelarLote } from '../api/inventarioApi'
 import { LoteForm } from '../components/LoteForm'
+import { LoteDesdeDeclaracionForm } from '../components/LoteDesdeDeclaracionForm'
 import { EntradaForm } from '../components/EntradaForm'
 import { DisponibleTabla } from '../components/DisponibleTabla'
 import { productosParaRequest } from '../schemas'
+import { construirDeclaracionPruebaPdf } from '../lib/generarDeclaracionPrueba'
+import { descargarPdf } from '../../solicitudes/lib/generarPdfTornaguia'
 import type { LoteFormValues } from '../schemas'
 import type { Lote } from '../types'
 
@@ -41,12 +44,18 @@ export function LotesPage() {
   })
 
   const [creando, setCreando] = useState(false)
+  const [creandoDesdeDeclaracion, setCreandoDesdeDeclaracion] = useState(false)
   const [editandoId, setEditandoId] = useState<number | null>(null)
   const [cancelandoId, setCancelandoId] = useState<number | null>(null)
 
   function invalidarListados() {
     queryClient.invalidateQueries({ queryKey: ['lotes-disponibles', bodegaActivaId] })
     queryClient.invalidateQueries({ queryKey: ['inventario', bodegaActivaId] })
+  }
+
+  async function descargarDeclaracionPrueba() {
+    const { bytes, numeroDeclaracion } = await construirDeclaracionPruebaPdf()
+    descargarPdf(bytes, `${numeroDeclaracion}.pdf`)
   }
 
   const crearMutation = useMutation({
@@ -81,7 +90,21 @@ export function LotesPage() {
 
   return (
     <div className="min-h-dvh flex bg-gray-50">
-      <Sidebar items={appSidebarItems} />
+      <Sidebar
+        items={appSidebarItems}
+        extra={
+          <button
+            type="button"
+            onClick={() => void descargarDeclaracionPrueba()}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white transition"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+              <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Declaración de prueba
+          </button>
+        }
+      />
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-6xl mx-auto p-6 sm:p-10">
@@ -142,15 +165,24 @@ export function LotesPage() {
                     </p>
                   )}
 
-                  <div className="flex justify-end mb-4">
-                    {!creando && (
-                      <button
-                        type="button"
-                        onClick={() => setCreando(true)}
-                        className="bg-marca-oscuro text-white text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition"
-                      >
-                        + Crear lote
-                      </button>
+                  <div className="flex flex-wrap justify-end gap-2 mb-4">
+                    {!creando && !creandoDesdeDeclaracion && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setCreandoDesdeDeclaracion(true)}
+                          className="border border-marca-medio text-marca-medio text-sm font-semibold px-4 py-2 rounded-lg hover:bg-marca-medio/5 transition"
+                        >
+                          Crear lote desde declaración
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCreando(true)}
+                          className="bg-marca-oscuro text-white text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition"
+                        >
+                          + Crear lote
+                        </button>
+                      </>
                     )}
                   </div>
 
@@ -165,6 +197,20 @@ export function LotesPage() {
                           crearMutation.mutate({ bodegaId: bodegaActivaId, productos: productosParaRequest(values) })
                         }
                         onCancelar={() => setCreando(false)}
+                      />
+                    </div>
+                  )}
+
+                  {creandoDesdeDeclaracion && (
+                    <div className="max-w-2xl mx-auto bg-white border border-gray-200 rounded-xl p-4 mb-6">
+                      <p className="text-sm font-bold text-marca-oscuro mb-3">Nuevo lote desde declaración</p>
+                      <LoteDesdeDeclaracionForm
+                        bodegaId={bodegaActivaId}
+                        onGuardado={() => {
+                          invalidarListados()
+                          setCreandoDesdeDeclaracion(false)
+                        }}
+                        onCancelar={() => setCreandoDesdeDeclaracion(false)}
                       />
                     </div>
                   )}

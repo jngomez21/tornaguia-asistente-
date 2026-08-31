@@ -19,6 +19,7 @@ public class CasoUsoGuardarDetalleTornaguia : ICasoUsoGuardarDetalleTornaguia
     {
         var solicitud = await _context.Solicitudes
             .Include(s => s.DetalleTornaguia)
+            .Include(s => s.TipoTornaguia)
             .FirstOrDefaultAsync(s => s.Id == request.SolicitudId)
             ?? throw new SolicitudInvalidaException($"Solicitud {request.SolicitudId} no encontrada.");
 
@@ -30,6 +31,7 @@ public class CasoUsoGuardarDetalleTornaguia : ICasoUsoGuardarDetalleTornaguia
         var lote = await _context.Lotes
             .Include(l => l.LoteProductos).ThenInclude(lp => lp.Producto)
             .Include(l => l.Bodega)
+            .Include(l => l.DeclaracionDepartamental)
             .FirstOrDefaultAsync(l => l.Id == request.LoteId)
             ?? throw new SolicitudInvalidaException($"Lote {request.LoteId} no encontrado.");
 
@@ -40,6 +42,17 @@ public class CasoUsoGuardarDetalleTornaguia : ICasoUsoGuardarDetalleTornaguia
                 lote.Estado == EstadoLote.Vinculado
                     ? "Este lote ya fue vinculado a otra solicitud."
                     : "Este lote fue cancelado.");
+
+        var esReenvio = solicitud.TipoTornaguia.Nombre == "Reenvío";
+        var tieneDeclaracion = lote.DeclaracionDepartamentalId is not null;
+
+        if (esReenvio && !tieneDeclaracion)
+            throw new SolicitudInvalidaException(
+                "Esta solicitud es de Reenvío y requiere un lote con declaración departamental asociada.");
+
+        if (!esReenvio && tieneDeclaracion)
+            throw new SolicitudInvalidaException(
+                "Este lote tiene una declaración departamental asociada; solo puede usarse en una solicitud de Reenvío.");
 
         var detalle = new SolicitudDetalleTornaguia
         {
@@ -68,6 +81,9 @@ public class CasoUsoGuardarDetalleTornaguia : ICasoUsoGuardarDetalleTornaguia
 
         solicitud.LoteId = lote.Id;
         lote.Estado = EstadoLote.Vinculado;
+
+        if (esReenvio)
+            solicitud.NumeroDeclaracionOrigen = lote.DeclaracionDepartamental!.NumeroDeclaracion;
 
         if (solicitud.BodegaDestinoId is not null)
         {

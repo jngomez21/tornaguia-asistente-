@@ -885,6 +885,7 @@ export function NuevaSolicitudPage() {
         <ModalDetalleTornaguia
           titulo={resultadoOkPorId(solicitudModalAbierta)?.label ?? ''}
           bodegaOrigenId={resultadoOkPorId(solicitudModalAbierta)?.bodegaOrigenId}
+          tipoTornaguia={resultadoOkPorId(solicitudModalAbierta)?.data.tipoTornaguia}
           valoresIniciales={carrito[solicitudModalAbierta]}
           textoBotonPrincipal={esResultadoMultiple ? 'Agregar al PDF' : 'Generar tornaguía'}
           enviando={!esResultadoMultiple && guardarDetalleMutation.isPending}

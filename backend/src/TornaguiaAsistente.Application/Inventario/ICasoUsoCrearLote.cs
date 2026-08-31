@@ -14,7 +14,14 @@ public record LoteResponse(
     string NumeroSerie,
     string Estado,
     DateTime FechaCreacion,
-    IReadOnlyList<LoteProductoResponse> Productos
+    IReadOnlyList<LoteProductoResponse> Productos,
+    DeclaracionResumen? Declaracion = null
 );
 
 public record LoteProductoResponse(int ProductoId, string ProductoNombre, decimal Cantidad);
+
+public record DeclaracionResumen(
+    string NumeroDeclaracion,
+    string RemitenteNombre,
+    string RemitenteIdentificacion
+);

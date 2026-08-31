@@ -26,6 +26,7 @@ public class TornaguiaDbContext : DbContext
     public DbSet<LoteProducto> LotesProductos => Set<LoteProducto>();
     public DbSet<InventarioProducto> InventarioProductos => Set<InventarioProducto>();
     public DbSet<EntradaInventario> EntradasInventario => Set<EntradaInventario>();
+    public DbSet<DeclaracionDepartamental> DeclaracionesDepartamentales => Set<DeclaracionDepartamental>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

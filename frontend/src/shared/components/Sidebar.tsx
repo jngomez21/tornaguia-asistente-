@@ -12,9 +12,10 @@ export interface SidebarItem {
 
 interface SidebarProps {
   items: SidebarItem[]
+  extra?: ReactNode
 }
 
-export function Sidebar({ items }: SidebarProps) {
+export function Sidebar({ items, extra }: SidebarProps) {
   const navigate = useNavigate()
   const nombre = localStorage.getItem('nombre')
 
@@ -64,6 +65,7 @@ export function Sidebar({ items }: SidebarProps) {
       </nav>
 
       <div className="px-3 py-4 border-t border-white/10 space-y-1">
+        {extra}
         {nombre && <p className="px-3 pb-1 text-xs text-white/50 truncate">{nombre}</p>}
         <button
           type="button"

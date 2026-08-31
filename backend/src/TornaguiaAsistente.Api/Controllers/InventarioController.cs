@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using TornaguiaAsistente.Application.Ia;
 using TornaguiaAsistente.Application.Inventario;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
@@ -18,6 +19,8 @@ public class InventarioController : ApiControllerBase
     private readonly ICasoUsoEditarLote _casoUsoEditarLote;
     private readonly ICasoUsoCancelarLote _casoUsoCancelarLote;
     private readonly ICasoUsoEditarInventario _casoUsoEditarInventario;
+    private readonly ICasoUsoProponerDeclaracion _casoUsoProponerDeclaracion;
+    private readonly ICasoUsoCrearLoteDesdeDeclaracion _casoUsoCrearLoteDesdeDeclaracion;
 
     public InventarioController(
         ICasoUsoObtenerInventario casoUsoObtenerInventario,
@@ -26,7 +29,9 @@ public class InventarioController : ApiControllerBase
         ICasoUsoCrearLote casoUsoCrearLote,
         ICasoUsoEditarLote casoUsoEditarLote,
         ICasoUsoCancelarLote casoUsoCancelarLote,
-        ICasoUsoEditarInventario casoUsoEditarInventario)
+        ICasoUsoEditarInventario casoUsoEditarInventario,
+        ICasoUsoProponerDeclaracion casoUsoProponerDeclaracion,
+        ICasoUsoCrearLoteDesdeDeclaracion casoUsoCrearLoteDesdeDeclaracion)
     {
         _casoUsoObtenerInventario = casoUsoObtenerInventario;
         _casoUsoRegistrarEntrada = casoUsoRegistrarEntrada;
@@ -35,6 +40,8 @@ public class InventarioController : ApiControllerBase
         _casoUsoEditarLote = casoUsoEditarLote;
         _casoUsoCancelarLote = casoUsoCancelarLote;
         _casoUsoEditarInventario = casoUsoEditarInventario;
+        _casoUsoProponerDeclaracion = casoUsoProponerDeclaracion;
+        _casoUsoCrearLoteDesdeDeclaracion = casoUsoCrearLoteDesdeDeclaracion;
     }
 
     [HttpGet]
@@ -129,6 +136,36 @@ public class InventarioController : ApiControllerBase
         {
             await _casoUsoCancelarLote.EjecutarAsync(new CancelarLoteRequest(id, UsuarioId));
             return NoContent();
+        }
+        catch (InventarioInvalidoException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+    }
+
+    [HttpPost("lotes/declaraciones/proponer")]
+    public async Task<ActionResult<PropuestaDeclaracionResponse>> ProponerDeclaracion(ProponerDeclaracionRequest request)
+    {
+        try
+        {
+            var resultado = await _casoUsoProponerDeclaracion.EjecutarAsync(request);
+            return Ok(resultado);
+        }
+        catch (ExtraccionDeclaracionException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+    }
+
+    [HttpPost("lotes/desde-declaracion")]
+    public async Task<ActionResult<LoteResponse>> CrearLoteDesdeDeclaracion(CrearLoteDesdeDeclaracionRequest request)
+    {
+        var requestConUsuarioReal = request with { UsuarioId = UsuarioId };
+
+        try
+        {
+            var resultado = await _casoUsoCrearLoteDesdeDeclaracion.EjecutarAsync(requestConUsuarioReal);
+            return Ok(resultado);
         }
         catch (InventarioInvalidoException ex)
         {

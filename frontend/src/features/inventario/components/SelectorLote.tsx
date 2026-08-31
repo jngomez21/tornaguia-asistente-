@@ -9,17 +9,23 @@ import { extraerMensajeAxios } from '../../../shared/lib/errores'
 interface SelectorLoteProps {
   bodegaId: number | undefined
   loteId: number | undefined
+  tipoTornaguia?: string
   onCambiar: (loteId: number | undefined) => void
   errorLoteId?: string
 }
 
-export function SelectorLote({ bodegaId, loteId, onCambiar, errorLoteId }: SelectorLoteProps) {
+export function SelectorLote({ bodegaId, loteId, tipoTornaguia, onCambiar, errorLoteId }: SelectorLoteProps) {
   const queryClient = useQueryClient()
   const lotesQuery = useQuery({
     queryKey: ['lotes-disponibles', bodegaId],
     queryFn: () => getLotesDisponibles(bodegaId),
   })
   const [creando, setCreando] = useState(false)
+
+  const esReenvio = tipoTornaguia === 'Reenvío'
+  const lotesFiltrados = lotesQuery.data?.filter((lote) =>
+    esReenvio ? lote.declaracion != null : lote.declaracion == null,
+  )
 
   const crearLoteMutation = useMutation({
     mutationFn: crearLote,
@@ -47,12 +53,16 @@ export function SelectorLote({ bodegaId, loteId, onCambiar, errorLoteId }: Selec
         <>
           {lotesQuery.isLoading && <p className="text-sm text-gray-400">Cargando lotes...</p>}
 
-          {lotesQuery.data?.length === 0 && (
-            <p className="text-sm text-gray-400 mb-2">No tienes lotes disponibles todavía.</p>
+          {lotesQuery.data && lotesFiltrados?.length === 0 && (
+            <p className="text-sm text-gray-400 mb-2">
+              {esReenvio
+                ? 'No tienes lotes con declaración departamental disponibles. Crea uno desde "Crear lote desde declaración" en Lotes.'
+                : 'No tienes lotes disponibles (sin declaración) para este tipo de tornaguía.'}
+            </p>
           )}
 
           <div className="space-y-2 mb-2">
-            {lotesQuery.data?.map((lote) => (
+            {lotesFiltrados?.map((lote) => (
               <label
                 key={lote.loteId}
                 className={`flex items-center justify-between gap-3 border rounded-lg px-3 py-2.5 cursor-pointer text-sm transition ${
@@ -75,7 +85,12 @@ export function SelectorLote({ bodegaId, loteId, onCambiar, errorLoteId }: Selec
             ))}
           </div>
 
-          {bodegaId != null ? (
+          {esReenvio ? (
+            <p className="text-xs text-gray-400">
+              Un Reenvío requiere un lote con declaración departamental — créalo desde "Crear lote desde
+              declaración" en Lotes.
+            </p>
+          ) : bodegaId != null ? (
             <button
               type="button"
               onClick={() => setCreando(true)}

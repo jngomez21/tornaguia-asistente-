@@ -19,6 +19,7 @@ public class CasoUsoListarLotesDisponibles : ICasoUsoListarLotesDisponibles
         var lotes = await _context.Lotes
             .Include(l => l.LoteProductos).ThenInclude(lp => lp.Producto)
             .Include(l => l.Bodega)
+            .Include(l => l.DeclaracionDepartamental)
             .Where(l => l.Bodega != null && l.Bodega.UsuarioId == usuarioId && l.Estado == EstadoLote.Reservado)
             .Where(l => bodegaId == null || l.BodegaId == bodegaId)
             .OrderByDescending(l => l.FechaCreacion)

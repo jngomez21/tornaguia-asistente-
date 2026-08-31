@@ -2,6 +2,7 @@ import { api } from '../../../shared/lib/axios'
 import type {
   Municipio,
   Pais,
+  Departamento,
   Producto,
   CrearProductoRequest,
   CrearSolicitudRequest,
@@ -19,6 +20,11 @@ export async function getMunicipios(): Promise<Municipio[]> {
 
 export async function getPaises(): Promise<Pais[]> {
   const response = await api.get<Pais[]>('/paises')
+  return response.data
+}
+
+export async function getDepartamentos(): Promise<Departamento[]> {
+  const response = await api.get<Departamento[]>('/departamentos')
   return response.data
 }
 

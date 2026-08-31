@@ -6,6 +6,9 @@ import type {
   Lote,
   CrearLoteRequest,
   EditarLoteRequest,
+  PropuestaDeclaracion,
+  ProponerDeclaracionRequest,
+  CrearLoteDesdeDeclaracionRequest,
 } from '../types'
 
 export async function getInventario(bodegaId: number): Promise<InventarioItem[]> {
@@ -40,4 +43,14 @@ export async function editarLote(loteId: number, data: EditarLoteRequest): Promi
 
 export async function cancelarLote(loteId: number): Promise<void> {
   await api.post(`/inventario/lotes/${loteId}/cancelar`)
+}
+
+export async function proponerDeclaracion(data: ProponerDeclaracionRequest): Promise<PropuestaDeclaracion> {
+  const response = await api.post<PropuestaDeclaracion>('/inventario/lotes/declaraciones/proponer', data)
+  return response.data
+}
+
+export async function crearLoteDesdeDeclaracion(data: CrearLoteDesdeDeclaracionRequest): Promise<Lote> {
+  const response = await api.post<Lote>('/inventario/lotes/desde-declaracion', data)
+  return response.data
 }
