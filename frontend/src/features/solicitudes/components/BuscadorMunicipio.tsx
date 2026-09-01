@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Municipio } from '../types'
 
 const RANGO_MARCAS_DIACRITICAS = String.fromCharCode(0x0300) + '-' + String.fromCharCode(0x036f)
@@ -30,14 +30,28 @@ export function BuscadorMunicipio({
 }: BuscadorMunicipioProps) {
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
+  const [departamento, setDepartamento] = useState('')
 
   const seleccionado = municipios.find((m) => m.id === value)
 
+  const departamentos = useMemo(() => {
+    const nombres = new Set(municipios.map((m) => m.departamentoNombre))
+    return Array.from(nombres).sort((a, b) => a.localeCompare(b, 'es'))
+  }, [municipios])
+
+  // Mantiene el filtro de departamento sincronizado cuando el municipio se elige
+  // desde afuera del buscador (bodega, "generar nuevo envío", etc.).
+  useEffect(() => {
+    if (seleccionado) setDepartamento(seleccionado.departamentoNombre)
+  }, [seleccionado])
+
   const opciones = useMemo(() => {
     const candidatos = excludeId != null ? municipios.filter((m) => m.id !== excludeId) : municipios
+    const porDepartamento =
+      departamento === '' ? candidatos : candidatos.filter((m) => m.departamentoNombre === departamento)
     const q = normalizar(query.trim())
-    return q === '' ? candidatos : candidatos.filter((m) => normalizar(m.nombre).includes(q))
-  }, [municipios, excludeId, query])
+    return q === '' ? porDepartamento : porDepartamento.filter((m) => normalizar(m.nombre).includes(q))
+  }, [municipios, excludeId, departamento, query])
 
   function seleccionar(m: Municipio) {
     onChange(m.id)
@@ -48,6 +62,13 @@ export function BuscadorMunicipio({
   function limpiar() {
     onChange(undefined)
     setQuery('')
+  }
+
+  function elegirDepartamento(nombre: string) {
+    setDepartamento(nombre)
+    if (seleccionado && nombre !== '' && seleccionado.departamentoNombre !== nombre) {
+      onChange(undefined)
+    }
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -66,59 +87,75 @@ export function BuscadorMunicipio({
       : ''
 
   return (
-    <div className="relative">
-      <input
-        type="text"
-        value={valorMostrado}
-        onChange={(e) => {
-          setQuery(e.target.value)
-          setIsOpen(true)
-          if (value != null) onChange(undefined)
-        }}
-        onFocus={() => {
-          setQuery('')
-          setIsOpen(true)
-        }}
-        onBlur={() => setIsOpen(false)}
-        onKeyDown={onKeyDown}
-        placeholder={placeholder ?? 'Escribe para buscar...'}
+    <div>
+      <select
+        value={departamento}
+        onChange={(e) => elegirDepartamento(e.target.value)}
         disabled={disabled}
-        autoComplete="off"
-        className="w-full border border-gray-200 rounded-lg px-3 py-2.5 pr-8 focus:outline-none focus:ring-2 focus:ring-marca-medio disabled:bg-gray-50"
-      />
+        className="w-full border border-gray-200 rounded-lg px-3 py-2 mb-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-marca-medio disabled:bg-gray-50"
+      >
+        <option value="">Todos los departamentos</option>
+        {departamentos.map((d) => (
+          <option key={d} value={d}>
+            {d}
+          </option>
+        ))}
+      </select>
 
-      {seleccionado && !isOpen && (
-        <button
-          type="button"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={limpiar}
-          aria-label="Limpiar selección"
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-        >
-          ×
-        </button>
-      )}
+      <div className="relative">
+        <input
+          type="text"
+          value={valorMostrado}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setIsOpen(true)
+            if (value != null) onChange(undefined)
+          }}
+          onFocus={() => {
+            setQuery('')
+            setIsOpen(true)
+          }}
+          onBlur={() => setIsOpen(false)}
+          onKeyDown={onKeyDown}
+          placeholder={placeholder ?? 'Escribe para buscar...'}
+          disabled={disabled}
+          autoComplete="off"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2.5 pr-8 focus:outline-none focus:ring-2 focus:ring-marca-medio disabled:bg-gray-50"
+        />
 
-      {isOpen && !disabled && (
-        <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
-          {opciones.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-gray-400">Sin resultados</li>
-          ) : (
-            opciones.map((m) => (
-              <li key={m.id}>
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => seleccionar(m)}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
-                >
-                  {m.nombre} — {m.departamentoNombre}
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-      )}
+        {seleccionado && !isOpen && (
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={limpiar}
+            aria-label="Limpiar selección"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            ×
+          </button>
+        )}
+
+        {isOpen && !disabled && (
+          <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
+            {opciones.length === 0 ? (
+              <li className="px-3 py-2 text-sm text-gray-400">Sin resultados</li>
+            ) : (
+              opciones.map((m) => (
+                <li key={m.id}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => seleccionar(m)}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                  >
+                    {m.nombre} — {m.departamentoNombre}
+                  </button>
+                </li>
+              ))
+            )}
+          </ul>
+        )}
+      </div>
     </div>
   )
 }
