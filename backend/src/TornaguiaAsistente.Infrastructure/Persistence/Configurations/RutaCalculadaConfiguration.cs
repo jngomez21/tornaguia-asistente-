@@ -17,5 +17,8 @@ public class RutaCalculadaConfiguration : IEntityTypeConfiguration<RutaCalculada
             .WithMany()
             .HasForeignKey(r => r.MunicipioDestinoId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(r => new { r.MunicipioOrigenId, r.MunicipioDestinoId })
+            .IsUnique();
     }
 }

@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Map, Marker, Popup, NavigationControl, FullscreenControl, type MapRef } from 'react-map-gl/mapbox'
+import { useEffect, useMemo } from 'react'
+import { Map, Marker, Popup } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import type { Bodega } from '../types'
-
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined
+import { MAPBOX_TOKEN, useMapaBase } from '../../../shared/components/mapa/useMapaBase'
+import { MapaControles, MapaNoDisponible } from '../../../shared/components/mapa/MapaControles'
 
 interface MapaBodegasProps {
   bodegas: Bodega[]
@@ -21,8 +21,7 @@ function IconoBodega() {
 }
 
 export function MapaBodegas({ bodegas, bodegaSeleccionadaId, onSeleccionar }: MapaBodegasProps) {
-  const mapRef = useRef<MapRef>(null)
-  const [mapCargado, setMapCargado] = useState(false)
+  const { mapRef, mapCargado, onLoad, ajustarABounds } = useMapaBase()
 
   const bodegasConUbicacion = useMemo(
     () => bodegas.filter((b): b is Bodega & { latitud: number; longitud: number } => b.latitud != null && b.longitud != null),
@@ -41,12 +40,7 @@ export function MapaBodegas({ bodegas, bodegaSeleccionadaId, onSeleccionar }: Ma
 
   useEffect(() => {
     if (!mapCargado || !bounds) return
-    const [min, max] = bounds
-    if (min[0] === max[0] && min[1] === max[1]) {
-      mapRef.current?.flyTo({ center: min, zoom: 11, duration: 0 })
-      return
-    }
-    mapRef.current?.fitBounds(bounds, { padding: 56, duration: 800 })
+    ajustarABounds(bounds)
     // Solo se ajusta a los límites cuando el mapa termina de cargar, no en cada cambio de bounds
     // (evita reencuadrar todo el mapa cada vez que el usuario selecciona una bodega puntual).
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -57,7 +51,7 @@ export function MapaBodegas({ bodegas, bodegaSeleccionadaId, onSeleccionar }: Ma
     const bodega = bodegasConUbicacion.find((b) => b.id === bodegaSeleccionadaId)
     if (!bodega) return
     mapRef.current?.flyTo({ center: [bodega.longitud, bodega.latitud], zoom: 9, duration: 800 })
-  }, [mapCargado, bodegaSeleccionadaId, bodegasConUbicacion])
+  }, [mapCargado, bodegaSeleccionadaId, bodegasConUbicacion, mapRef])
 
   if (bodegasConUbicacion.length === 0) {
     return (
@@ -68,11 +62,7 @@ export function MapaBodegas({ bodegas, bodegaSeleccionadaId, onSeleccionar }: Ma
   }
 
   if (!MAPBOX_TOKEN) {
-    return (
-      <div className="w-full h-80 rounded-xl bg-gray-100 flex items-center justify-center text-xs text-gray-400 mb-6">
-        Mapa no disponible (falta configurar VITE_MAPBOX_TOKEN)
-      </div>
-    )
+    return <MapaNoDisponible />
   }
 
   const centro = bounds![0]
@@ -87,10 +77,9 @@ export function MapaBodegas({ bodegas, bodegaSeleccionadaId, onSeleccionar }: Ma
         scrollZoom={false}
         attributionControl={false}
         style={{ width: '100%', height: '100%' }}
-        onLoad={() => setMapCargado(true)}
+        onLoad={onLoad}
       >
-        <NavigationControl position="top-right" showCompass={false} />
-        <FullscreenControl position="top-right" />
+        <MapaControles />
 
         {bodegasConUbicacion.map((bodega) => {
           const seleccionada = bodega.id === bodegaSeleccionadaId

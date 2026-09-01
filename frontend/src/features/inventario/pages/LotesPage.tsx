@@ -12,7 +12,6 @@ import { LoteDesdeDeclaracionForm } from '../components/LoteDesdeDeclaracionForm
 import { EntradaForm } from '../components/EntradaForm'
 import { DisponibleTabla } from '../components/DisponibleTabla'
 import { productosParaRequest } from '../schemas'
-import { generarDeclaracionPruebaAleatoria, descargarArchivo } from '../lib/generarDeclaracionPrueba'
 import type { LoteFormValues } from '../schemas'
 import type { Lote } from '../types'
 
@@ -63,6 +62,7 @@ export function LotesPage() {
     const bodegaActiva = bodegasQuery.data?.find((b) => b.id === bodegaActivaId)
     if (!bodegaActiva) return
 
+    const { generarDeclaracionPruebaAleatoria, descargarArchivo } = await import('../lib/generarDeclaracionPrueba')
     const { bytes, nombreArchivo, contentType } = await generarDeclaracionPruebaAleatoria(bodegaActiva.departamentoNombre)
     descargarArchivo(bytes, nombreArchivo, contentType)
   }
@@ -102,16 +102,18 @@ export function LotesPage() {
       <Sidebar
         items={appSidebarItems}
         extra={
-          <button
-            type="button"
-            onClick={() => void descargarDeclaracionPrueba()}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white transition"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
-              <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Declaración de prueba
-          </button>
+          import.meta.env.DEV ? (
+            <button
+              type="button"
+              onClick={() => void descargarDeclaracionPrueba()}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white transition"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+                <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Declaración de prueba
+            </button>
+          ) : undefined
         }
       />
 

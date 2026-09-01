@@ -2,7 +2,7 @@ namespace TornaguiaAsistente.Application.Solicitudes;
 
 public interface ICasoUsoCrearSolicitud
 {
-    Task<CrearSolicitudResponse> EjecutarAsync(CrearSolicitudRequest request);
+    Task<CrearSolicitudResponse> EjecutarAsync(CrearSolicitudRequest request, CancellationToken cancellationToken = default);
 }
 
 public record CrearSolicitudRequest(

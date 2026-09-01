@@ -54,7 +54,8 @@ public class ExtractorDeclaracionGemini : IExtractorDeclaracion
         _logger = logger;
     }
 
-    public async Task<DeclaracionDetectada> ExtraerAsync(byte[] documentoBytes, string contentType)
+    public async Task<DeclaracionDetectada> ExtraerAsync(
+        byte[] documentoBytes, string contentType, CancellationToken cancellationToken = default)
     {
         var apiKey = _configuration["Gemini:ApiKey"]
             ?? throw new ExtraccionDeclaracionException(
@@ -93,8 +94,8 @@ public class ExtractorDeclaracionGemini : IExtractorDeclaracion
         try
         {
             using var contenido = new StringContent(JsonSerializer.Serialize(cuerpo), Encoding.UTF8, "application/json");
-            var respuesta = await _httpClient.PostAsync(url, contenido);
-            json = await respuesta.Content.ReadAsStringAsync();
+            var respuesta = await _httpClient.PostAsync(url, contenido, cancellationToken);
+            json = await respuesta.Content.ReadAsStringAsync(cancellationToken);
 
             if (!respuesta.IsSuccessStatusCode)
             {

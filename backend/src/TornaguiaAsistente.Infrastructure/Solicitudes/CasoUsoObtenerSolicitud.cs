@@ -17,6 +17,7 @@ public class CasoUsoObtenerSolicitud : ICasoUsoObtenerSolicitud
     {
         var solicitud = await _context.Solicitudes
             .Include(s => s.TipoTornaguia)
+            .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Id == solicitudId)
             ?? throw new SolicitudInvalidaException($"Solicitud {solicitudId} no encontrada.");
 
@@ -26,6 +27,7 @@ public class CasoUsoObtenerSolicitud : ICasoUsoObtenerSolicitud
         if (solicitud.MunicipioDestinoId is not null)
         {
             var rutaCacheada = await _context.RutasCalculadas
+                .AsNoTracking()
                 .FirstOrDefaultAsync(r =>
                     r.MunicipioOrigenId == solicitud.MunicipioOrigenId &&
                     r.MunicipioDestinoId == solicitud.MunicipioDestinoId.Value);

@@ -24,7 +24,7 @@ export function BloqueBodegasLotes({ delayMs }: BloqueBodegasLotesProps) {
       setIndice((actual) => (actual + 1) % bodegas.length)
     }, INTERVALO_MS)
     return () => clearInterval(id)
-  }, [bodegas.length, enPausa, indice])
+  }, [bodegas.length, enPausa])
 
   if (bodegasQuery.isLoading) return null
 

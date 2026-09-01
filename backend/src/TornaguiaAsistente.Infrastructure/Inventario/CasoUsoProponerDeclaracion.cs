@@ -16,9 +16,11 @@ public class CasoUsoProponerDeclaracion : ICasoUsoProponerDeclaracion
         _extractor = extractor;
     }
 
-    public async Task<PropuestaDeclaracionResponse> EjecutarAsync(ProponerDeclaracionRequest request)
+    public async Task<PropuestaDeclaracionResponse> EjecutarAsync(
+        ProponerDeclaracionRequest request, CancellationToken cancellationToken = default)
     {
-        var detectado = await _extractor.ExtraerAsync(request.DocumentoBytes, request.DocumentoContentType);
+        var detectado = await _extractor.ExtraerAsync(
+            request.DocumentoBytes, request.DocumentoContentType, cancellationToken);
 
         int? departamentoId = null;
         if (!string.IsNullOrWhiteSpace(detectado.DepartamentoNombreDetectado))
@@ -27,7 +29,7 @@ public class CasoUsoProponerDeclaracion : ICasoUsoProponerDeclaracion
             departamentoId = await _context.Departamentos
                 .Where(d => d.Nombre.ToUpper() == nombreDepartamento)
                 .Select(d => (int?)d.Id)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
         }
 
         var productos = new List<ProductoPropuesto>();
@@ -37,7 +39,7 @@ public class CasoUsoProponerDeclaracion : ICasoUsoProponerDeclaracion
             var coincidencia = await _context.Productos
                 .Where(p => p.Nombre.ToUpper() == nombreProducto)
                 .Select(p => new { p.Id, p.Capacidad })
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             productos.Add(new ProductoPropuesto(
                 NombreDetectado: productoDetectado.NombreDetectado,

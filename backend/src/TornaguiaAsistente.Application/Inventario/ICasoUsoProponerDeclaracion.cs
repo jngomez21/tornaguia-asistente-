@@ -2,7 +2,8 @@ namespace TornaguiaAsistente.Application.Inventario;
 
 public interface ICasoUsoProponerDeclaracion
 {
-    Task<PropuestaDeclaracionResponse> EjecutarAsync(ProponerDeclaracionRequest request);
+    Task<PropuestaDeclaracionResponse> EjecutarAsync(
+        ProponerDeclaracionRequest request, CancellationToken cancellationToken = default);
 }
 
 public record ProponerDeclaracionRequest(byte[] DocumentoBytes, string DocumentoContentType);

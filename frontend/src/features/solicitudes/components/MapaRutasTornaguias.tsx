@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Map, Marker, Popup, Source, Layer, NavigationControl, FullscreenControl, type MapRef } from 'react-map-gl/mapbox'
+import { useEffect, useMemo, useState } from 'react'
+import { Map, Marker, Popup, Source, Layer } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import type { EstadoTornaguiaPdf } from './ResultadoSolicitud'
 import { colorPorTipo, colorHexPorTipo } from '../lib/coloresTornaguia'
 import { explicarResultado } from '../lib/tiposTornaguia'
+import { MAPBOX_TOKEN, useMapaBase } from '../../../shared/components/mapa/useMapaBase'
+import { MapaControles, MapaNoDisponible } from '../../../shared/components/mapa/MapaControles'
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined
 const DURACION_ANIMACION_MS = 1800
 const PALETA_RUTAS = ['#1E88C7', '#2FA84F', '#C2410C', '#7C3AED', '#DB2777', '#0B1F4B']
 
@@ -186,8 +187,7 @@ function RutaEnMapa({ ruta, animar, color }: { ruta: RutaMapa; animar: boolean; 
 }
 
 export function MapaRutasTornaguias({ rutas, animar = false, rutaEnFocoId = null, onSalirFoco }: MapaRutasTornaguiasProps) {
-  const mapRef = useRef<MapRef>(null)
-  const [mapCargado, setMapCargado] = useState(false)
+  const { mapRef, mapCargado, onLoad, ajustarABounds } = useMapaBase()
 
   const rutaEnFoco = rutaEnFocoId != null ? rutas.find((r) => r.solicitudId === rutaEnFocoId) : undefined
   const enFoco = rutaEnFoco !== undefined
@@ -205,17 +205,13 @@ export function MapaRutasTornaguias({ rutas, animar = false, rutaEnFocoId = null
 
   useEffect(() => {
     if (!mapCargado) return
-    mapRef.current?.fitBounds(bounds, { padding: 56, duration: 800 })
-  }, [mapCargado, bounds])
+    ajustarABounds(bounds)
+  }, [mapCargado, bounds, ajustarABounds])
 
   if (rutas.length === 0) return null
 
   if (!MAPBOX_TOKEN) {
-    return (
-      <div className="w-full h-80 rounded-xl bg-gray-100 flex items-center justify-center text-xs text-gray-400 mb-6">
-        Mapa no disponible (falta configurar VITE_MAPBOX_TOKEN)
-      </div>
-    )
+    return <MapaNoDisponible />
   }
 
   const centro: [number, number] = [(bounds[0][0] + bounds[1][0]) / 2, (bounds[0][1] + bounds[1][1]) / 2]
@@ -231,10 +227,9 @@ export function MapaRutasTornaguias({ rutas, animar = false, rutaEnFocoId = null
         scrollZoom={false}
         attributionControl={false}
         style={{ width: '100%', height: '100%' }}
-        onLoad={() => setMapCargado(true)}
+        onLoad={onLoad}
       >
-        <NavigationControl position="top-right" showCompass={false} />
-        <FullscreenControl position="top-right" />
+        <MapaControles />
 
         {rutasVisibles.map((ruta) => (
           <RutaEnMapa

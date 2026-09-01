@@ -1,5 +1,4 @@
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
-import type { PDFFont, PDFPage } from 'pdf-lib'
+import type { PDFFont, PDFPage, Color } from 'pdf-lib'
 import type { CrearSolicitudResponse, DetalleTornaguiaResponse } from '../types'
 
 const ANCHO_PAGINA = 595.28
@@ -7,9 +6,9 @@ const MARGEN_X = 55
 const ANCHO_TEXTO = ANCHO_PAGINA - MARGEN_X * 2
 const CAJA_X = MARGEN_X - 20
 const CAJA_ANCHO = ANCHO_PAGINA - CAJA_X * 2
-const AZUL_MARCA = rgb(0.043, 0.122, 0.294)
-const GRIS_TEXTO = rgb(0.25, 0.25, 0.25)
-const GRIS_LINEA = rgb(0.82, 0.82, 0.82)
+const AZUL_MARCA_RGB: [number, number, number] = [0.043, 0.122, 0.294]
+const GRIS_TEXTO_RGB: [number, number, number] = [0.25, 0.25, 0.25]
+const GRIS_LINEA_RGB: [number, number, number] = [0.82, 0.82, 0.82]
 const PUNTEADO = '..............................'
 
 export interface DatosRutaTornaguia {
@@ -25,6 +24,11 @@ export async function construirPdfTornaguia(
   detalle: DetalleTornaguiaResponse,
   ruta: DatosRutaTornaguia,
 ): Promise<Uint8Array> {
+  const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib')
+  const AZUL_MARCA = rgb(...AZUL_MARCA_RGB)
+  const GRIS_TEXTO = rgb(...GRIS_TEXTO_RGB)
+  const GRIS_LINEA = rgb(...GRIS_LINEA_RGB)
+
   const pdfDoc = await PDFDocument.create()
   const page = pdfDoc.addPage([595.28, 841.89])
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
@@ -145,7 +149,7 @@ export async function construirPdfTornaguia(
   // Productos
   tituloSeccion('PRODUCTOS')
   y -= 2
-  dibujarTablaProductos(page, detalle, font, fontBold, () => y, (nuevaY) => (y = nuevaY))
+  dibujarTablaProductos(page, detalle, font, fontBold, AZUL_MARCA, GRIS_TEXTO, () => y, (nuevaY) => (y = nuevaY))
   divisor()
 
   // Ruta / entidades territoriales
@@ -180,6 +184,8 @@ function dibujarTablaProductos(
   detalle: DetalleTornaguiaResponse,
   font: PDFFont,
   fontBold: PDFFont,
+  AZUL_MARCA: Color,
+  GRIS_TEXTO: Color,
   obtenerY: () => number,
   fijarY: (y: number) => void,
 ) {

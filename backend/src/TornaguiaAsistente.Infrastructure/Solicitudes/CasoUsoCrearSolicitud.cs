@@ -23,7 +23,8 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
         _motorReglas = motorReglas;
     }
 
-    public async Task<CrearSolicitudResponse> EjecutarAsync(CrearSolicitudRequest request)
+    public async Task<CrearSolicitudResponse> EjecutarAsync(
+        CrearSolicitudRequest request, CancellationToken cancellationToken = default)
     {
         var entradasDestino = new[]
         {
@@ -45,7 +46,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
 
         if (request.BodegaOrigenId is not null)
         {
-            var bodegaOrigen = await _context.Bodegas.FindAsync(request.BodegaOrigenId.Value)
+            var bodegaOrigen = await _context.Bodegas.FindAsync([request.BodegaOrigenId.Value], cancellationToken)
                 ?? throw new SolicitudInvalidaException($"Bodega de origen {request.BodegaOrigenId} no encontrada.");
             if (bodegaOrigen.UsuarioId != request.UsuarioId)
                 throw new SolicitudInvalidaException("La bodega de origen no pertenece al usuario autenticado.");
@@ -58,7 +59,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
             municipioOrigenId = request.MunicipioOrigenId!.Value;
         }
 
-        var origen = await _context.Municipios.FindAsync(municipioOrigenId)
+        var origen = await _context.Municipios.FindAsync([municipioOrigenId], cancellationToken)
             ?? throw new SolicitudInvalidaException($"Municipio de origen {municipioOrigenId} no encontrado.");
 
         int? bodegaDestinoId = null;
@@ -75,7 +76,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
             if (request.BodegaDestinoId == bodegaOrigenUsuarioId)
                 throw new SolicitudInvalidaException("La bodega de destino no puede ser la misma que la de origen.");
 
-            var bodegaDestino = await _context.Bodegas.FindAsync(request.BodegaDestinoId.Value)
+            var bodegaDestino = await _context.Bodegas.FindAsync([request.BodegaDestinoId.Value], cancellationToken)
                 ?? throw new SolicitudInvalidaException($"Bodega de destino {request.BodegaDestinoId} no encontrada.");
             if (bodegaDestino.UsuarioId != request.UsuarioId)
                 throw new SolicitudInvalidaException("La bodega de destino no pertenece al usuario autenticado.");
@@ -86,7 +87,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
 
         if (request.MunicipioDestinoId is not null)
         {
-            destinoMunicipio = await _context.Municipios.FindAsync(request.MunicipioDestinoId.Value)
+            destinoMunicipio = await _context.Municipios.FindAsync([request.MunicipioDestinoId.Value], cancellationToken)
                 ?? throw new SolicitudInvalidaException($"Municipio de destino {request.MunicipioDestinoId} no encontrado.");
 
             if (destinoMunicipio.Id == origen.Id)
@@ -96,7 +97,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
 
             try
             {
-                var ruta = await _motorGeografico.CalcularRutaAsync(origen.Id, destinoMunicipio.Id);
+                var ruta = await _motorGeografico.CalcularRutaAsync(origen.Id, destinoMunicipio.Id, cancellationToken);
                 distanciaKm = ruta.DistanciaKm;
                 tiempoEstimado = ruta.TiempoEstimadoMinutos;
                 geometria = ruta.Geometria;
@@ -106,7 +107,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
                     departamentosIntermedios = await _context.Departamentos
                         .Where(d => ruta.DepartamentosIntermedioIds.Contains(d.Id))
                         .Select(d => d.Nombre)
-                        .ToListAsync();
+                        .ToListAsync(cancellationToken);
                 }
             }
             catch (SolicitudInvalidaException)
@@ -117,7 +118,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
         }
         else
         {
-            destinoPais = await _context.Paises.FindAsync(request.PaisDestinoId!.Value)
+            destinoPais = await _context.Paises.FindAsync([request.PaisDestinoId!.Value], cancellationToken)
                 ?? throw new SolicitudInvalidaException($"País de destino {request.PaisDestinoId} no encontrado.");
         }
 
@@ -129,7 +130,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
         var resultado = _motorReglas.Determinar(evaluacion);
 
         var tipoTornaguia = await _context.TiposTornaguia
-            .FirstOrDefaultAsync(t => t.Nombre == resultado.TipoTornaguiaNombre)
+            .FirstOrDefaultAsync(t => t.Nombre == resultado.TipoTornaguiaNombre, cancellationToken)
             ?? throw new InvalidOperationException(
                 $"Tipo de tornaguía '{resultado.TipoTornaguiaNombre}' no existe en el catálogo.");
 
@@ -156,7 +157,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
         };
 
         _context.Solicitudes.Add(solicitud);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
 
         return new CrearSolicitudResponse(
             SolicitudId: solicitud.Id,

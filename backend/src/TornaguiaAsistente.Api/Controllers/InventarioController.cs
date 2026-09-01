@@ -144,11 +144,12 @@ public class InventarioController : ApiControllerBase
     }
 
     [HttpPost("lotes/declaraciones/proponer")]
-    public async Task<ActionResult<PropuestaDeclaracionResponse>> ProponerDeclaracion(ProponerDeclaracionRequest request)
+    public async Task<ActionResult<PropuestaDeclaracionResponse>> ProponerDeclaracion(
+        ProponerDeclaracionRequest request, CancellationToken cancellationToken)
     {
         try
         {
-            var resultado = await _casoUsoProponerDeclaracion.EjecutarAsync(request);
+            var resultado = await _casoUsoProponerDeclaracion.EjecutarAsync(request, cancellationToken);
             return Ok(resultado);
         }
         catch (ExtraccionDeclaracionException ex)

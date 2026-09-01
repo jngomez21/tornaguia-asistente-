@@ -25,11 +25,12 @@ public class MotorGeograficoMapbox : IMotorGeografico
             ?? throw new InvalidOperationException("Falta configurar Mapbox:AccessToken");
     }
 
-    public async Task<ResultadoRuta> CalcularRutaAsync(int municipioOrigenId, int municipioDestinoId)
+    public async Task<ResultadoRuta> CalcularRutaAsync(
+        int municipioOrigenId, int municipioDestinoId, CancellationToken cancellationToken = default)
     {
-        var origen = await _context.Municipios.FindAsync(municipioOrigenId)
+        var origen = await _context.Municipios.FindAsync([municipioOrigenId], cancellationToken)
             ?? throw new InvalidOperationException($"Municipio origen {municipioOrigenId} no encontrado.");
-        var destino = await _context.Municipios.FindAsync(municipioDestinoId)
+        var destino = await _context.Municipios.FindAsync([municipioDestinoId], cancellationToken)
             ?? throw new InvalidOperationException($"Municipio destino {municipioDestinoId} no encontrado.");
 
         if (origen.Ubicacion is null || destino.Ubicacion is null)
@@ -44,8 +45,8 @@ public class MotorGeograficoMapbox : IMotorGeografico
         var url = $"https://api.mapbox.com/directions/v5/mapbox/driving/{coordenadasUrl}" +
                    $"?geometries=geojson&overview=full&access_token={_accessToken}";
 
-        var respuesta = await _httpClient.GetAsync(url);
-        var json = await respuesta.Content.ReadAsStringAsync();
+        var respuesta = await _httpClient.GetAsync(url, cancellationToken);
+        var json = await respuesta.Content.ReadAsStringAsync(cancellationToken);
 
         if (!respuesta.IsSuccessStatusCode)
         {
@@ -81,7 +82,7 @@ public class MotorGeograficoMapbox : IMotorGeografico
         var departamentosIntermedios = await _context.Departamentos
             .Where(d => lineaRuta.Intersects(d.Limites!))
             .Select(d => d.Id)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return new ResultadoRuta(
             DistanciaKm: Math.Round(distanciaMetros / 1000, 2),

@@ -2,7 +2,8 @@ namespace TornaguiaAsistente.Application.Ia;
 
 public interface IExtractorDeclaracion
 {
-    Task<DeclaracionDetectada> ExtraerAsync(byte[] documentoBytes, string contentType);
+    Task<DeclaracionDetectada> ExtraerAsync(
+        byte[] documentoBytes, string contentType, CancellationToken cancellationToken = default);
 }
 
 public record DeclaracionDetectada(

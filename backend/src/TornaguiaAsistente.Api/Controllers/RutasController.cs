@@ -17,9 +17,10 @@ public class RutasController : ControllerBase
     [HttpGet("calcular")]
     public async Task<ActionResult<ResultadoRuta>> Calcular(
         [FromQuery] int origenId,
-        [FromQuery] int destinoId)
+        [FromQuery] int destinoId,
+        CancellationToken cancellationToken)
     {
-        var resultado = await _motorGeografico.CalcularRutaAsync(origenId, destinoId);
+        var resultado = await _motorGeografico.CalcularRutaAsync(origenId, destinoId, cancellationToken);
         return Ok(resultado);
     }
 }

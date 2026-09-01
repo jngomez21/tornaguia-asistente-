@@ -42,13 +42,13 @@ public class SolicitudesController : ApiControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<CrearSolicitudResponse>> Crear(CrearSolicitudRequest request)
+    public async Task<ActionResult<CrearSolicitudResponse>> Crear(CrearSolicitudRequest request, CancellationToken cancellationToken)
     {
         var requestConUsuarioReal = request with { UsuarioId = UsuarioId };
 
         try
         {
-            var resultado = await _casoUso.EjecutarAsync(requestConUsuarioReal);
+            var resultado = await _casoUso.EjecutarAsync(requestConUsuarioReal, cancellationToken);
             return Ok(resultado);
         }
         catch (SolicitudInvalidaException ex)

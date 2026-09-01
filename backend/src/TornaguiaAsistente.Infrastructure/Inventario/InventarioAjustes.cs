@@ -27,20 +27,23 @@ internal static class InventarioAjustes
     public static async Task DescontarAsync(
         TornaguiaDbContext context, int bodegaId, IReadOnlyDictionary<int, decimal> cantidades)
     {
+        var productoIds = cantidades.Keys.ToList();
+
+        var inventarios = await context.InventarioProductos
+            .Include(i => i.Producto)
+            .Where(i => i.BodegaId == bodegaId && productoIds.Contains(i.ProductoId))
+            .ToDictionaryAsync(i => i.ProductoId);
+
         foreach (var (productoId, cantidad) in cantidades)
         {
-            var inventario = await context.InventarioProductos
-                .FirstOrDefaultAsync(i => i.BodegaId == bodegaId && i.ProductoId == productoId)
-                ?? throw new InventarioInvalidoException(
+            if (!inventarios.TryGetValue(productoId, out var inventario))
+                throw new InventarioInvalidoException(
                     $"No hay inventario registrado para el producto {productoId}.");
 
             if (inventario.CantidadDisponible < cantidad)
-            {
-                var producto = await context.Productos.FindAsync(productoId);
                 throw new InventarioInvalidoException(
-                    $"Stock insuficiente de {producto?.Nombre ?? productoId.ToString()}: " +
+                    $"Stock insuficiente de {inventario.Producto.Nombre}: " +
                     $"disponible {inventario.CantidadDisponible}, solicitado {cantidad}.");
-            }
 
             inventario.CantidadDisponible -= cantidad;
         }
@@ -49,11 +52,17 @@ internal static class InventarioAjustes
     public static async Task ReponerAsync(
         TornaguiaDbContext context, int bodegaId, IEnumerable<LoteProducto> loteProductos)
     {
-        foreach (var lp in loteProductos)
+        var lista = loteProductos as IReadOnlyCollection<LoteProducto> ?? loteProductos.ToList();
+        var productoIds = lista.Select(lp => lp.ProductoId).ToList();
+
+        var inventarios = await context.InventarioProductos
+            .Where(i => i.BodegaId == bodegaId && productoIds.Contains(i.ProductoId))
+            .ToDictionaryAsync(i => i.ProductoId);
+
+        foreach (var lp in lista)
         {
-            var inventario = await context.InventarioProductos
-                .FirstOrDefaultAsync(i => i.BodegaId == bodegaId && i.ProductoId == lp.ProductoId)
-                ?? throw new InvalidOperationException(
+            if (!inventarios.TryGetValue(lp.ProductoId, out var inventario))
+                throw new InvalidOperationException(
                     $"Inventario no encontrado para el producto {lp.ProductoId}.");
 
             inventario.CantidadDisponible += lp.Cantidad;
@@ -63,12 +72,20 @@ internal static class InventarioAjustes
     public static async Task RegistrarEntradaPorTrasladoAsync(
         TornaguiaDbContext context, int bodegaDestinoId, IEnumerable<LoteProducto> loteProductos)
     {
-        foreach (var lp in loteProductos)
-        {
-            var inventario = await context.InventarioProductos
-                .FirstOrDefaultAsync(i => i.BodegaId == bodegaDestinoId && i.ProductoId == lp.ProductoId);
+        var lista = loteProductos as IReadOnlyCollection<LoteProducto> ?? loteProductos.ToList();
+        var productoIds = lista.Select(lp => lp.ProductoId).ToList();
 
-            if (inventario is null)
+        var inventarios = await context.InventarioProductos
+            .Where(i => i.BodegaId == bodegaDestinoId && productoIds.Contains(i.ProductoId))
+            .ToDictionaryAsync(i => i.ProductoId);
+
+        foreach (var lp in lista)
+        {
+            if (inventarios.TryGetValue(lp.ProductoId, out var inventario))
+            {
+                inventario.CantidadDisponible += lp.Cantidad;
+            }
+            else
             {
                 inventario = new InventarioProducto
                 {
@@ -77,10 +94,7 @@ internal static class InventarioAjustes
                     CantidadDisponible = lp.Cantidad,
                 };
                 context.InventarioProductos.Add(inventario);
-            }
-            else
-            {
-                inventario.CantidadDisponible += lp.Cantidad;
+                inventarios[lp.ProductoId] = inventario;
             }
 
             context.EntradasInventario.Add(new EntradaInventario
