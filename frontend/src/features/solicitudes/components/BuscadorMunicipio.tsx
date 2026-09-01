@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Municipio } from '../types'
+
+const LIMITE_SUGERIDOS = 5
 
 const RANGO_MARCAS_DIACRITICAS = String.fromCharCode(0x0300) + '-' + String.fromCharCode(0x036f)
 const DIACRITICOS = new RegExp('[' + RANGO_MARCAS_DIACRITICAS + ']', 'g')
@@ -30,28 +32,26 @@ export function BuscadorMunicipio({
 }: BuscadorMunicipioProps) {
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
-  const [departamento, setDepartamento] = useState('')
+  const [resaltado, setResaltado] = useState(0)
+  const listaRef = useRef<HTMLUListElement>(null)
 
   const seleccionado = municipios.find((m) => m.id === value)
 
-  const departamentos = useMemo(() => {
-    const nombres = new Set(municipios.map((m) => m.departamentoNombre))
-    return Array.from(nombres).sort((a, b) => a.localeCompare(b, 'es'))
-  }, [municipios])
-
-  // Mantiene el filtro de departamento sincronizado cuando el municipio se elige
-  // desde afuera del buscador (bodega, "generar nuevo envío", etc.).
-  useEffect(() => {
-    if (seleccionado) setDepartamento(seleccionado.departamentoNombre)
-  }, [seleccionado])
-
   const opciones = useMemo(() => {
     const candidatos = excludeId != null ? municipios.filter((m) => m.id !== excludeId) : municipios
-    const porDepartamento =
-      departamento === '' ? candidatos : candidatos.filter((m) => m.departamentoNombre === departamento)
     const q = normalizar(query.trim())
-    return q === '' ? porDepartamento : porDepartamento.filter((m) => normalizar(m.nombre).includes(q))
-  }, [municipios, excludeId, departamento, query])
+    if (q === '') return candidatos.slice(0, LIMITE_SUGERIDOS)
+    return candidatos.filter((m) => normalizar(m.nombre).includes(q))
+  }, [municipios, excludeId, query])
+
+  useEffect(() => {
+    setResaltado(0)
+  }, [opciones])
+
+  useEffect(() => {
+    const item = listaRef.current?.children[resaltado] as HTMLElement | undefined
+    item?.scrollIntoView({ block: 'nearest' })
+  }, [resaltado])
 
   function seleccionar(m: Municipio) {
     onChange(m.id)
@@ -64,17 +64,17 @@ export function BuscadorMunicipio({
     setQuery('')
   }
 
-  function elegirDepartamento(nombre: string) {
-    setDepartamento(nombre)
-    if (seleccionado && nombre !== '' && seleccionado.departamentoNombre !== nombre) {
-      onChange(undefined)
-    }
-  }
-
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') {
+    if (e.key === 'ArrowDown') {
       e.preventDefault()
-      if (opciones.length > 0) seleccionar(opciones[0])
+      if (opciones.length > 0) setResaltado((i) => Math.min(i + 1, opciones.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      if (opciones.length > 0) setResaltado((i) => Math.max(i - 1, 0))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      const elegido = opciones[resaltado]
+      if (elegido) seleccionar(elegido)
     } else if (e.key === 'Escape') {
       setIsOpen(false)
     }
@@ -87,75 +87,67 @@ export function BuscadorMunicipio({
       : ''
 
   return (
-    <div>
-      <select
-        value={departamento}
-        onChange={(e) => elegirDepartamento(e.target.value)}
+    <div className="relative">
+      <input
+        type="text"
+        value={valorMostrado}
+        onChange={(e) => {
+          setQuery(e.target.value)
+          setIsOpen(true)
+          if (value != null) onChange(undefined)
+        }}
+        onFocus={() => {
+          setQuery('')
+          setIsOpen(true)
+        }}
+        onBlur={() => setIsOpen(false)}
+        onKeyDown={onKeyDown}
+        placeholder={placeholder ?? 'Escribe para buscar...'}
         disabled={disabled}
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 mb-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-marca-medio disabled:bg-gray-50"
-      >
-        <option value="">Todos los departamentos</option>
-        {departamentos.map((d) => (
-          <option key={d} value={d}>
-            {d}
-          </option>
-        ))}
-      </select>
+        autoComplete="off"
+        className="w-full border border-gray-200 rounded-lg px-3 py-2.5 pr-8 focus:outline-none focus:ring-2 focus:ring-marca-medio disabled:bg-gray-50"
+      />
 
-      <div className="relative">
-        <input
-          type="text"
-          value={valorMostrado}
-          onChange={(e) => {
-            setQuery(e.target.value)
-            setIsOpen(true)
-            if (value != null) onChange(undefined)
-          }}
-          onFocus={() => {
-            setQuery('')
-            setIsOpen(true)
-          }}
-          onBlur={() => setIsOpen(false)}
-          onKeyDown={onKeyDown}
-          placeholder={placeholder ?? 'Escribe para buscar...'}
-          disabled={disabled}
-          autoComplete="off"
-          className="w-full border border-gray-200 rounded-lg px-3 py-2.5 pr-8 focus:outline-none focus:ring-2 focus:ring-marca-medio disabled:bg-gray-50"
-        />
+      {seleccionado && !isOpen && (
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={limpiar}
+          aria-label="Limpiar selección"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+        >
+          ×
+        </button>
+      )}
 
-        {seleccionado && !isOpen && (
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={limpiar}
-            aria-label="Limpiar selección"
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-          >
-            ×
-          </button>
-        )}
-
-        {isOpen && !disabled && (
-          <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
-            {opciones.length === 0 ? (
-              <li className="px-3 py-2 text-sm text-gray-400">Sin resultados</li>
-            ) : (
-              opciones.map((m) => (
-                <li key={m.id}>
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => seleccionar(m)}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
-                  >
-                    {m.nombre} — {m.departamentoNombre}
-                  </button>
-                </li>
-              ))
-            )}
-          </ul>
-        )}
-      </div>
+      {isOpen && !disabled && (
+        <ul ref={listaRef} className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
+          {opciones.length === 0 ? (
+            <li className="px-3 py-2 text-sm text-gray-400">Sin resultados</li>
+          ) : (
+            opciones.map((m, i) => (
+              <li key={m.id}>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onMouseEnter={() => setResaltado(i)}
+                  onClick={() => seleccionar(m)}
+                  className={`w-full text-left px-3 py-2 text-sm ${
+                    i === resaltado ? 'bg-marca-medio/10 text-marca-oscuro' : 'hover:bg-gray-50'
+                  }`}
+                >
+                  {m.nombre} — {m.departamentoNombre}
+                </button>
+              </li>
+            ))
+          )}
+          {query.trim() === '' && opciones.length === LIMITE_SUGERIDOS && (
+            <li className="px-3 py-1.5 text-xs text-gray-400 border-t border-gray-100">
+              Escribe para ver más municipios
+            </li>
+          )}
+        </ul>
+      )}
     </div>
   )
 }
