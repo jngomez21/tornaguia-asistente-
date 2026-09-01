@@ -12,8 +12,7 @@ import { LoteDesdeDeclaracionForm } from '../components/LoteDesdeDeclaracionForm
 import { EntradaForm } from '../components/EntradaForm'
 import { DisponibleTabla } from '../components/DisponibleTabla'
 import { productosParaRequest } from '../schemas'
-import { construirDeclaracionPruebaPdf } from '../lib/generarDeclaracionPrueba'
-import { descargarPdf } from '../../solicitudes/lib/generarPdfTornaguia'
+import { generarDeclaracionPruebaAleatoria, descargarArchivo } from '../lib/generarDeclaracionPrueba'
 import type { LoteFormValues } from '../schemas'
 import type { Lote } from '../types'
 
@@ -47,6 +46,13 @@ export function LotesPage() {
   const [creandoDesdeDeclaracion, setCreandoDesdeDeclaracion] = useState(false)
   const [editandoId, setEditandoId] = useState<number | null>(null)
   const [cancelandoId, setCancelandoId] = useState<number | null>(null)
+  const [filtroOrigen, setFiltroOrigen] = useState<'todos' | 'declarados' | 'noDeclarados'>('todos')
+
+  const lotesFiltrados = lotesQuery.data?.filter((lote) => {
+    if (filtroOrigen === 'declarados') return lote.declaracion != null
+    if (filtroOrigen === 'noDeclarados') return lote.declaracion == null
+    return true
+  })
 
   function invalidarListados() {
     queryClient.invalidateQueries({ queryKey: ['lotes-disponibles', bodegaActivaId] })
@@ -57,8 +63,8 @@ export function LotesPage() {
     const bodegaActiva = bodegasQuery.data?.find((b) => b.id === bodegaActivaId)
     if (!bodegaActiva) return
 
-    const { bytes, numeroDeclaracion } = await construirDeclaracionPruebaPdf(bodegaActiva.departamentoNombre)
-    descargarPdf(bytes, `${numeroDeclaracion}.pdf`)
+    const { bytes, nombreArchivo, contentType } = await generarDeclaracionPruebaAleatoria(bodegaActiva.departamentoNombre)
+    descargarArchivo(bytes, nombreArchivo, contentType)
   }
 
   const crearMutation = useMutation({
@@ -219,12 +225,42 @@ export function LotesPage() {
                   )}
 
                   {lotesQuery.isLoading && <p className="text-sm text-gray-400">Cargando lotes...</p>}
-                  {lotesQuery.data?.length === 0 && !creando && (
-                    <p className="text-sm text-gray-400">No tienes lotes disponibles todavía en esta bodega.</p>
+
+                  {!lotesQuery.isLoading && (lotesQuery.data?.length ?? 0) > 0 && (
+                    <div className="flex gap-2 mb-4">
+                      {(
+                        [
+                          { valor: 'todos', etiqueta: 'Todos' },
+                          { valor: 'declarados', etiqueta: 'Declarados' },
+                          { valor: 'noDeclarados', etiqueta: 'No declarados' },
+                        ] as const
+                      ).map((opcion) => (
+                        <button
+                          key={opcion.valor}
+                          type="button"
+                          onClick={() => setFiltroOrigen(opcion.valor)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
+                            filtroOrigen === opcion.valor
+                              ? 'bg-marca-oscuro text-white border-marca-oscuro'
+                              : 'bg-white text-gray-600 border-gray-200 hover:border-marca-medio/40'
+                          }`}
+                        >
+                          {opcion.etiqueta}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {lotesFiltrados?.length === 0 && !creando && (
+                    <p className="text-sm text-gray-400">
+                      {filtroOrigen === 'todos'
+                        ? 'No tienes lotes disponibles todavía en esta bodega.'
+                        : 'No hay lotes que coincidan con este filtro.'}
+                    </p>
                   )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {lotesQuery.data?.map((lote) => (
+                    {lotesFiltrados?.map((lote) => (
                       <div
                         key={lote.loteId}
                         className="h-full flex flex-col bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition"
@@ -268,6 +304,18 @@ export function LotesPage() {
                                 {cancelandoId === lote.loteId ? 'Cancelando...' : 'Cancelar'}
                               </button>
                             </div>
+                          )}
+                        </div>
+
+                        <div className="mb-3">
+                          {lote.declaracion ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-marca-medio bg-marca-medio/10 px-2 py-0.5 rounded-full">
+                              Declarado · Nº {lote.declaracion.numeroDeclaracion}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                              No declarado
+                            </span>
                           )}
                         </div>
 
