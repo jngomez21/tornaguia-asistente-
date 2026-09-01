@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { Municipio } from '../types'
 
-const LIMITE_RESULTADOS = 5
-
 const RANGO_MARCAS_DIACRITICAS = String.fromCharCode(0x0300) + '-' + String.fromCharCode(0x036f)
 const DIACRITICOS = new RegExp('[' + RANGO_MARCAS_DIACRITICAS + ']', 'g')
 
@@ -38,8 +36,7 @@ export function BuscadorMunicipio({
   const opciones = useMemo(() => {
     const candidatos = excludeId != null ? municipios.filter((m) => m.id !== excludeId) : municipios
     const q = normalizar(query.trim())
-    const filtrados = q === '' ? candidatos : candidatos.filter((m) => normalizar(m.nombre).includes(q))
-    return filtrados.slice(0, LIMITE_RESULTADOS)
+    return q === '' ? candidatos : candidatos.filter((m) => normalizar(m.nombre).includes(q))
   }, [municipios, excludeId, query])
 
   function seleccionar(m: Municipio) {
