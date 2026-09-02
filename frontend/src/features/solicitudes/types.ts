@@ -44,6 +44,7 @@ export interface CrearSolicitudResponse {
   departamentosIntermedios: string[] | null
   geometria: [number, number][] | null
   departamentosIntermedioIds: number[] | null
+  origenDireccionEspecifica: string | null
 }
 
 /** Límites de un departamento como MultiPolygon: polígonos -> anillos (0 = exterior, resto = huecos) -> puntos [lon, lat]. */

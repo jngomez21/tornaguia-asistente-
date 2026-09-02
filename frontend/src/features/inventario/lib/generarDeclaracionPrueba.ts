@@ -1,5 +1,6 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import type { PDFFont, PDFPage } from 'pdf-lib'
+import { primerSegmentoDireccion } from '../../../shared/lib/formato'
 
 const ANCHO_PAGINA = 595.28
 const MARGEN_X = 55
@@ -69,6 +70,7 @@ export interface DatosDeclaracion {
   nit: string
   radicado: string
   productos: ProductoDeclarado[]
+  direccion: string | null
 }
 
 export type VarianteDeclaracion = 1 | 2
@@ -83,7 +85,7 @@ export interface DeclaracionPrueba {
 }
 
 /** Datos aleatorios de la declaracion, independientes del formato/variante de renderizado. */
-export function generarDatosDeclaracion(departamento: string): DatosDeclaracion {
+export function generarDatosDeclaracion(departamento: string, direccion: string | null = null): DatosDeclaracion {
   const productosElegidos = [...PRODUCTOS].sort(() => Math.random() - 0.5).slice(0, numeroAleatorio(1, 3))
   return {
     numeroDeclaracion: generarNumeroDeclaracion(),
@@ -93,6 +95,7 @@ export function generarDatosDeclaracion(departamento: string): DatosDeclaracion 
     nit: generarNit(),
     radicado: generarRadicado(),
     productos: productosElegidos.map((p) => ({ ...p, cantidad: numeroAleatorio(20, 500) })),
+    direccion,
   }
 }
 
@@ -100,8 +103,11 @@ export function generarDatosDeclaracion(departamento: string): DatosDeclaracion 
  * Genera una declaracion de prueba en formato y variante de diseno aleatorios: PDF "digital" (vectorial),
  * PDF "escaneado" (imagen incrustada, sin texto seleccionable) o imagen tipo foto/escaneo (JPEG).
  */
-export async function generarDeclaracionPruebaAleatoria(departamento: string): Promise<DeclaracionPrueba> {
-  const datos = generarDatosDeclaracion(departamento)
+export async function generarDeclaracionPruebaAleatoria(
+  departamento: string,
+  direccion: string | null = null,
+): Promise<DeclaracionPrueba> {
+  const datos = generarDatosDeclaracion(departamento, direccion)
   const variante: VarianteDeclaracion = aleatorio([1, 2])
   const formato: FormatoDeclaracion = aleatorio(['pdf-digital', 'pdf-escaneado', 'imagen-foto', 'imagen-escaneada'])
 
@@ -226,7 +232,7 @@ export async function construirDeclaracionPruebaPdf(
     campo('NIT', datos.nit)
     campo('Razon social', datos.remitente)
   }
-  campo('Direccion', PUNTEADO)
+  campo('Direccion', datos.direccion ? primerSegmentoDireccion(datos.direccion) : PUNTEADO)
   campo('Correo de notificacion', PUNTEADO)
   divisor()
 
@@ -476,7 +482,7 @@ function dibujarContenidoDeclaracionEnCanvas(
     campo('NIT', datos.nit)
     campo('Razon social', datos.remitente)
   }
-  campo('Direccion', PUNTEADO)
+  campo('Direccion', datos.direccion ? primerSegmentoDireccion(datos.direccion) : PUNTEADO)
   campo('Correo de notificacion', PUNTEADO)
   divisor()
 

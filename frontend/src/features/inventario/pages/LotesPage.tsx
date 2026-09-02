@@ -63,7 +63,10 @@ export function LotesPage() {
     if (!bodegaActiva) return
 
     const { generarDeclaracionPruebaAleatoria, descargarArchivo } = await import('../lib/generarDeclaracionPrueba')
-    const { bytes, nombreArchivo, contentType } = await generarDeclaracionPruebaAleatoria(bodegaActiva.departamentoNombre)
+    const { bytes, nombreArchivo, contentType } = await generarDeclaracionPruebaAleatoria(
+      bodegaActiva.departamentoNombre,
+      bodegaActiva.direccionEspecifica,
+    )
     descargarArchivo(bytes, nombreArchivo, contentType)
   }
 

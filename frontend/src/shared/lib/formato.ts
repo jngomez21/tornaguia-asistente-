@@ -7,3 +7,10 @@ export function formatearFecha(fechaIso: string): string {
     minute: '2-digit',
   })
 }
+
+/** Primer segmento (antes de la primera coma) de una dirección geocodificada por Mapbox — el
+ * resto (municipio, departamento, país) ya se muestra aparte, así que mostrarlo de nuevo es
+ * redundante. */
+export function primerSegmentoDireccion(direccion: string): string {
+  return direccion.split(',')[0].trim()
+}

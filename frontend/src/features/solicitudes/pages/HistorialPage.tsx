@@ -113,6 +113,7 @@ export function HistorialPage() {
         ruta: {
           origenDepartamento: departamentoDeMunicipio(item.municipioOrigenNombre) ?? '—',
           origenMunicipio: item.municipioOrigenNombre,
+          origenDireccion: resultado.origenDireccionEspecifica,
           destinoDepartamento: departamentoDeMunicipio(item.municipioDestinoNombre),
           destinoMunicipio: destino(item),
           departamentosIntermedios: resultado.departamentosIntermedios ?? [],

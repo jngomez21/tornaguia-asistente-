@@ -1,5 +1,6 @@
 import type { PDFFont, PDFPage, Color } from 'pdf-lib'
 import type { CrearSolicitudResponse, DetalleTornaguiaResponse } from '../types'
+import { primerSegmentoDireccion } from '../../../shared/lib/formato'
 
 const ANCHO_PAGINA = 595.28
 const MARGEN_X = 55
@@ -14,6 +15,7 @@ const PUNTEADO = '..............................'
 export interface DatosRutaTornaguia {
   origenDepartamento: string
   origenMunicipio: string
+  origenDireccion: string | null
   destinoDepartamento: string | null
   destinoMunicipio: string
   departamentosIntermedios: string[]
@@ -118,7 +120,7 @@ export async function construirPdfTornaguia(
   // Origen / Destino
   tituloSeccion('ORIGEN')
   escribir(`${ruta.origenDepartamento} · ${ruta.origenMunicipio}`)
-  campo('Dirección', PUNTEADO)
+  campo('Dirección', ruta.origenDireccion ? primerSegmentoDireccion(ruta.origenDireccion) : PUNTEADO)
   y -= 4
   tituloSeccion('DESTINO')
   escribir(

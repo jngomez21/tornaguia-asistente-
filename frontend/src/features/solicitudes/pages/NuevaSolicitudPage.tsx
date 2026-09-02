@@ -154,6 +154,7 @@ export function NuevaSolicitudPage() {
     return {
       origenDepartamento: origen?.departamentoNombre ?? '—',
       origenMunicipio: origen?.nombre ?? '—',
+      origenDireccion: item.data.origenDireccionEspecifica,
       destinoDepartamento: destinoMunicipio?.departamentoNombre ?? null,
       destinoMunicipio: destinoMunicipio?.nombre ?? destinoPais?.nombre ?? '—',
       departamentosIntermedios: item.data.departamentosIntermedios ?? [],

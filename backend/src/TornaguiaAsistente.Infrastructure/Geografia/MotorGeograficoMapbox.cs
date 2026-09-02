@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using NetTopologySuite.Geometries;
+using NetTopologySuite.LinearReferencing;
 using TornaguiaAsistente.Application.Geografia;
 using TornaguiaAsistente.Application.Solicitudes;
 using TornaguiaAsistente.Infrastructure.Persistence;
@@ -79,10 +80,30 @@ public class MotorGeograficoMapbox : IMotorGeografico
         var lineaRuta = geometryFactory.CreateLineString(puntos.ToArray());
         lineaRuta.SRID = 4326;
 
-        var departamentosIntermedios = await _context.Departamentos
+        // "Intermedios" excluye los departamentos del propio origen y destino (la línea siempre
+        // los toca, al empezar/terminar dentro de ellos) y queda ordenado por dónde la ruta entra
+        // primero a cada uno, no por el orden arbitrario que devuelva la consulta.
+        var departamentosCandidatos = await _context.Departamentos
             .Where(d => lineaRuta.Intersects(d.Limites!))
-            .Select(d => d.Id)
+            .Select(d => new { d.Id, d.Limites })
             .ToListAsync(cancellationToken);
+
+        var lineaIndexada = new LengthIndexedLine(lineaRuta);
+
+        double PosicionDeEntrada(Geometry limites)
+        {
+            var interseccion = lineaRuta.Intersection(limites);
+            return interseccion.IsEmpty
+                ? double.MaxValue
+                : interseccion.Coordinates.Min(c => lineaIndexada.IndexOf(c));
+        }
+
+        var departamentosIntermedios = departamentosCandidatos
+            .Where(d => d.Id != origen.DepartamentoId && d.Id != destino.DepartamentoId)
+            .Select(d => new { d.Id, Posicion = PosicionDeEntrada(d.Limites!) })
+            .OrderBy(x => x.Posicion)
+            .Select(x => x.Id)
+            .ToList();
 
         return new ResultadoRuta(
             DistanciaKm: Math.Round(distanciaMetros / 1000, 2),

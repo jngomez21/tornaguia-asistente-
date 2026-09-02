@@ -42,6 +42,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
             throw new SolicitudInvalidaException("Debe indicar un municipio o una bodega de origen.");
 
         int? bodegaOrigenUsuarioId = null;
+        string? bodegaOrigenDireccionEspecifica = null;
         int municipioOrigenId;
 
         if (request.BodegaOrigenId is not null)
@@ -52,6 +53,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
                 throw new SolicitudInvalidaException("La bodega de origen no pertenece al usuario autenticado.");
 
             bodegaOrigenUsuarioId = bodegaOrigen.Id;
+            bodegaOrigenDireccionEspecifica = bodegaOrigen.DireccionEspecifica;
             municipioOrigenId = bodegaOrigen.MunicipioId;
         }
         else
@@ -106,10 +108,16 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
 
                 if (ruta.DepartamentosIntermedioIds.Count > 0)
                 {
-                    departamentosIntermedios = await _context.Departamentos
+                    // Un `IN (...)` de SQL no garantiza devolver las filas en el orden de la
+                    // lista de IDs, así que se arma un diccionario y se proyecta conservando el
+                    // orden geográfico ya calculado en DepartamentosIntermedioIds.
+                    var nombresPorId = await _context.Departamentos
                         .Where(d => ruta.DepartamentosIntermedioIds.Contains(d.Id))
-                        .Select(d => d.Nombre)
-                        .ToListAsync(cancellationToken);
+                        .ToDictionaryAsync(d => d.Id, d => d.Nombre, cancellationToken);
+
+                    departamentosIntermedios = ruta.DepartamentosIntermedioIds
+                        .Select(id => nombresPorId[id])
+                        .ToList();
                 }
             }
             catch (SolicitudInvalidaException)
@@ -169,6 +177,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
             TiempoEstimadoMinutos: tiempoEstimado,
             DepartamentosIntermedios: departamentosIntermedios,
             Geometria: geometria,
-            DepartamentosIntermedioIds: departamentosIntermedioIds);
+            DepartamentosIntermedioIds: departamentosIntermedioIds,
+            OrigenDireccionEspecifica: bodegaOrigenDireccionEspecifica);
     }
 }

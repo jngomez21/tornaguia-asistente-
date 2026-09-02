@@ -18,6 +18,7 @@ public class CasoUsoObtenerSolicitud : ICasoUsoObtenerSolicitud
     {
         var solicitud = await _context.Solicitudes
             .Include(s => s.TipoTornaguia)
+            .Include(s => s.BodegaOrigen)
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Id == solicitudId)
             ?? throw new SolicitudInvalidaException($"Solicitud {solicitudId} no encontrada.");
@@ -52,6 +53,7 @@ public class CasoUsoObtenerSolicitud : ICasoUsoObtenerSolicitud
             TiempoEstimadoMinutos: solicitud.TiempoEstimadoMinutos,
             DepartamentosIntermedios: solicitud.DepartamentosIntermedios,
             Geometria: geometria,
-            DepartamentosIntermedioIds: departamentosIntermedioIds);
+            DepartamentosIntermedioIds: departamentosIntermedioIds,
+            OrigenDireccionEspecifica: solicitud.BodegaOrigen?.DireccionEspecifica);
     }
 }
