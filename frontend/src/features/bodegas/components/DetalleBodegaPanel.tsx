@@ -27,6 +27,9 @@ export function DetalleBodegaPanel({ bodega, onCerrar }: DetalleBodegaPanelProps
           <p className="text-xs text-gray-400 truncate">
             {bodega.municipioNombre} — {bodega.departamentoNombre}
           </p>
+          {bodega.direccionEspecifica && (
+            <p className="text-xs text-gray-400 truncate">{bodega.direccionEspecifica}</p>
+          )}
         </div>
         <button
           type="button"

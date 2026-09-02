@@ -12,7 +12,24 @@ import type { BodegaFormValues } from '../schemas'
 import type { Bodega } from '../types'
 
 function bodegaAValoresFormulario(bodega: Bodega): BodegaFormValues {
-  return { nombre: bodega.nombre, municipioId: bodega.municipioId }
+  return {
+    nombre: bodega.nombre,
+    municipioId: bodega.municipioId,
+    direccion:
+      bodega.direccionEspecifica && bodega.latitud != null && bodega.longitud != null
+        ? { texto: bodega.direccionEspecifica, latitud: bodega.latitud, longitud: bodega.longitud }
+        : null,
+  }
+}
+
+function valoresFormularioARequest(values: BodegaFormValues) {
+  return {
+    nombre: values.nombre,
+    municipioId: values.municipioId!,
+    direccionEspecifica: values.direccion?.texto ?? null,
+    direccionLatitud: values.direccion?.latitud ?? null,
+    direccionLongitud: values.direccion?.longitud ?? null,
+  }
 }
 
 function IconoEditar() {
@@ -63,7 +80,7 @@ export function BodegasPage() {
 
   const editarMutation = useMutation({
     mutationFn: ({ bodegaId, data }: { bodegaId: number; data: BodegaFormValues }) =>
-      editarBodega(bodegaId, { nombre: data.nombre, municipioId: data.municipioId! }),
+      editarBodega(bodegaId, valoresFormularioARequest(data)),
     onSuccess: () => {
       invalidarListado()
       setEditandoId(null)
@@ -135,9 +152,7 @@ export function BodegasPage() {
               <BodegaForm
                 textoBoton="Crear bodega"
                 guardando={crearMutation.isPending}
-                onGuardar={(values) =>
-                  crearMutation.mutate({ nombre: values.nombre, municipioId: values.municipioId! })
-                }
+                onGuardar={(values) => crearMutation.mutate(valoresFormularioARequest(values))}
                 onCancelar={() => setCreando(false)}
               />
             </div>

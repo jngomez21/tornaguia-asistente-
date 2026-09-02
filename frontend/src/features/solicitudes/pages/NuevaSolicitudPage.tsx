@@ -40,6 +40,7 @@ type ResultadoItem = {
   municipioDestinoId: number | undefined
   paisDestinoId: number | undefined
   bodegaOrigenId: number | undefined
+  bodegaDestinoId: number | undefined
 } & ({ ok: true; data: CrearSolicitudResponse } | { ok: false; mensaje: string })
 
 export function NuevaSolicitudPage() {
@@ -127,6 +128,14 @@ export function NuevaSolicitudPage() {
     return paisesQuery.data?.find((p) => p.id === id)?.nombre ?? '—'
   }
 
+  // Coordenadas exactas de la bodega (si tiene dirección específica geocodificada) para mostrar
+  // el marcador de inicio/fin en el punto real, sin afectar el cálculo de la ruta ni la decisión.
+  function coordsDeBodega(bodegaId: number | undefined): [number, number] | undefined {
+    const bodega = bodegasQuery.data?.find((b) => b.id === bodegaId)
+    if (!bodega || bodega.latitud == null || bodega.longitud == null) return undefined
+    return [bodega.longitud, bodega.latitud]
+  }
+
   function etiquetaSolicitud(item: SolicitudItemFormValues) {
     const origen = nombreMunicipio(item.municipioOrigenId)
     const destino =
@@ -173,8 +182,15 @@ export function NuevaSolicitudPage() {
 
     return resultados.map((resultado, i) => {
       const label = etiquetaSolicitud(items[i])
-      const { tipoDestino, esParaExportacion, municipioOrigenId, municipioDestinoId, paisDestinoId, bodegaOrigenId } =
-        items[i]
+      const {
+        tipoDestino,
+        esParaExportacion,
+        municipioOrigenId,
+        municipioDestinoId,
+        paisDestinoId,
+        bodegaOrigenId,
+        bodegaDestinoId,
+      } = items[i]
       const base = {
         label,
         tipoDestino,
@@ -183,6 +199,7 @@ export function NuevaSolicitudPage() {
         municipioDestinoId,
         paisDestinoId,
         bodegaOrigenId,
+        bodegaDestinoId,
       }
       if (resultado.status === 'fulfilled') {
         return { ...base, ok: true, data: resultado.value }
@@ -453,6 +470,8 @@ export function NuevaSolicitudPage() {
                             tipoDestino: r.tipoDestino,
                             esParaExportacion: r.esParaExportacion,
                             departamentosIntermedioIds: r.data.departamentosIntermedioIds ?? undefined,
+                            origenExacto: coordsDeBodega(r.bodegaOrigenId),
+                            destinoExacto: coordsDeBodega(r.bodegaDestinoId),
                             onSolicitarTornaguia: () => abrirModal(r.data.solicitudId),
                             onDescargarPdf: () => descargarPdfSolicitud(r.data.solicitudId),
                           },
@@ -798,6 +817,8 @@ export function NuevaSolicitudPage() {
                                 estadoPdf: 'pendiente',
                                 interactiva: false,
                                 departamentosIntermedioIds: rutaPreviewQuery.data.departamentosIntermedioIds,
+                                origenExacto: coordsDeBodega(primerItem?.bodegaOrigenId),
+                                destinoExacto: coordsDeBodega(primerItem?.bodegaDestinoId),
                               },
                             ]}
                           />

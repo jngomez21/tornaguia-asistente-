@@ -2,6 +2,8 @@ export interface Municipio {
   id: number
   nombre: string
   departamentoNombre: string
+  latitud: number | null
+  longitud: number | null
 }
 
 export interface Pais {

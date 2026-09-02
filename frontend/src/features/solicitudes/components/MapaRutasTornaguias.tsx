@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useQueries } from '@tanstack/react-query'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { Map, Marker, Popup, Source, Layer } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import type { EstadoTornaguiaPdf } from './ResultadoSolicitud'
@@ -29,6 +29,13 @@ export interface RutaMapa {
   esParaExportacion?: boolean
   /** Departamentos que cruza la ruta, usados para el pulso de jurisdicción mientras se anima. */
   departamentosIntermedioIds?: number[]
+  /** Coordenadas exactas de la bodega origen/destino (si tiene dirección específica geocodificada).
+   * Cuando están presentes, el mapa pide a Mapbox Directions una polilínea aparte que arranca/termina
+   * ahí para mostrarla; esa llamada es puramente visual (vive en el frontend) y nunca alimenta
+   * `departamentosIntermedioIds` ni el resultado que ya devolvió el backend, así que no puede
+   * afectar el motor de reglas ni la decisión de la solicitud. */
+  origenExacto?: [number, number]
+  destinoExacto?: [number, number]
 }
 
 interface MapaRutasTornaguiasProps {
@@ -61,6 +68,45 @@ function interpolarEnRuta(geometria: [number, number][], t: number): [number, nu
   const [x0, y0] = geometria[i - 1]
   const [x1, y1] = geometria[i]
   return [x0 + (x1 - x0) * fraccion, y0 + (y1 - y0) * fraccion]
+}
+
+/** Pide a Mapbox Directions (desde el navegador) la polilínea entre dos puntos exactos. Es una
+ * llamada puramente visual e independiente de `IMotorGeografico`/`CalcularRutaAsync` del backend
+ * (la que sí alimenta el motor de reglas): si falla o Mapbox no encuentra ruta, se devuelve null
+ * y quien la use debe conservar la geometría original entre municipios. */
+async function obtenerRutaVisual(
+  origen: [number, number],
+  destino: [number, number],
+  signal?: AbortSignal,
+): Promise<[number, number][] | null> {
+  const coordenadas = `${origen[0]},${origen[1]};${destino[0]},${destino[1]}`
+  const url =
+    `https://api.mapbox.com/directions/v5/mapbox/driving/${coordenadas}` +
+    `?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`
+  const respuesta = await fetch(url, { signal })
+  if (!respuesta.ok) return null
+  const data = (await respuesta.json()) as { routes?: { geometry?: { coordinates?: [number, number][] } }[] }
+  const coordinates = data.routes?.[0]?.geometry?.coordinates
+  return coordinates && coordinates.length > 1 ? coordinates : null
+}
+
+/** Geometría a dibujar/animar: si la ruta trae coordenadas exactas de bodega (origen y/o destino),
+ * se recalcula la polilínea real hacia/desde ese punto; mientras carga o si falla, se mantiene la
+ * geometría entre municipios que ya vino del backend, para no dejar el mapa sin trazo. */
+function useGeometriaVisual(ruta: RutaMapa): { geometria: [number, number][]; cargando: boolean } {
+  const origenPunto = ruta.origenExacto ?? ruta.geometria[0]
+  const destinoPunto = ruta.destinoExacto ?? ruta.geometria[ruta.geometria.length - 1]
+  const necesitaRecalculo = Boolean(ruta.origenExacto || ruta.destinoExacto)
+
+  const query = useQuery({
+    queryKey: ['ruta-visual', origenPunto[0], origenPunto[1], destinoPunto[0], destinoPunto[1]],
+    queryFn: ({ signal }) => obtenerRutaVisual(origenPunto, destinoPunto, signal),
+    enabled: necesitaRecalculo && Boolean(MAPBOX_TOKEN),
+    staleTime: Infinity,
+  })
+
+  if (necesitaRecalculo && query.data) return { geometria: query.data, cargando: false }
+  return { geometria: ruta.geometria, cargando: necesitaRecalculo && query.isLoading }
 }
 
 function useProgresoAnimacion(activa: boolean): number {
@@ -102,14 +148,17 @@ function RutaEnMapa({
     tipoDestino: ruta.tipoDestino,
     esParaExportacion: ruta.esParaExportacion,
   })
-  const origen = ruta.geometria[0]
-  const destino = ruta.geometria[ruta.geometria.length - 1]
+  const { geometria, cargando: cargandoGeometriaVisual } = useGeometriaVisual(ruta)
+  const origen = geometria[0]
+  const destino = geometria[geometria.length - 1]
   const listoParaDescargar = ruta.estadoPdf === 'generado'
   const interactiva = ruta.interactiva ?? true
 
-  const progreso = useProgresoAnimacion(animar)
+  // Mientras se recalcula la ruta visual hacia la dirección exacta, la animación espera: así no
+  // arranca sobre la geometría entre municipios para luego saltar a la definitiva.
+  const progreso = useProgresoAnimacion(animar && !cargandoGeometriaVisual)
   const animacionTerminada = !animar || progreso >= 1
-  const posicionActual = animar ? interpolarEnRuta(ruta.geometria, progreso) : destino
+  const posicionActual = animar ? interpolarEnRuta(geometria, progreso) : destino
 
   const departamentoActivoId = useMemo(() => {
     if (animacionTerminada || departamentos.length === 0) return null
@@ -122,9 +171,9 @@ function RutaEnMapa({
     () => ({
       type: 'Feature' as const,
       properties: {},
-      geometry: { type: 'LineString' as const, coordinates: ruta.geometria },
+      geometry: { type: 'LineString' as const, coordinates: geometria },
     }),
-    [ruta.geometria],
+    [geometria],
   )
 
   return (
@@ -234,7 +283,11 @@ export function MapaRutasTornaguias({ rutas, animar = false, rutaEnFocoId = null
   const rutasVisibles = useMemo(() => (rutaEnFoco ? [rutaEnFoco] : rutas), [rutaEnFoco, rutas])
 
   const bounds = useMemo<[[number, number], [number, number]]>(() => {
-    const puntos = rutasVisibles.flatMap((r) => r.geometria)
+    const puntos = rutasVisibles.flatMap((r) => [
+      ...r.geometria,
+      ...(r.origenExacto ? [r.origenExacto] : []),
+      ...(r.destinoExacto ? [r.destinoExacto] : []),
+    ])
     const lons = puntos.map((p) => p[0])
     const lats = puntos.map((p) => p[1])
     return [

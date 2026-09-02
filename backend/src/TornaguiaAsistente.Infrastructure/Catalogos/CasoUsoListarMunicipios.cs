@@ -17,7 +17,12 @@ public class CasoUsoListarMunicipios : ICasoUsoListarMunicipios
     {
         return await _context.Municipios
             .OrderBy(m => m.Nombre)
-            .Select(m => new MunicipioResponse(m.Id, m.Nombre, m.Departamento.Nombre))
+            .Select(m => new MunicipioResponse(
+                m.Id,
+                m.Nombre,
+                m.Departamento.Nombre,
+                m.Ubicacion == null ? null : m.Ubicacion.Y,
+                m.Ubicacion == null ? null : m.Ubicacion.X))
             .ToListAsync();
     }
 }

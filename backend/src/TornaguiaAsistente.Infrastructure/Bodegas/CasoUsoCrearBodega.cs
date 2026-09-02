@@ -28,6 +28,8 @@ public class CasoUsoCrearBodega : ICasoUsoCrearBodega
             UsuarioId = request.UsuarioId,
             MunicipioId = request.MunicipioId,
             Nombre = request.Nombre.Trim(),
+            DireccionEspecifica = string.IsNullOrWhiteSpace(request.DireccionEspecifica) ? null : request.DireccionEspecifica.Trim(),
+            UbicacionEspecifica = BodegasAjustes.ConstruirUbicacionEspecifica(request.DireccionLatitud, request.DireccionLongitud),
         };
 
         _context.Bodegas.Add(bodega);

@@ -5,4 +5,4 @@ public interface ICasoUsoListarMunicipios
     Task<IReadOnlyList<MunicipioResponse>> EjecutarAsync();
 }
 
-public record MunicipioResponse(int Id, string Nombre, string DepartamentoNombre);
+public record MunicipioResponse(int Id, string Nombre, string DepartamentoNombre, double? Latitud, double? Longitud);

@@ -31,6 +31,9 @@ public class CasoUsoEditarBodega : ICasoUsoEditarBodega
             throw new BodegaInvalidaException($"Municipio {request.MunicipioId} no encontrado.");
 
         bodega.Nombre = request.Nombre.Trim();
+        bodega.DireccionEspecifica = string.IsNullOrWhiteSpace(request.DireccionEspecifica) ? null : request.DireccionEspecifica.Trim();
+        bodega.UbicacionEspecifica = BodegasAjustes.ConstruirUbicacionEspecifica(request.DireccionLatitud, request.DireccionLongitud);
+
         if (bodega.MunicipioId != request.MunicipioId)
         {
             bodega.MunicipioId = request.MunicipioId;

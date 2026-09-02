@@ -4,6 +4,7 @@ export interface Bodega {
   municipioId: number
   municipioNombre: string
   departamentoNombre: string
+  direccionEspecifica: string | null
   latitud: number | null
   longitud: number | null
   lotesActivos: number
@@ -13,9 +14,15 @@ export interface Bodega {
 export interface CrearBodegaRequest {
   nombre: string
   municipioId: number
+  direccionEspecifica?: string | null
+  direccionLatitud?: number | null
+  direccionLongitud?: number | null
 }
 
 export interface EditarBodegaRequest {
   nombre: string
   municipioId: number
+  direccionEspecifica?: string | null
+  direccionLatitud?: number | null
+  direccionLongitud?: number | null
 }

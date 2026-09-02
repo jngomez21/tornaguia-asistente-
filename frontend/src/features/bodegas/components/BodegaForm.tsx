@@ -1,8 +1,9 @@
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, useWatch, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
 import { getMunicipios } from '../../solicitudes/api/solicitudesApi'
 import { BuscadorMunicipio } from '../../solicitudes/components/BuscadorMunicipio'
+import { BuscadorDireccion } from './BuscadorDireccion'
 import { bodegaFormSchema, bodegaFormPorDefecto } from '../schemas'
 import type { BodegaFormValues } from '../schemas'
 
@@ -26,6 +27,13 @@ export function BodegaForm({ valoresIniciales, textoBoton, guardando, onGuardar,
     resolver: zodResolver(bodegaFormSchema),
     defaultValues: valoresIniciales ?? bodegaFormPorDefecto,
   })
+
+  const municipioIdSeleccionado = useWatch({ control, name: 'municipioId' })
+  const municipioSeleccionado = municipiosQuery.data?.find((m) => m.id === municipioIdSeleccionado)
+  const centroMunicipio =
+    municipioSeleccionado?.latitud != null && municipioSeleccionado?.longitud != null
+      ? { latitud: municipioSeleccionado.latitud, longitud: municipioSeleccionado.longitud }
+      : null
 
   return (
     <div>
@@ -53,6 +61,16 @@ export function BodegaForm({ valoresIniciales, textoBoton, guardando, onGuardar,
         )}
       />
       {errors.municipioId && <p className="text-xs text-red-600 mb-3">{errors.municipioId.message}</p>}
+
+      <label className="block text-sm text-gray-600 mb-1 mt-3">Dirección exacta (opcional)</label>
+      <Controller
+        control={control}
+        name="direccion"
+        render={({ field }) => (
+          <BuscadorDireccion value={field.value} onChange={field.onChange} centroMunicipio={centroMunicipio} />
+        )}
+      />
+      <p className="text-xs text-gray-400 mt-1">Se usa solo para ubicar el punto exacto en el mapa.</p>
 
       <div className="flex gap-3 mt-4">
         {onCancelar && (

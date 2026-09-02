@@ -11,6 +11,7 @@ public record BodegaResponse(
     int MunicipioId,
     string MunicipioNombre,
     string DepartamentoNombre,
+    string? DireccionEspecifica,
     double? Latitud,
     double? Longitud,
     int LotesActivos,
