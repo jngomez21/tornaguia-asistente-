@@ -79,6 +79,7 @@ export function ResultadoSolicitud({
               estadoPdf,
               tipoDestino,
               esParaExportacion,
+              departamentosIntermedioIds: resultado.departamentosIntermedioIds ?? undefined,
               onSolicitarTornaguia,
               onDescargarPdf,
             },

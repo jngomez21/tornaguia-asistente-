@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using TornaguiaAsistente.Application.Solicitudes;
 using TornaguiaAsistente.Infrastructure.Persistence;
@@ -24,6 +25,7 @@ public class CasoUsoObtenerSolicitud : ICasoUsoObtenerSolicitud
         SolicitudesAjustes.AsegurarPropietario(solicitud.UsuarioId, usuarioId, "La solicitud");
 
         IReadOnlyList<double[]>? geometria = null;
+        IReadOnlyList<int>? departamentosIntermedioIds = null;
         if (solicitud.MunicipioDestinoId is not null)
         {
             var rutaCacheada = await _context.RutasCalculadas
@@ -35,6 +37,11 @@ public class CasoUsoObtenerSolicitud : ICasoUsoObtenerSolicitud
             geometria = rutaCacheada?.Geometria?.Coordinates
                 .Select(c => new[] { c.X, c.Y })
                 .ToList();
+
+            if (rutaCacheada is not null)
+            {
+                departamentosIntermedioIds = JsonSerializer.Deserialize<List<int>>(rutaCacheada.DepartamentosIntermedios);
+            }
         }
 
         return new CrearSolicitudResponse(
@@ -44,6 +51,7 @@ public class CasoUsoObtenerSolicitud : ICasoUsoObtenerSolicitud
             DistanciaKm: solicitud.DistanciaKm,
             TiempoEstimadoMinutos: solicitud.TiempoEstimadoMinutos,
             DepartamentosIntermedios: solicitud.DepartamentosIntermedios,
-            Geometria: geometria);
+            Geometria: geometria,
+            DepartamentosIntermedioIds: departamentosIntermedioIds);
     }
 }

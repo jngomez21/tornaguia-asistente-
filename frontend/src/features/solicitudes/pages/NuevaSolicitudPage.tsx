@@ -452,6 +452,7 @@ export function NuevaSolicitudPage() {
                             estadoPdf: estadoPdfDe(r.data.solicitudId),
                             tipoDestino: r.tipoDestino,
                             esParaExportacion: r.esParaExportacion,
+                            departamentosIntermedioIds: r.data.departamentosIntermedioIds ?? undefined,
                             onSolicitarTornaguia: () => abrirModal(r.data.solicitudId),
                             onDescargarPdf: () => descargarPdfSolicitud(r.data.solicitudId),
                           },
@@ -787,6 +788,7 @@ export function NuevaSolicitudPage() {
                       <div ref={mapaRef}>
                         {rutaPreviewQuery.data && rutaPreviewQuery.data.geometria.length > 1 ? (
                           <MapaRutasTornaguias
+                            animar
                             rutas={[
                               {
                                 solicitudId: 0,
@@ -795,6 +797,7 @@ export function NuevaSolicitudPage() {
                                 justificacion: 'Vista previa de la ruta.',
                                 estadoPdf: 'pendiente',
                                 interactiva: false,
+                                departamentosIntermedioIds: rutaPreviewQuery.data.departamentosIntermedioIds,
                               },
                             ]}
                           />

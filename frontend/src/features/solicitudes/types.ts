@@ -41,6 +41,14 @@ export interface CrearSolicitudResponse {
   tiempoEstimadoMinutos: number | null
   departamentosIntermedios: string[] | null
   geometria: [number, number][] | null
+  departamentosIntermedioIds: number[] | null
+}
+
+/** Límites de un departamento como MultiPolygon: polígonos -> anillos (0 = exterior, resto = huecos) -> puntos [lon, lat]. */
+export interface DepartamentoLimites {
+  id: number
+  nombre: string
+  poligonos: number[][][][]
 }
 
 export interface Producto {

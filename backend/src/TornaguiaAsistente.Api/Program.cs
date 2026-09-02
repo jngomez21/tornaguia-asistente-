@@ -79,6 +79,7 @@ builder.Services.AddScoped<ICasoUsoEditarInventario, CasoUsoEditarInventario>();
 builder.Services.AddScoped<ICasoUsoListarMunicipios, CasoUsoListarMunicipios>();
 builder.Services.AddScoped<ICasoUsoListarPaises, CasoUsoListarPaises>();
 builder.Services.AddScoped<ICasoUsoListarDepartamentos, CasoUsoListarDepartamentos>();
+builder.Services.AddScoped<ICasoUsoObtenerLimitesDepartamentos, CasoUsoObtenerLimitesDepartamentos>();
 builder.Services.AddScoped<ICasoUsoListarProductos, CasoUsoListarProductos>();
 builder.Services.AddScoped<ICasoUsoCrearProducto, CasoUsoCrearProducto>();
 builder.Services.AddScoped<ICasoUsoListarBodegas, CasoUsoListarBodegas>();

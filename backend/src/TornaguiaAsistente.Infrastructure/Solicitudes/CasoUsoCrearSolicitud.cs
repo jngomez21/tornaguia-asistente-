@@ -70,6 +70,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
         int? tiempoEstimado = null;
         List<string>? departamentosIntermedios = null;
         IReadOnlyList<double[]>? geometria = null;
+        IReadOnlyList<int>? departamentosIntermedioIds = null;
 
         if (request.BodegaDestinoId is not null)
         {
@@ -101,6 +102,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
                 distanciaKm = ruta.DistanciaKm;
                 tiempoEstimado = ruta.TiempoEstimadoMinutos;
                 geometria = ruta.Geometria;
+                departamentosIntermedioIds = ruta.DepartamentosIntermedioIds;
 
                 if (ruta.DepartamentosIntermedioIds.Count > 0)
                 {
@@ -166,6 +168,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
             DistanciaKm: distanciaKm,
             TiempoEstimadoMinutos: tiempoEstimado,
             DepartamentosIntermedios: departamentosIntermedios,
-            Geometria: geometria);
+            Geometria: geometria,
+            DepartamentosIntermedioIds: departamentosIntermedioIds);
     }
 }

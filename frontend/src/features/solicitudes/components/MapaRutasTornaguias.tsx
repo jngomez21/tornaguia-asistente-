@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useQueries } from '@tanstack/react-query'
 import { Map, Marker, Popup, Source, Layer } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import type { EstadoTornaguiaPdf } from './ResultadoSolicitud'
+import type { DepartamentoLimites } from '../types'
 import { colorPorTipo, colorHexPorTipo } from '../lib/coloresTornaguia'
 import { explicarResultado } from '../lib/tiposTornaguia'
+import { getLimitesDepartamento } from '../api/solicitudesApi'
+import { puntoEnMultiPoligono, multiPoligonoAGeoJson } from '../lib/geometriaDepartamentos'
 import { MAPBOX_TOKEN, useMapaBase } from '../../../shared/components/mapa/useMapaBase'
 import { MapaControles, MapaNoDisponible } from '../../../shared/components/mapa/MapaControles'
 
@@ -23,6 +27,8 @@ export interface RutaMapa {
   /** Contexto de la solicitud original, usado para distinguir los subcasos de Tránsito en la explicación. */
   tipoDestino?: 'municipio' | 'pais'
   esParaExportacion?: boolean
+  /** Departamentos que cruza la ruta, usados para el pulso de jurisdicción mientras se anima. */
+  departamentosIntermedioIds?: number[]
 }
 
 interface MapaRutasTornaguiasProps {
@@ -80,7 +86,17 @@ function useProgresoAnimacion(activa: boolean): number {
   return progreso
 }
 
-function RutaEnMapa({ ruta, animar, color }: { ruta: RutaMapa; animar: boolean; color: string }) {
+function RutaEnMapa({
+  ruta,
+  animar,
+  color,
+  departamentos,
+}: {
+  ruta: RutaMapa
+  animar: boolean
+  color: string
+  departamentos: DepartamentoLimites[]
+}) {
   const claseColor = colorPorTipo[ruta.tipoTornaguia] ?? 'bg-marca-oscuro'
   const explicacion = explicarResultado(ruta.tipoTornaguia, {
     tipoDestino: ruta.tipoDestino,
@@ -95,6 +111,11 @@ function RutaEnMapa({ ruta, animar, color }: { ruta: RutaMapa; animar: boolean; 
   const animacionTerminada = !animar || progreso >= 1
   const posicionActual = animar ? interpolarEnRuta(ruta.geometria, progreso) : destino
 
+  const departamentoActivoId = useMemo(() => {
+    if (animacionTerminada || departamentos.length === 0) return null
+    return departamentos.find((d) => puntoEnMultiPoligono(posicionActual, d.poligonos))?.id ?? null
+  }, [departamentos, posicionActual, animacionTerminada])
+
   const [popupAbierto, setPopupAbierto] = useState(false)
 
   const lineaRuta = useMemo(
@@ -108,6 +129,25 @@ function RutaEnMapa({ ruta, animar, color }: { ruta: RutaMapa; animar: boolean; 
 
   return (
     <>
+      {departamentos.map((departamento) => (
+        <Source
+          key={departamento.id}
+          id={`ruta-${ruta.solicitudId}-depto-${departamento.id}`}
+          type="geojson"
+          data={multiPoligonoAGeoJson(departamento.poligonos)}
+        >
+          <Layer
+            id={`ruta-${ruta.solicitudId}-depto-${departamento.id}-relleno`}
+            type="fill"
+            paint={{
+              'fill-color': color,
+              'fill-opacity': departamentoActivoId === departamento.id ? 0.35 : 0.06,
+              'fill-opacity-transition': { duration: 450 },
+            }}
+          />
+        </Source>
+      ))}
+
       <Source id={`ruta-${ruta.solicitudId}`} type="geojson" data={lineaRuta}>
         <Layer
           id={`ruta-${ruta.solicitudId}-linea`}
@@ -191,7 +231,7 @@ export function MapaRutasTornaguias({ rutas, animar = false, rutaEnFocoId = null
 
   const rutaEnFoco = rutaEnFocoId != null ? rutas.find((r) => r.solicitudId === rutaEnFocoId) : undefined
   const enFoco = rutaEnFoco !== undefined
-  const rutasVisibles = rutaEnFoco ? [rutaEnFoco] : rutas
+  const rutasVisibles = useMemo(() => (rutaEnFoco ? [rutaEnFoco] : rutas), [rutaEnFoco, rutas])
 
   const bounds = useMemo<[[number, number], [number, number]]>(() => {
     const puntos = rutasVisibles.flatMap((r) => r.geometria)
@@ -208,6 +248,35 @@ export function MapaRutasTornaguias({ rutas, animar = false, rutaEnFocoId = null
     ajustarABounds(bounds)
   }, [mapCargado, bounds, ajustarABounds])
 
+  const animarRutas = (animar && rutas.length === 1) || enFoco
+
+  // Un departamento por query: cada uno se cachea por su propio id (staleTime Infinity) y se
+  // reutiliza entre rutas y páginas distintas dentro de la misma sesión, en vez de refetchear
+  // el conjunto completo cada vez que cambia la combinación de departamentos a mostrar.
+  const idsDepartamentos = useMemo(
+    () =>
+      animarRutas ? Array.from(new Set(rutasVisibles.flatMap((r) => r.departamentosIntermedioIds ?? []))) : [],
+    [animarRutas, rutasVisibles],
+  )
+
+  const limitesQueries = useQueries({
+    queries: idsDepartamentos.map((id) => ({
+      queryKey: ['departamento-limites', id],
+      queryFn: () => getLimitesDepartamento(id),
+      staleTime: Infinity,
+    })),
+  })
+
+  // Nota: "Map" aquí es el componente de react-map-gl (importado arriba), no el tipo
+  // built-in de JS — por eso el lookup se arma como Record en vez de `new Map()`.
+  const limitesPorId = useMemo(() => {
+    const porId: Record<number, DepartamentoLimites> = {}
+    for (const q of limitesQueries) {
+      if (q.data) porId[q.data.id] = q.data
+    }
+    return porId
+  }, [limitesQueries])
+
   if (rutas.length === 0) return null
 
   if (!MAPBOX_TOKEN) {
@@ -215,7 +284,6 @@ export function MapaRutasTornaguias({ rutas, animar = false, rutaEnFocoId = null
   }
 
   const centro: [number, number] = [(bounds[0][0] + bounds[1][0]) / 2, (bounds[0][1] + bounds[1][1]) / 2]
-  const animarRutas = (animar && rutas.length === 1) || enFoco
 
   return (
     <div className="relative w-full h-80 rounded-xl overflow-hidden mb-6 border border-gray-100">
@@ -236,6 +304,10 @@ export function MapaRutasTornaguias({ rutas, animar = false, rutaEnFocoId = null
             key={ruta.solicitudId}
             ruta={ruta}
             animar={animarRutas}
+            departamentos={(ruta.departamentosIntermedioIds ?? []).flatMap((id) => {
+              const depto = limitesPorId[id]
+              return depto ? [depto] : []
+            })}
             color={
               rutasVisibles.length > 1
                 ? PALETA_RUTAS[rutas.findIndex((r) => r.solicitudId === ruta.solicitudId) % PALETA_RUTAS.length]

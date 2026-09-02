@@ -11,6 +11,7 @@ import type {
   DetalleTornaguiaResponse,
   HistorialSolicitud,
   RutaPreview,
+  DepartamentoLimites,
 } from '../types'
 
 export async function getMunicipios(): Promise<Municipio[]> {
@@ -36,6 +37,16 @@ export async function crearSolicitud(data: CrearSolicitudRequest): Promise<Crear
 export async function calcularRuta(origenId: number, destinoId: number): Promise<RutaPreview> {
   const response = await api.get<RutaPreview>('/rutas/calcular', { params: { origenId, destinoId } })
   return response.data
+}
+
+// Un departamento por llamada: así cada uno se cachea de forma independiente (staleTime
+// Infinity en el hook que lo consume) y se reutiliza entre rutas distintas que comparten
+// jurisdicción, en vez de repetir la descarga cada vez que cambia el conjunto de IDs.
+export async function getLimitesDepartamento(departamentoId: number): Promise<DepartamentoLimites | undefined> {
+  const response = await api.get<DepartamentoLimites[]>('/departamentos/limites', {
+    params: { ids: departamentoId },
+  })
+  return response.data[0]
 }
 
 export async function getProductos(): Promise<Producto[]> {
