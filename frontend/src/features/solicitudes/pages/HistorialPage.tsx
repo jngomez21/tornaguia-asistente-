@@ -13,6 +13,7 @@ import type { DatosRutaTornaguia } from '../lib/generarPdfTornaguia'
 import { mapearDetalleARequest } from '../lib/mapearDetalle'
 import { colorPorTipo } from '../lib/coloresTornaguia'
 import { ModalDetalleTornaguia } from '../components/ModalDetalleTornaguia'
+import { ModalVistaPreviaPdf } from '../components/ModalVistaPreviaPdf'
 import { Sidebar } from '../../../shared/components/Sidebar'
 import { appSidebarItems } from '../../../shared/components/sidebarItems'
 import { formatearFecha } from '../../../shared/lib/formato'
@@ -44,6 +45,8 @@ export function HistorialPage() {
   const [fechaDesde, setFechaDesde] = useState('')
   const [fechaHasta, setFechaHasta] = useState('')
   const [descargandoId, setDescargandoId] = useState<number | null>(null)
+  const [cargandoVistaPreviaId, setCargandoVistaPreviaId] = useState<number | null>(null)
+  const [vistaPrevia, setVistaPrevia] = useState<{ item: HistorialSolicitud; bytes: Uint8Array } | null>(null)
   const [cargandoRetomarId, setCargandoRetomarId] = useState<number | null>(null)
   const [errorAccion, setErrorAccion] = useState<string | null>(null)
   const [solicitudARetomar, setSolicitudARetomar] = useState<SolicitudEnRetomada | null>(null)
@@ -93,6 +96,19 @@ export function HistorialPage() {
       setErrorAccion('No se pudo descargar el PDF de esta tornaguía.')
     } finally {
       setDescargandoId(null)
+    }
+  }
+
+  async function abrirVistaPrevia(item: HistorialSolicitud) {
+    setErrorAccion(null)
+    setCargandoVistaPreviaId(item.solicitudId)
+    try {
+      const bytes = await getPdfTornaguia(item.solicitudId)
+      setVistaPrevia({ item, bytes })
+    } catch {
+      setErrorAccion('No se pudo cargar la vista previa de esta tornaguía.')
+    } finally {
+      setCargandoVistaPreviaId(null)
     }
   }
 
@@ -266,17 +282,36 @@ export function HistorialPage() {
                       <td className="px-5 py-3 text-center text-gray-600 whitespace-nowrap">{item.loteNumeroSerie ?? '—'}</td>
                       <td className="px-5 py-3 text-center whitespace-nowrap">
                         {item.tienePdf ? (
-                          <button
-                            type="button"
-                            onClick={() => descargarPdfDeHistorial(item)}
-                            disabled={descargandoId === item.solicitudId}
-                            className="flex items-center justify-center gap-1.5 text-marca-oscuro font-semibold hover:underline disabled:opacity-50"
-                          >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
-                              <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                            {descargandoId === item.solicitudId ? 'Descargando...' : 'Descargar PDF'}
-                          </button>
+                          <div className="flex items-center justify-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => abrirVistaPrevia(item)}
+                              disabled={cargandoVistaPreviaId === item.solicitudId}
+                              className="flex items-center justify-center gap-1.5 text-marca-oscuro/60 font-semibold hover:text-marca-oscuro hover:underline disabled:opacity-50"
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+                                <path
+                                  d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12z"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                                <circle cx="12" cy="12" r="3" />
+                              </svg>
+                              {cargandoVistaPreviaId === item.solicitudId ? 'Cargando...' : 'Vista previa'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => descargarPdfDeHistorial(item)}
+                              disabled={descargandoId === item.solicitudId}
+                              title={descargandoId === item.solicitudId ? 'Descargando...' : 'Descargar PDF'}
+                              aria-label="Descargar PDF"
+                              className="flex items-center justify-center w-8 h-8 rounded-lg text-marca-oscuro hover:bg-marca-oscuro/5 disabled:opacity-50 transition"
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+                                <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </button>
+                          </div>
                         ) : item.tieneDetalleGenerado ? (
                           <span className="text-gray-400">PDF no disponible</span>
                         ) : (
@@ -310,6 +345,15 @@ export function HistorialPage() {
           enviando={retomarMutation.isPending}
           onCerrar={() => setSolicitudARetomar(null)}
           onConfirmar={(values) => retomarMutation.mutate(values)}
+        />
+      )}
+
+      {vistaPrevia && (
+        <ModalVistaPreviaPdf
+          titulo={`${vistaPrevia.item.municipioOrigenNombre} → ${destino(vistaPrevia.item)}`}
+          bytes={vistaPrevia.bytes}
+          onCerrar={() => setVistaPrevia(null)}
+          onDescargar={() => descargarPdf(vistaPrevia.bytes, `tornaguia-${vistaPrevia.item.solicitudId}.pdf`)}
         />
       )}
     </div>

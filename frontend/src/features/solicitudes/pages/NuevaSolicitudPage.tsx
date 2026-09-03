@@ -22,6 +22,7 @@ import {
   PanelExplicacionTipoTornaguia,
 } from '../components/ExplicacionTipoTornaguia'
 import { ModalDetalleTornaguia } from '../components/ModalDetalleTornaguia'
+import { ModalVistaPreviaPdf } from '../components/ModalVistaPreviaPdf'
 import { construirPdfTornaguia, descargarPdf, bytesABase64 } from '../lib/generarPdfTornaguia'
 import type { DatosRutaTornaguia } from '../lib/generarPdfTornaguia'
 import { mapearDetalleARequest } from '../lib/mapearDetalle'
@@ -234,6 +235,7 @@ export function NuevaSolicitudPage() {
   const [generados, setGenerados] = useState<Record<number, boolean>>({})
   const [pdfsGenerados, setPdfsGenerados] = useState<Record<number, Uint8Array>>({})
   const [solicitudModalAbierta, setSolicitudModalAbierta] = useState<number | null>(null)
+  const [vistaPreviaId, setVistaPreviaId] = useState<number | null>(null)
   const [errorGeneracion, setErrorGeneracion] = useState<string | null>(null)
   const [solicitudEnFoco, setSolicitudEnFoco] = useState<number | null>(null)
   const [seleccionadoIndex, setSeleccionadoIndex] = useState(0)
@@ -308,12 +310,21 @@ export function NuevaSolicitudPage() {
     setSeleccionadoIndex(0)
     setTornaguiaActivaIndex(0)
     setHuboSeleccionDeRuta(false)
+    setVistaPreviaId(null)
   }
 
   function descargarPdfSolicitud(solicitudId: number) {
     const bytes = pdfsGenerados[solicitudId]
     if (!bytes) return
     descargarPdf(bytes, `tornaguia-${solicitudId}.pdf`)
+  }
+
+  function abrirVistaPrevia(solicitudId: number) {
+    setVistaPreviaId(solicitudId)
+  }
+
+  function etiquetaPorId(solicitudId: number) {
+    return resultados?.find((r) => r.ok && r.data.solicitudId === solicitudId)?.label
   }
 
   function descargarTodasLasGeneradas() {
@@ -485,6 +496,7 @@ export function NuevaSolicitudPage() {
                             destinoExacto: coordsDeBodega(r.bodegaDestinoId),
                             onSolicitarTornaguia: () => abrirModal(r.data.solicitudId),
                             onDescargarPdf: () => descargarPdfSolicitud(r.data.solicitudId),
+                            onVistaPreviaPdf: () => abrirVistaPrevia(r.data.solicitudId),
                           },
                         ]
                       : [],
@@ -548,6 +560,7 @@ export function NuevaSolicitudPage() {
                           estadoPdf={estadoPdfDe(resultadoMostrado.data.solicitudId)}
                           onSolicitarTornaguia={() => abrirModal(resultadoMostrado.data.solicitudId)}
                           onDescargarPdf={() => descargarPdfSolicitud(resultadoMostrado.data.solicitudId)}
+                          onVistaPreviaPdf={() => abrirVistaPrevia(resultadoMostrado.data.solicitudId)}
                           mostrarMapa={false}
                           tipoDestino={resultadoMostrado.tipoDestino}
                           esParaExportacion={resultadoMostrado.esParaExportacion}
@@ -577,6 +590,7 @@ export function NuevaSolicitudPage() {
                         estadoPdf={estadoPdfDe(resultadoMostrado.data.solicitudId)}
                         onSolicitarTornaguia={() => abrirModal(resultadoMostrado.data.solicitudId)}
                         onDescargarPdf={() => descargarPdfSolicitud(resultadoMostrado.data.solicitudId)}
+                        onVistaPreviaPdf={() => abrirVistaPrevia(resultadoMostrado.data.solicitudId)}
                         mostrarMapa
                         tipoDestino={resultadoMostrado.tipoDestino}
                         esParaExportacion={resultadoMostrado.esParaExportacion}
@@ -930,6 +944,15 @@ export function NuevaSolicitudPage() {
           enviando={!esResultadoMultiple && guardarDetalleMutation.isPending}
           onCerrar={cerrarModal}
           onConfirmar={onConfirmarModal}
+        />
+      )}
+
+      {vistaPreviaId != null && pdfsGenerados[vistaPreviaId] && (
+        <ModalVistaPreviaPdf
+          titulo={etiquetaPorId(vistaPreviaId)}
+          bytes={pdfsGenerados[vistaPreviaId]}
+          onCerrar={() => setVistaPreviaId(null)}
+          onDescargar={() => descargarPdfSolicitud(vistaPreviaId)}
         />
       )}
     </div>

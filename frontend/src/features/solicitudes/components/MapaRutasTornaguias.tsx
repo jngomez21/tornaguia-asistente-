@@ -22,6 +22,7 @@ export interface RutaMapa {
   estadoPdf: EstadoTornaguiaPdf
   onSolicitarTornaguia?: () => void
   onDescargarPdf?: () => void
+  onVistaPreviaPdf?: () => void
   /** false = solo vista previa (aún no existe una solicitud creada): sin marcador de acciones. */
   interactiva?: boolean
   /** Contexto de la solicitud original, usado para distinguir los subcasos de Tránsito en la explicación. */
@@ -269,10 +270,10 @@ function RutaEnMapa({
             {listoParaDescargar ? (
               <button
                 type="button"
-                onClick={ruta.onDescargarPdf}
+                onClick={ruta.onVistaPreviaPdf}
                 className="w-full bg-marca-oscuro text-white text-xs font-semibold py-1.5 rounded-md hover:opacity-90 transition"
               >
-                Descargar PDF
+                Vista previa
               </button>
             ) : (
               <button

@@ -10,6 +10,7 @@ interface ResultadoSolicitudProps {
   titulo?: string
   onSolicitarTornaguia?: () => void
   onDescargarPdf?: () => void
+  onVistaPreviaPdf?: () => void
   estadoPdf?: EstadoTornaguiaPdf
   mostrarMapa?: boolean
   onClickBadge?: () => void
@@ -38,6 +39,7 @@ export function ResultadoSolicitud({
   titulo,
   onSolicitarTornaguia,
   onDescargarPdf,
+  onVistaPreviaPdf,
   estadoPdf = 'pendiente',
   mostrarMapa = true,
   onClickBadge,
@@ -83,6 +85,7 @@ export function ResultadoSolicitud({
               esAproximada: resultado.esAproximada,
               onSolicitarTornaguia,
               onDescargarPdf,
+              onVistaPreviaPdf,
             },
           ]}
         />
