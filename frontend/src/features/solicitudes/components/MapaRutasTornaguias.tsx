@@ -109,7 +109,7 @@ function useGeometriaVisual(ruta: RutaMapa): { geometria: [number, number][]; ca
   return { geometria: ruta.geometria, cargando: necesitaRecalculo && query.isLoading }
 }
 
-function useProgresoAnimacion(activa: boolean): number {
+function useProgresoAnimacion(activa: boolean, repeticion: number): number {
   const [progreso, setProgreso] = useState(activa ? 0 : 1)
 
   useEffect(() => {
@@ -127,7 +127,7 @@ function useProgresoAnimacion(activa: boolean): number {
 
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [activa])
+  }, [activa, repeticion])
 
   return progreso
 }
@@ -135,11 +135,13 @@ function useProgresoAnimacion(activa: boolean): number {
 function RutaEnMapa({
   ruta,
   animar,
+  repeticion,
   color,
   departamentos,
 }: {
   ruta: RutaMapa
   animar: boolean
+  repeticion: number
   color: string
   departamentos: DepartamentoLimites[]
 }) {
@@ -156,7 +158,7 @@ function RutaEnMapa({
 
   // Mientras se recalcula la ruta visual hacia la dirección exacta, la animación espera: así no
   // arranca sobre la geometría entre municipios para luego saltar a la definitiva.
-  const progreso = useProgresoAnimacion(animar && !cargandoGeometriaVisual)
+  const progreso = useProgresoAnimacion(animar && !cargandoGeometriaVisual, repeticion)
   const animacionTerminada = !animar || progreso >= 1
   const posicionActual = animar ? interpolarEnRuta(geometria, progreso) : destino
 
@@ -277,6 +279,7 @@ function RutaEnMapa({
 
 export function MapaRutasTornaguias({ rutas, animar = false, rutaEnFocoId = null, onSalirFoco }: MapaRutasTornaguiasProps) {
   const { mapRef, mapCargado, onLoad, ajustarABounds } = useMapaBase()
+  const [repeticion, setRepeticion] = useState(0)
 
   const rutaEnFoco = rutaEnFocoId != null ? rutas.find((r) => r.solicitudId === rutaEnFocoId) : undefined
   const enFoco = rutaEnFoco !== undefined
@@ -357,6 +360,7 @@ export function MapaRutasTornaguias({ rutas, animar = false, rutaEnFocoId = null
             key={ruta.solicitudId}
             ruta={ruta}
             animar={animarRutas}
+            repeticion={repeticion}
             departamentos={(ruta.departamentosIntermedioIds ?? []).flatMap((id) => {
               const depto = limitesPorId[id]
               return depto ? [depto] : []
@@ -380,6 +384,25 @@ export function MapaRutasTornaguias({ rutas, animar = false, rutaEnFocoId = null
             <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           Ver todas las rutas
+        </button>
+      )}
+
+      {animarRutas && (
+        <button
+          type="button"
+          onClick={() => setRepeticion((r) => r + 1)}
+          title="Repetir animación de la ruta"
+          className={`absolute left-3 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-white shadow-md border border-gray-200 text-marca-oscuro hover:bg-gray-50 transition ${
+            enFoco && onSalirFoco ? 'top-14' : 'top-3'
+          }`}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+            <path
+              d="M3 12a9 9 0 1 1 2.6 6.4M3 12v-5m0 5h5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </button>
       )}
     </div>
