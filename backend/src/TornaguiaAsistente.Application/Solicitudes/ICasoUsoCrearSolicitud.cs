@@ -25,7 +25,8 @@ public record CrearSolicitudResponse(
     IReadOnlyList<string>? DepartamentosIntermedios,
     IReadOnlyList<double[]>? Geometria,
     IReadOnlyList<int>? DepartamentosIntermedioIds,
-    string? OrigenDireccionEspecifica = null
+    string? OrigenDireccionEspecifica = null,
+    bool EsAproximada = false
 );
 
 public class SolicitudInvalidaException : Exception

@@ -4,11 +4,15 @@ public interface IMotorGeografico
 {
     Task<ResultadoRuta> CalcularRutaAsync(
         int municipioOrigenId, int municipioDestinoId, CancellationToken cancellationToken = default);
+
+    Task<ResultadoRuta> CalcularRutaHaciaPaisAsync(
+        int municipioOrigenId, int paisDestinoId, CancellationToken cancellationToken = default);
 }
 
 public record ResultadoRuta(
     double DistanciaKm,
-    int TiempoEstimadoMinutos,
+    int? TiempoEstimadoMinutos,
     IReadOnlyList<int> DepartamentosIntermedioIds,
-    IReadOnlyList<double[]> Geometria
+    IReadOnlyList<double[]> Geometria,
+    bool EsAproximada
 );

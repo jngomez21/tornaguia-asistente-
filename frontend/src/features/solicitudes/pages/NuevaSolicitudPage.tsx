@@ -70,14 +70,23 @@ export function NuevaSolicitudPage() {
 
   const rutaPreviewHabilitada =
     !esMultiple &&
-    primerItem?.tipoDestino === 'municipio' &&
     primerItem?.municipioOrigenId != null &&
-    primerItem?.municipioDestinoId != null &&
-    primerItem.municipioOrigenId !== primerItem.municipioDestinoId
+    ((primerItem?.tipoDestino === 'municipio' &&
+      primerItem?.municipioDestinoId != null &&
+      primerItem.municipioOrigenId !== primerItem.municipioDestinoId) ||
+      (primerItem?.tipoDestino === 'pais' && primerItem?.paisDestinoId != null))
 
   const rutaPreviewQuery = useQuery({
-    queryKey: ['ruta-preview', primerItem?.municipioOrigenId, primerItem?.municipioDestinoId],
-    queryFn: () => calcularRuta(primerItem!.municipioOrigenId!, primerItem!.municipioDestinoId!),
+    queryKey: [
+      'ruta-preview',
+      primerItem?.municipioOrigenId,
+      primerItem?.tipoDestino,
+      primerItem?.tipoDestino === 'municipio' ? primerItem?.municipioDestinoId : primerItem?.paisDestinoId,
+    ],
+    queryFn: () =>
+      primerItem!.tipoDestino === 'municipio'
+        ? calcularRuta(primerItem!.municipioOrigenId!, { destinoId: primerItem!.municipioDestinoId! })
+        : calcularRuta(primerItem!.municipioOrigenId!, { paisDestinoId: primerItem!.paisDestinoId! }),
     enabled: rutaPreviewHabilitada,
     staleTime: 5 * 60 * 1000,
   })
@@ -471,6 +480,7 @@ export function NuevaSolicitudPage() {
                             tipoDestino: r.tipoDestino,
                             esParaExportacion: r.esParaExportacion,
                             departamentosIntermedioIds: r.data.departamentosIntermedioIds ?? undefined,
+                            esAproximada: r.data.esAproximada,
                             origenExacto: coordsDeBodega(r.bodegaOrigenId),
                             destinoExacto: coordsDeBodega(r.bodegaDestinoId),
                             onSolicitarTornaguia: () => abrirModal(r.data.solicitudId),
@@ -818,6 +828,7 @@ export function NuevaSolicitudPage() {
                                 estadoPdf: 'pendiente',
                                 interactiva: false,
                                 departamentosIntermedioIds: rutaPreviewQuery.data.departamentosIntermedioIds,
+                                esAproximada: rutaPreviewQuery.data.esAproximada,
                                 origenExacto: coordsDeBodega(primerItem?.bodegaOrigenId),
                                 destinoExacto: coordsDeBodega(primerItem?.bodegaDestinoId),
                               },
@@ -850,8 +861,11 @@ export function NuevaSolicitudPage() {
 
                       {rutaPreviewQuery.data && rutaPreviewQuery.data.geometria.length > 1 && (
                         <p className="text-xs text-gray-400">
-                          {rutaPreviewQuery.data.distanciaKm.toFixed(0)} km · ~
-                          {Math.round(rutaPreviewQuery.data.tiempoEstimadoMinutos / 60)} h estimadas
+                          {rutaPreviewQuery.data.esAproximada
+                            ? `~${rutaPreviewQuery.data.distanciaKm.toFixed(0)} km en línea recta (sin conexión terrestre)`
+                            : `${rutaPreviewQuery.data.distanciaKm.toFixed(0)} km · ~${Math.round(
+                                (rutaPreviewQuery.data.tiempoEstimadoMinutos ?? 0) / 60,
+                              )} h estimadas`}
                         </p>
                       )}
                     </div>

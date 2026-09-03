@@ -80,6 +80,7 @@ export function ResultadoSolicitud({
               tipoDestino,
               esParaExportacion,
               departamentosIntermedioIds: resultado.departamentosIntermedioIds ?? undefined,
+              esAproximada: resultado.esAproximada,
               onSolicitarTornaguia,
               onDescargarPdf,
             },

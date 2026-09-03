@@ -30,9 +30,10 @@ export interface CrearSolicitudRequest {
 
 export interface RutaPreview {
   distanciaKm: number
-  tiempoEstimadoMinutos: number
+  tiempoEstimadoMinutos: number | null
   departamentosIntermedioIds: number[]
   geometria: [number, number][]
+  esAproximada: boolean
 }
 
 export interface CrearSolicitudResponse {
@@ -45,6 +46,7 @@ export interface CrearSolicitudResponse {
   geometria: [number, number][] | null
   departamentosIntermedioIds: number[] | null
   origenDireccionEspecifica: string | null
+  esAproximada: boolean
 }
 
 /** Límites de un departamento como MultiPolygon: polígonos -> anillos (0 = exterior, resto = huecos) -> puntos [lon, lat]. */

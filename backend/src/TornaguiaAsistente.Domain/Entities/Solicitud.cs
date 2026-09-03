@@ -34,6 +34,9 @@ public class Solicitud
     public int? TiempoEstimadoMinutos { get; set; }
     public List<string>? DepartamentosIntermedios { get; set; }
 
+    /// <summary>true cuando DistanciaKm es una distancia en línea recta (sin conexión terrestre real).</summary>
+    public bool EsAproximada { get; set; }
+
     public DateTime FechaSolicitud { get; set; }
 
     public int? LoteId { get; set; }

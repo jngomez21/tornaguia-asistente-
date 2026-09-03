@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using TornaguiaAsistente.Application.Solicitudes;
+using TornaguiaAsistente.Domain.Entities;
 using TornaguiaAsistente.Infrastructure.Persistence;
 
 namespace TornaguiaAsistente.Infrastructure.Solicitudes;
@@ -27,22 +28,31 @@ public class CasoUsoObtenerSolicitud : ICasoUsoObtenerSolicitud
 
         IReadOnlyList<double[]>? geometria = null;
         IReadOnlyList<int>? departamentosIntermedioIds = null;
+
+        RutaCalculada? rutaCacheada = null;
         if (solicitud.MunicipioDestinoId is not null)
         {
-            var rutaCacheada = await _context.RutasCalculadas
+            rutaCacheada = await _context.RutasCalculadas
                 .AsNoTracking()
                 .FirstOrDefaultAsync(r =>
                     r.MunicipioOrigenId == solicitud.MunicipioOrigenId &&
                     r.MunicipioDestinoId == solicitud.MunicipioDestinoId.Value);
+        }
+        else if (solicitud.PaisDestinoId is not null)
+        {
+            rutaCacheada = await _context.RutasCalculadas
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r =>
+                    r.MunicipioOrigenId == solicitud.MunicipioOrigenId &&
+                    r.PaisDestinoId == solicitud.PaisDestinoId.Value);
+        }
 
-            geometria = rutaCacheada?.Geometria?.Coordinates
+        if (rutaCacheada is not null)
+        {
+            geometria = rutaCacheada.Geometria.Coordinates
                 .Select(c => new[] { c.X, c.Y })
                 .ToList();
-
-            if (rutaCacheada is not null)
-            {
-                departamentosIntermedioIds = JsonSerializer.Deserialize<List<int>>(rutaCacheada.DepartamentosIntermedios);
-            }
+            departamentosIntermedioIds = JsonSerializer.Deserialize<List<int>>(rutaCacheada.DepartamentosIntermedios);
         }
 
         return new CrearSolicitudResponse(
@@ -54,6 +64,7 @@ public class CasoUsoObtenerSolicitud : ICasoUsoObtenerSolicitud
             DepartamentosIntermedios: solicitud.DepartamentosIntermedios,
             Geometria: geometria,
             DepartamentosIntermedioIds: departamentosIntermedioIds,
-            OrigenDireccionEspecifica: solicitud.BodegaOrigen?.DireccionEspecifica);
+            OrigenDireccionEspecifica: solicitud.BodegaOrigen?.DireccionEspecifica,
+            EsAproximada: solicitud.EsAproximada);
     }
 }

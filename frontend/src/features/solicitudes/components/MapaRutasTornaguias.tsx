@@ -29,6 +29,9 @@ export interface RutaMapa {
   esParaExportacion?: boolean
   /** Departamentos que cruza la ruta, usados para el pulso de jurisdicción mientras se anima. */
   departamentosIntermedioIds?: number[]
+  /** true cuando no existe conexión terrestre real (Mapbox no encontró ruta) y la geometría es
+   * en cambio una línea recta de 2 puntos entre origen y destino, solo de referencia visual. */
+  esAproximada?: boolean
   /** Coordenadas exactas de la bodega origen/destino (si tiene dirección específica geocodificada).
    * Cuando están presentes, el mapa pide a Mapbox Directions una polilínea aparte que arranca/termina
    * ahí para mostrarla; esa llamada es puramente visual (vive en el frontend) y nunca alimenta
@@ -204,7 +207,12 @@ function RutaEnMapa({
           id={`ruta-${ruta.solicitudId}-linea`}
           type="line"
           layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-          paint={{ 'line-color': color, 'line-width': 4, 'line-opacity': 0.9 }}
+          paint={{
+            'line-color': color,
+            'line-width': 4,
+            'line-opacity': 0.9,
+            ...(ruta.esAproximada ? { 'line-dasharray': [2, 2] } : {}),
+          }}
         />
       </Source>
 
@@ -253,6 +261,11 @@ function RutaEnMapa({
               {ruta.tipoTornaguia}
             </span>
             <p className="text-xs text-gray-700 mb-2">{explicacion}</p>
+            {ruta.esAproximada && (
+              <p className="text-[10px] text-gray-500 italic mb-2">
+                Línea recta aproximada — no hay conexión terrestre calculada hacia este destino.
+              </p>
+            )}
             {listoParaDescargar ? (
               <button
                 type="button"

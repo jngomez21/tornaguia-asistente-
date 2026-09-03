@@ -34,8 +34,11 @@ export async function crearSolicitud(data: CrearSolicitudRequest): Promise<Crear
   return response.data
 }
 
-export async function calcularRuta(origenId: number, destinoId: number): Promise<RutaPreview> {
-  const response = await api.get<RutaPreview>('/rutas/calcular', { params: { origenId, destinoId } })
+export async function calcularRuta(
+  origenId: number,
+  destino: { destinoId: number } | { paisDestinoId: number },
+): Promise<RutaPreview> {
+  const response = await api.get<RutaPreview>('/rutas/calcular', { params: { origenId, ...destino } })
   return response.data
 }
 

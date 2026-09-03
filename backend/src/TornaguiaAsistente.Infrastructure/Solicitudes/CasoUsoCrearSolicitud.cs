@@ -73,6 +73,30 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
         List<string>? departamentosIntermedios = null;
         IReadOnlyList<double[]>? geometria = null;
         IReadOnlyList<int>? departamentosIntermedioIds = null;
+        var esAproximada = false;
+
+        async Task AplicarRutaAsync(ResultadoRuta ruta)
+        {
+            distanciaKm = ruta.DistanciaKm;
+            tiempoEstimado = ruta.TiempoEstimadoMinutos;
+            geometria = ruta.Geometria;
+            departamentosIntermedioIds = ruta.DepartamentosIntermedioIds;
+            esAproximada = ruta.EsAproximada;
+
+            if (ruta.DepartamentosIntermedioIds.Count > 0)
+            {
+                // Un `IN (...)` de SQL no garantiza devolver las filas en el orden de la
+                // lista de IDs, así que se arma un diccionario y se proyecta conservando el
+                // orden geográfico ya calculado en DepartamentosIntermedioIds.
+                var nombresPorId = await _context.Departamentos
+                    .Where(d => ruta.DepartamentosIntermedioIds.Contains(d.Id))
+                    .ToDictionaryAsync(d => d.Id, d => d.Nombre, cancellationToken);
+
+                departamentosIntermedios = ruta.DepartamentosIntermedioIds
+                    .Select(id => nombresPorId[id])
+                    .ToList();
+            }
+        }
 
         if (request.BodegaDestinoId is not null)
         {
@@ -98,38 +122,16 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
 
             mismoDepartamento = origen.DepartamentoId == destinoMunicipio.DepartamentoId;
 
-            try
-            {
-                var ruta = await _motorGeografico.CalcularRutaAsync(origen.Id, destinoMunicipio.Id, cancellationToken);
-                distanciaKm = ruta.DistanciaKm;
-                tiempoEstimado = ruta.TiempoEstimadoMinutos;
-                geometria = ruta.Geometria;
-                departamentosIntermedioIds = ruta.DepartamentosIntermedioIds;
-
-                if (ruta.DepartamentosIntermedioIds.Count > 0)
-                {
-                    // Un `IN (...)` de SQL no garantiza devolver las filas en el orden de la
-                    // lista de IDs, así que se arma un diccionario y se proyecta conservando el
-                    // orden geográfico ya calculado en DepartamentosIntermedioIds.
-                    var nombresPorId = await _context.Departamentos
-                        .Where(d => ruta.DepartamentosIntermedioIds.Contains(d.Id))
-                        .ToDictionaryAsync(d => d.Id, d => d.Nombre, cancellationToken);
-
-                    departamentosIntermedios = ruta.DepartamentosIntermedioIds
-                        .Select(id => nombresPorId[id])
-                        .ToList();
-                }
-            }
-            catch (SolicitudInvalidaException)
-            {
-                // No hay ruta terrestre calculable (ej. destinos sin conexión vial como Acandí).
-                // El tipo de tornaguía no depende de la ruta, así que se sigue sin distancia/mapa.
-            }
+            var ruta = await _motorGeografico.CalcularRutaAsync(origen.Id, destinoMunicipio.Id, cancellationToken);
+            await AplicarRutaAsync(ruta);
         }
         else
         {
             destinoPais = await _context.Paises.FindAsync([request.PaisDestinoId!.Value], cancellationToken)
                 ?? throw new SolicitudInvalidaException($"País de destino {request.PaisDestinoId} no encontrado.");
+
+            var ruta = await _motorGeografico.CalcularRutaHaciaPaisAsync(origen.Id, destinoPais.Id, cancellationToken);
+            await AplicarRutaAsync(ruta);
         }
 
         var evaluacion = new EvaluacionSolicitud(
@@ -164,6 +166,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
             DistanciaKm = distanciaKm,
             TiempoEstimadoMinutos = tiempoEstimado,
             DepartamentosIntermedios = departamentosIntermedios,
+            EsAproximada = esAproximada,
         };
 
         _context.Solicitudes.Add(solicitud);
@@ -178,6 +181,7 @@ public class CasoUsoCrearSolicitud : ICasoUsoCrearSolicitud
             DepartamentosIntermedios: departamentosIntermedios,
             Geometria: geometria,
             DepartamentosIntermedioIds: departamentosIntermedioIds,
-            OrigenDireccionEspecifica: bodegaOrigenDireccionEspecifica);
+            OrigenDireccionEspecifica: bodegaOrigenDireccionEspecifica,
+            EsAproximada: esAproximada);
     }
 }
