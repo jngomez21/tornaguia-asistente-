@@ -75,7 +75,7 @@ export function ForgotPasswordPage() {
         <img
           src={logo}
           alt="Tornaguía Asistente"
-          className="absolute left-1/2 top-[calc(25%+60px)] w-[56%] min-w-[204px] max-w-[492px] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_4px_12px_rgba(0,0,0,0.35)]"
+          className="absolute left-1/2 top-[calc(25%+60px)] w-[37.3%] min-w-[136px] max-w-[328px] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_4px_12px_rgba(0,0,0,0.35)]"
         />
       </div>
 
@@ -89,7 +89,7 @@ export function ForgotPasswordPage() {
             <img
               src={logo}
               alt="Tornaguía Asistente"
-              className="w-[287.2px] max-w-[70%] translate-y-[60px]"
+              className="w-[191.5px] max-w-[46.7%] translate-y-[60px]"
             />
           </div>
           <div className="flex-none flex items-center justify-center w-full p-6 sm:p-8">
