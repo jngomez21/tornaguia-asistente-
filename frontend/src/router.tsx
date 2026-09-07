@@ -7,6 +7,7 @@ import { NuevaSolicitudPage } from './features/solicitudes/pages/NuevaSolicitudP
 import { HistorialPage } from './features/solicitudes/pages/HistorialPage'
 import { LotesPage } from './features/inventario/pages/LotesPage'
 import { BodegasPage } from './features/bodegas/pages/BodegasPage'
+import { HistorialAsistentePage } from './features/asistente/pages/HistorialAsistentePage'
 import { RutaProtegida } from './shared/components/RutaProtegida'
 
 export const router = createBrowserRouter([
@@ -44,6 +45,10 @@ export const router = createBrowserRouter([
             {
                 path: '/bodegas',
                 element: <BodegasPage />,
+            },
+            {
+                path: '/asistente/historial',
+                element: <HistorialAsistentePage />,
             },
         ],
     },

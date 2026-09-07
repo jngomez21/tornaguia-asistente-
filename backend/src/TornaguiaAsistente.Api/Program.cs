@@ -20,6 +20,8 @@ using TornaguiaAsistente.Application.Bodegas;
 using TornaguiaAsistente.Infrastructure.Bodegas;
 using TornaguiaAsistente.Application.Ia;
 using TornaguiaAsistente.Infrastructure.Ia;
+using TornaguiaAsistente.Application.Asistente;
+using TornaguiaAsistente.Infrastructure.Asistente;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -90,6 +92,9 @@ builder.Services.AddHttpClient<ExtractorDeclaracionGemini>();
 builder.Services.AddScoped<IExtractorDeclaracion, ExtractorDeclaracionGemini>();
 builder.Services.AddScoped<ICasoUsoProponerDeclaracion, CasoUsoProponerDeclaracion>();
 builder.Services.AddScoped<ICasoUsoCrearLoteDesdeDeclaracion, CasoUsoCrearLoteDesdeDeclaracion>();
+builder.Services.AddHttpClient<CasoUsoResponderPreguntaGroq>();
+builder.Services.AddScoped<ICasoUsoResponderPregunta, CasoUsoResponderPreguntaGroq>();
+builder.Services.AddScoped<ICasoUsoObtenerHistorialConversacion, CasoUsoObtenerHistorialConversacion>();
 
 builder.Services.AddDbContext<TornaguiaDbContext>(options =>
     options.UseNpgsql(

@@ -7,4 +7,5 @@ export const appSidebarItems: SidebarItem[] = [
   { key: 'historial', label: 'Historial de solicitudes', icon: sidebarIconos.historial, to: '/solicitudes/historial' },
   { key: 'lotes', label: 'Lotes', icon: sidebarIconos.lotes, to: '/inventario/lotes' },
   { key: 'bodegas', label: 'Bodegas', icon: sidebarIconos.bodegas, to: '/bodegas' },
+  { key: 'asistente', label: 'Tornaguías ChatBot', icon: sidebarIconos.asistente, to: '/asistente/historial' },
 ]

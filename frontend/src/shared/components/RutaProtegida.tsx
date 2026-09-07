@@ -1,4 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom'
+import { ChatAsistente } from '../../features/asistente/components/ChatAsistente'
+import { AsistenteProvider } from '../../features/asistente/context/AsistenteContext'
 
 export function RutaProtegida() {
   const token = localStorage.getItem('token')
@@ -7,5 +9,10 @@ export function RutaProtegida() {
     return <Navigate to="/" replace />
   }
 
-  return <Outlet />
+  return (
+    <AsistenteProvider>
+      <Outlet />
+      <ChatAsistente />
+    </AsistenteProvider>
+  )
 }

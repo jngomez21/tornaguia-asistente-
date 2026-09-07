@@ -29,4 +29,14 @@ export const sidebarIconos = {
       <path d="M8 20v-6h8v6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
+  asistente: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+      <path d="M12 8V4" strokeLinecap="round" />
+      <circle cx="12" cy="3" r="1" fill="currentColor" stroke="none" />
+      <rect x="4" y="8" width="16" height="12" rx="2.5" />
+      <path d="M2 12h2M20 12h2" strokeLinecap="round" />
+      <circle cx="9" cy="14" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="14" r="1.2" fill="currentColor" stroke="none" />
+    </svg>
+  ),
 }

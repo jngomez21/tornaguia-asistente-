@@ -14,3 +14,12 @@ export function formatearFecha(fechaIso: string): string {
 export function primerSegmentoDireccion(direccion: string): string {
   return direccion.split(',')[0].trim()
 }
+
+export function truncarTexto(texto: string, longitudMaxima: number): string {
+  const plano = texto.replace(/\s+/g, ' ').trim()
+  if (plano.length <= longitudMaxima) return plano
+
+  const cortado = plano.slice(0, longitudMaxima)
+  const ultimoEspacio = cortado.lastIndexOf(' ')
+  return `${ultimoEspacio > 0 ? cortado.slice(0, ultimoEspacio) : cortado}…`
+}
