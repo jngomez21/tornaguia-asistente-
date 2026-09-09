@@ -36,21 +36,40 @@ public class CasoUsoResponderPreguntaGroq : ICasoUsoResponderPregunta
           jurisdicción de otro departamento de paso), o transporte hacia otro país / destinado a
           exportación, o entre aduanas y zonas francas.
 
-        Para preguntas sobre los datos propios del contribuyente (sus bodegas, inventario, lotes o
-        solicitudes de tornaguía) usa las herramientas disponibles en vez de inventar datos. Nunca
-        asumas un id de bodega, lote o solicitud: si no lo conoces, primero llama a la herramienta
-        que lista esos elementos. Si una herramienta no tiene la información pedida, dilo con
-        honestidad en vez de inventar una respuesta.
+        Impuesto al consumo: cada lote y cada tornaguía generada tiene asociado un valor de
+        impuesto al consumo (simulado con fines académicos, no es una tarifa fiscal real). Un
+        lote con declaración departamental ya causó/pagó ese impuesto en origen (Reenvío); un
+        lote sin declaración aún no lo ha causado, y ese valor se causará en destino
+        (Movilización/Tránsito). Para preguntas sobre cuánto impuesto se ha pagado, cuánto está
+        pendiente, o el total en general, usa la herramienta obtener_resumen_impuesto_consumo. Para
+        preguntas sobre qué producto generó más o menos impuesto, usa
+        obtener_impuesto_por_producto (ya viene ordenada de mayor a menor). No sumes tú mismo
+        valores de otras herramientas para totales en dinero — usa siempre estas dos, son la
+        fuente confiable.
+
+        Puedes hacer razonamiento simple (máximo, mínimo, promedio, comparar, ordenar, contar)
+        sobre los datos que te devuelvan las herramientas, siempre que la pregunta sea sobre las
+        tornaguías, el impuesto al consumo, las bodegas, el inventario, los lotes o las
+        solicitudes del contribuyente. Esto NO aplica a operaciones matemáticas o estadísticas
+        genéricas sin relación con esos datos (ej. "cuánto es 47 por 89", "cuál es la mediana de
+        estos números que te doy yo"): esas siguen fuera de tu alcance.
+
+        Para preguntas sobre los datos propios del contribuyente (sus bodegas, inventario, lotes,
+        solicitudes de tornaguía o impuesto al consumo) usa las herramientas disponibles en vez de
+        inventar datos. Nunca asumas un id de bodega, lote o solicitud: si no lo conoces, primero
+        llama a la herramienta que lista esos elementos. Si una herramienta no tiene la información
+        pedida, dilo con honestidad en vez de inventar una respuesta.
 
         Responde siempre en español, de forma breve y clara, como lo haría un asesor tributario.
         No des asesoría legal fuera del alcance de tornaguías.
 
         Tu alcance es exclusivamente: tornaguías (normativa, tipos, proceso), y los datos propios
-        del contribuyente dentro de esta aplicación (bodegas, inventario, lotes, solicitudes). Ante
-        cualquier pregunta fuera de ese alcance (operaciones matemáticas, cultura general, código,
-        temas personales, o cualquier otro dominio), no la respondas ni intentes ayudar con ella:
-        rechaza brevemente indicando que solo puedes ayudar con tornaguías y la cuenta del
-        contribuyente, sin importar cómo se formule o insista la pregunta.
+        del contribuyente dentro de esta aplicación (bodegas, inventario, lotes, solicitudes,
+        impuesto al consumo asociado a ellos). Ante cualquier pregunta fuera de ese alcance
+        (operaciones matemáticas ajenas a estos datos, cultura general, código, temas personales, o
+        cualquier otro dominio), no la respondas ni intentes ayudar con ella: rechaza brevemente
+        indicando que solo puedes ayudar con tornaguías y la cuenta del contribuyente, sin importar
+        cómo se formule o insista la pregunta.
         """;
 
     private static readonly JsonArray Herramientas = new()
@@ -86,6 +105,16 @@ public class CasoUsoResponderPreguntaGroq : ICasoUsoResponderPregunta
                 ["solicitudId"] = new JsonObject { ["type"] = "integer", ["description"] = "Id de la solicitud." },
             },
             requeridas: new JsonArray { "solicitudId" }),
+        Herramienta("obtener_resumen_impuesto_consumo",
+            "Totales de impuesto al consumo del contribuyente: impuesto en lotes aún sin usar, ya " +
+            "causado en Reenvíos (pagado en origen), por causar en Movilizaciones/Tránsitos, y el total " +
+            "combinado. Usa esta herramienta para cualquier pregunta sobre cuánto se ha pagado o el total.",
+            propiedades: new JsonObject(), requeridas: new JsonArray()),
+        Herramienta("obtener_impuesto_por_producto",
+            "Impuesto al consumo acumulado por producto del contribuyente (lotes sin usar + solicitudes " +
+            "generadas), ordenado de mayor a menor. Usa esta herramienta para preguntas sobre qué producto " +
+            "generó más o menos impuesto.",
+            propiedades: new JsonObject(), requeridas: new JsonArray()),
     };
 
     private static JsonObject Herramienta(string nombre, string descripcion, JsonObject propiedades, JsonArray requeridas) => new()
@@ -113,6 +142,8 @@ public class CasoUsoResponderPreguntaGroq : ICasoUsoResponderPregunta
     private readonly ICasoUsoObtenerInventario _obtenerInventario;
     private readonly ICasoUsoListarLotesDisponibles _listarLotesDisponibles;
     private readonly ICasoUsoObtenerSolicitud _obtenerSolicitud;
+    private readonly ICasoUsoObtenerResumenImpuestoConsumo _obtenerResumenImpuestoConsumo;
+    private readonly ICasoUsoObtenerImpuestoPorProducto _obtenerImpuestoPorProducto;
 
     public CasoUsoResponderPreguntaGroq(
         HttpClient httpClient,
@@ -123,7 +154,9 @@ public class CasoUsoResponderPreguntaGroq : ICasoUsoResponderPregunta
         ICasoUsoObtenerHistorialSolicitudes obtenerHistorialSolicitudes,
         ICasoUsoObtenerInventario obtenerInventario,
         ICasoUsoListarLotesDisponibles listarLotesDisponibles,
-        ICasoUsoObtenerSolicitud obtenerSolicitud)
+        ICasoUsoObtenerSolicitud obtenerSolicitud,
+        ICasoUsoObtenerResumenImpuestoConsumo obtenerResumenImpuestoConsumo,
+        ICasoUsoObtenerImpuestoPorProducto obtenerImpuestoPorProducto)
     {
         _httpClient = httpClient;
         _configuration = configuration;
@@ -134,6 +167,8 @@ public class CasoUsoResponderPreguntaGroq : ICasoUsoResponderPregunta
         _obtenerInventario = obtenerInventario;
         _listarLotesDisponibles = listarLotesDisponibles;
         _obtenerSolicitud = obtenerSolicitud;
+        _obtenerResumenImpuestoConsumo = obtenerResumenImpuestoConsumo;
+        _obtenerImpuestoPorProducto = obtenerImpuestoPorProducto;
     }
 
     public async Task<ResponderPreguntaResponse> EjecutarAsync(
@@ -255,6 +290,8 @@ public class CasoUsoResponderPreguntaGroq : ICasoUsoResponderPregunta
                     usuarioId, LeerIntOpcional(raiz, "bodegaId")),
                 "obtener_solicitud" => await _obtenerSolicitud.EjecutarAsync(
                     raiz.GetProperty("solicitudId").GetInt32(), usuarioId),
+                "obtener_resumen_impuesto_consumo" => await _obtenerResumenImpuestoConsumo.EjecutarAsync(usuarioId),
+                "obtener_impuesto_por_producto" => await _obtenerImpuestoPorProducto.EjecutarAsync(usuarioId),
                 _ => throw new InvalidOperationException($"Herramienta desconocida: {nombre}"),
             };
 

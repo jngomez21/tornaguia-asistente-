@@ -76,6 +76,7 @@ public class CasoUsoGuardarDetalleTornaguia : ICasoUsoGuardarDetalleTornaguia
                 SolicitudId = solicitud.Id,
                 ProductoId = loteProducto.ProductoId,
                 Cantidad = loteProducto.Cantidad,
+                ValorImpuestoConsumo = loteProducto.ValorImpuestoConsumo,
             });
         }
 
@@ -105,7 +106,8 @@ public class CasoUsoGuardarDetalleTornaguia : ICasoUsoGuardarDetalleTornaguia
             FechaGeneracion: detalle.FechaGeneracion,
             Productos: lote.LoteProductos
                 .Select(lp => new ProductoTransportadoResponse(
-                    lp.Producto.CodigoUnico, lp.Producto.Nombre, lp.Cantidad, lp.Producto.Capacidad))
-                .ToList());
+                    lp.Producto.CodigoUnico, lp.Producto.Nombre, lp.Cantidad, lp.Producto.Capacidad, lp.ValorImpuestoConsumo))
+                .ToList(),
+            ValorImpuestoTotal: lote.LoteProductos.Sum(lp => lp.ValorImpuestoConsumo));
     }
 }

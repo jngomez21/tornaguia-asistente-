@@ -16,7 +16,7 @@ import { ModalDetalleTornaguia } from '../components/ModalDetalleTornaguia'
 import { ModalVistaPreviaPdf } from '../components/ModalVistaPreviaPdf'
 import { Sidebar } from '../../../shared/components/Sidebar'
 import { appSidebarItems } from '../../../shared/components/sidebarItems'
-import { formatearFecha } from '../../../shared/lib/formato'
+import { formatearFecha, formatearMonedaCOP } from '../../../shared/lib/formato'
 import { extraerMensajeAxios } from '../../../shared/lib/errores'
 import type { DetalleTornaguiaFormValues } from '../schemas'
 import type { CrearSolicitudResponse, HistorialSolicitud } from '../types'
@@ -261,6 +261,7 @@ export function HistorialPage() {
                     <th className="px-4 py-3 font-semibold">Origen → Destino</th>
                     <th className="px-4 py-3 font-semibold">Declarado</th>
                     <th className="px-5 py-3 font-semibold">Lote</th>
+                    <th className="px-4 py-3 font-semibold">Impuesto</th>
                     <th className="px-5 py-3 font-semibold">Tornaguía</th>
                   </tr>
                 </thead>
@@ -280,6 +281,9 @@ export function HistorialPage() {
                       </td>
                       <td className="px-4 py-3 text-center text-gray-600">{item.estaDeclarado ? 'Sí' : 'No'}</td>
                       <td className="px-5 py-3 text-center text-gray-600 whitespace-nowrap">{item.loteNumeroSerie ?? '—'}</td>
+                      <td className="px-4 py-3 text-center text-gray-600 whitespace-nowrap">
+                        {item.valorImpuestoTotal != null ? formatearMonedaCOP(item.valorImpuestoTotal) : '—'}
+                      </td>
                       <td className="px-5 py-3 text-center whitespace-nowrap">
                         {item.tienePdf ? (
                           <div className="flex items-center justify-center gap-3">

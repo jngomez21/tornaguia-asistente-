@@ -288,18 +288,18 @@ export function LoteDesdeDeclaracionForm({ bodegaId, onGuardado, onCancelar }: L
             const errorItem = errors.productos?.[index]
             return (
               <div key={field.id} className="border border-gray-200 rounded-lg p-3 mb-2">
+                <div className="mb-2">
+                  <label className="block text-xs text-gray-500 mb-1">Producto</label>
+                  <input
+                    type="text"
+                    {...register(`productos.${index}.productoNombre`)}
+                    className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-marca-medio"
+                  />
+                  {errorItem?.productoNombre && (
+                    <p className="text-xs text-red-600 mt-1">{errorItem.productoNombre.message}</p>
+                  )}
+                </div>
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="col-span-1">
-                    <label className="block text-xs text-gray-500 mb-1">Producto</label>
-                    <input
-                      type="text"
-                      {...register(`productos.${index}.productoNombre`)}
-                      className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-marca-medio"
-                    />
-                    {errorItem?.productoNombre && (
-                      <p className="text-xs text-red-600 mt-1">{errorItem.productoNombre.message}</p>
-                    )}
-                  </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Presentación</label>
                     <input
@@ -322,6 +322,18 @@ export function LoteDesdeDeclaracionForm({ bodegaId, onGuardado, onCancelar }: L
                     />
                     {errorItem?.cantidad && (
                       <p className="text-xs text-red-600 mt-1">{errorItem.cantidad.message}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Impuesto declarado</label>
+                    <input
+                      type="number"
+                      step="any"
+                      {...register(`productos.${index}.valorImpuestoDeclarado`, { valueAsNumber: true })}
+                      className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-marca-medio"
+                    />
+                    {errorItem?.valorImpuestoDeclarado && (
+                      <p className="text-xs text-red-600 mt-1">{errorItem.valorImpuestoDeclarado.message}</p>
                     )}
                   </div>
                 </div>

@@ -19,4 +19,4 @@ public record CrearLoteDesdeDeclaracionRequest(
     IReadOnlyList<ProductoDeclaradoRequest> Productos
 );
 
-public record ProductoDeclaradoRequest(string ProductoNombre, decimal Capacidad, decimal Cantidad);
+public record ProductoDeclaradoRequest(string ProductoNombre, decimal Capacidad, decimal Cantidad, decimal ValorImpuestoDeclarado);

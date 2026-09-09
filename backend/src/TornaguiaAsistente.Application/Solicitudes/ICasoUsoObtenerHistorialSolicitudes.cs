@@ -16,5 +16,6 @@ public record HistorialSolicitudResponse(
     DateTime FechaSolicitud,
     bool TieneDetalleGenerado,
     bool TienePdf,
-    string? LoteNumeroSerie
+    string? LoteNumeroSerie,
+    decimal? ValorImpuestoTotal
 );

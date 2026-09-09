@@ -26,7 +26,7 @@ public class CasoUsoListarLotesDisponibles : ICasoUsoListarLotesDisponibles
                 l.Estado,
                 l.FechaCreacion,
                 Productos = l.LoteProductos
-                    .Select(lp => new LoteProductoResponse(lp.ProductoId, lp.Producto.Nombre, lp.Cantidad))
+                    .Select(lp => new LoteProductoResponse(lp.ProductoId, lp.Producto.Nombre, lp.Cantidad, lp.ValorImpuestoConsumo))
                     .ToList(),
                 Declaracion = l.DeclaracionDepartamental == null
                     ? null

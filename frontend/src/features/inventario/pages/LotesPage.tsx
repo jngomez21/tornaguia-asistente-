@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Sidebar } from '../../../shared/components/Sidebar'
 import { appSidebarItems } from '../../../shared/components/sidebarItems'
-import { formatearFecha } from '../../../shared/lib/formato'
+import { formatearFecha, formatearMonedaCOP } from '../../../shared/lib/formato'
 import { extraerMensajeAxios } from '../../../shared/lib/errores'
 import { getBodegas } from '../../bodegas/api/bodegasApi'
 import { getLotesDisponibles, crearLote, editarLote, cancelarLote } from '../api/inventarioApi'
@@ -337,12 +337,23 @@ export function LotesPage() {
                           <div className="flex-1 pt-3 border-t border-gray-100 space-y-2">
                             {lote.productos.map((p) => (
                               <div key={p.productoId} className="flex items-center justify-between gap-2 text-sm">
-                                <span className="text-gray-600 truncate">{p.productoNombre}</span>
+                                <span className="text-gray-600 truncate">
+                                  {p.productoNombre}
+                                  <span className="block text-xs text-gray-400">
+                                    Impuesto: {formatearMonedaCOP(p.valorImpuestoConsumo)}
+                                  </span>
+                                </span>
                                 <span className="shrink-0 font-semibold text-marca-oscuro bg-gray-50 px-2 py-0.5 rounded-md text-xs">
                                   {p.cantidad}
                                 </span>
                               </div>
                             ))}
+                            <div className="flex items-center justify-between gap-2 text-xs font-semibold text-marca-oscuro pt-2 border-t border-gray-100">
+                              <span>Total impuesto al consumo</span>
+                              <span>
+                                {formatearMonedaCOP(lote.productos.reduce((total, p) => total + p.valorImpuestoConsumo, 0))}
+                              </span>
+                            </div>
                           </div>
                         )}
                       </div>

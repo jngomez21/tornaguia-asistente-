@@ -1,31 +1,42 @@
 using Microsoft.EntityFrameworkCore;
 using TornaguiaAsistente.Application.Inventario;
 using TornaguiaAsistente.Domain.Entities;
+using TornaguiaAsistente.Domain.Impuestos;
 using TornaguiaAsistente.Infrastructure.Persistence;
 
 namespace TornaguiaAsistente.Infrastructure.Inventario;
 
+/// <summary>Cantidad y valor de impuesto al consumo de un producto agrupado dentro de un lote.</summary>
+internal readonly record struct DatosLoteProducto(decimal Cantidad, decimal ValorImpuestoConsumo);
+
 internal static class InventarioAjustes
 {
-    public static Dictionary<int, decimal> AgruparCantidades(IReadOnlyList<LoteProductoRequest> productos)
+    /// <summary>
+    /// Agrupa por producto y calcula el impuesto al consumo con el valor por defecto del sistema:
+    /// se usa para lotes SIN declaracion departamental (el impuesto aun no ha sido causado).
+    /// </summary>
+    public static Dictionary<int, DatosLoteProducto> AgruparCantidades(IReadOnlyList<LoteProductoRequest> productos)
     {
         if (productos.Count == 0)
             throw new InventarioInvalidoException("El lote debe tener al menos un producto.");
 
-        var agrupado = new Dictionary<int, decimal>();
+        var agrupado = new Dictionary<int, DatosLoteProducto>();
         foreach (var p in productos)
         {
             if (p.Cantidad <= 0)
                 throw new InventarioInvalidoException("La cantidad de cada producto debe ser mayor que cero.");
 
-            agrupado[p.ProductoId] = agrupado.GetValueOrDefault(p.ProductoId) + p.Cantidad;
+            var previo = agrupado.GetValueOrDefault(p.ProductoId);
+            agrupado[p.ProductoId] = new DatosLoteProducto(
+                previo.Cantidad + p.Cantidad,
+                previo.ValorImpuestoConsumo + ImpuestoConsumo.CalcularValorLinea(p.Cantidad));
         }
 
         return agrupado;
     }
 
     public static async Task DescontarAsync(
-        TornaguiaDbContext context, int bodegaId, IReadOnlyDictionary<int, decimal> cantidades)
+        TornaguiaDbContext context, int bodegaId, IReadOnlyDictionary<int, DatosLoteProducto> cantidades)
     {
         var productoIds = cantidades.Keys.ToList();
 
@@ -34,18 +45,18 @@ internal static class InventarioAjustes
             .Where(i => i.BodegaId == bodegaId && productoIds.Contains(i.ProductoId))
             .ToDictionaryAsync(i => i.ProductoId);
 
-        foreach (var (productoId, cantidad) in cantidades)
+        foreach (var (productoId, datos) in cantidades)
         {
             if (!inventarios.TryGetValue(productoId, out var inventario))
                 throw new InventarioInvalidoException(
                     $"No hay inventario registrado para el producto {productoId}.");
 
-            if (inventario.CantidadDisponible < cantidad)
+            if (inventario.CantidadDisponible < datos.Cantidad)
                 throw new InventarioInvalidoException(
                     $"Stock insuficiente de {inventario.Producto.Nombre}: " +
-                    $"disponible {inventario.CantidadDisponible}, solicitado {cantidad}.");
+                    $"disponible {inventario.CantidadDisponible}, solicitado {datos.Cantidad}.");
 
-            inventario.CantidadDisponible -= cantidad;
+            inventario.CantidadDisponible -= datos.Cantidad;
         }
     }
 
@@ -108,7 +119,7 @@ internal static class InventarioAjustes
     }
 
     public static Lote CrearLoteReservado(
-        TornaguiaDbContext context, int bodegaId, IReadOnlyDictionary<int, decimal> cantidades)
+        TornaguiaDbContext context, int bodegaId, IReadOnlyDictionary<int, DatosLoteProducto> cantidades)
     {
         var lote = new Lote
         {
@@ -117,8 +128,13 @@ internal static class InventarioAjustes
             FechaCreacion = DateTime.UtcNow,
         };
 
-        foreach (var (productoId, cantidad) in cantidades)
-            lote.LoteProductos.Add(new LoteProducto { ProductoId = productoId, Cantidad = cantidad });
+        foreach (var (productoId, datos) in cantidades)
+            lote.LoteProductos.Add(new LoteProducto
+            {
+                ProductoId = productoId,
+                Cantidad = datos.Cantidad,
+                ValorImpuestoConsumo = datos.ValorImpuestoConsumo,
+            });
 
         context.Lotes.Add(lote);
         return lote;
@@ -165,7 +181,7 @@ internal static class InventarioAjustes
         Estado: lote.Estado.ToString(),
         FechaCreacion: lote.FechaCreacion,
         Productos: lote.LoteProductos
-            .Select(lp => new LoteProductoResponse(lp.ProductoId, lp.Producto.Nombre, lp.Cantidad))
+            .Select(lp => new LoteProductoResponse(lp.ProductoId, lp.Producto.Nombre, lp.Cantidad, lp.ValorImpuestoConsumo))
             .ToList(),
         Declaracion: lote.DeclaracionDepartamental is null
             ? null

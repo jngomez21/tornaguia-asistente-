@@ -1,6 +1,6 @@
 import type { PDFFont, PDFPage, Color } from 'pdf-lib'
 import type { CrearSolicitudResponse, DetalleTornaguiaResponse } from '../types'
-import { primerSegmentoDireccion } from '../../../shared/lib/formato'
+import { primerSegmentoDireccion, formatearMonedaCOP } from '../../../shared/lib/formato'
 
 const ANCHO_PAGINA = 595.28
 const MARGEN_X = 55
@@ -225,13 +225,18 @@ function dibujarTablaProductos(
       [truncarAlAncho(producto.productoNombre, font, 9, anchoProducto), colProducto],
       [formatearNumero(producto.capacidad), colCapacidad],
       [formatearNumero(producto.cantidad), colCantidad],
-      ['$......', colImpuesto],
+      [formatearMonedaCOP(producto.valorImpuestoConsumo), colImpuesto],
     ]
     for (const [texto, x] of fila) {
       page.drawText(sanearParaWinAnsi(texto), { x, y, size: 9, font, color: GRIS_TEXTO })
     }
     y -= 15
   }
+
+  const totalImpuesto = detalle.productos.reduce((total, p) => total + p.valorImpuestoConsumo, 0)
+  page.drawText('Total impuesto al consumo', { x: colProducto, y, size: 9, font: fontBold, color: AZUL_MARCA })
+  page.drawText(formatearMonedaCOP(totalImpuesto), { x: colImpuesto, y, size: 9, font: fontBold, color: AZUL_MARCA })
+  y -= 15
 
   fijarY(y - 4)
 }

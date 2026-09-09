@@ -5,6 +5,11 @@ import { LoteForm } from './LoteForm'
 import { productosParaRequest } from '../schemas'
 import type { Lote } from '../types'
 import { extraerMensajeAxios } from '../../../shared/lib/errores'
+import { formatearMonedaCOP } from '../../../shared/lib/formato'
+
+function impuestoTotalLote(lote: Lote): number {
+  return lote.productos.reduce((total, p) => total + p.valorImpuestoConsumo, 0)
+}
 
 interface SelectorLoteProps {
   bodegaId: number | undefined
@@ -73,6 +78,9 @@ export function SelectorLote({ bodegaId, loteId, tipoTornaguia, onCambiar, error
                   <span className="font-semibold">{lote.numeroSerie}</span>{' '}
                   <span className="text-gray-500">
                     ({lote.productos.map((p) => `${p.productoNombre} x${p.cantidad}`).join(', ')})
+                  </span>
+                  <span className="block text-xs text-gray-400">
+                    Impuesto al consumo: {formatearMonedaCOP(impuestoTotalLote(lote))}
                   </span>
                 </span>
                 <input

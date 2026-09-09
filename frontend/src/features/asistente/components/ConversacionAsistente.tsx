@@ -22,7 +22,7 @@ export function ConversacionAsistente({ contenidoVacio }: ConversacionAsistenteP
   const { mensajes, conversacionId, agregarMensaje } = useAsistente()
   const [pregunta, setPregunta] = useState('')
   const [escribiendo, setEscribiendo] = useState(false)
-  const finRef = useRef<HTMLDivElement>(null)
+  const contenedorRef = useRef<HTMLDivElement>(null)
 
   const mutation = useMutation({
     mutationFn: (texto: string) => preguntarAsistente(texto, conversacionId),
@@ -46,7 +46,13 @@ export function ConversacionAsistente({ contenidoVacio }: ConversacionAsistenteP
   })
 
   useEffect(() => {
-    finRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const contenedor = contenedorRef.current
+    if (!contenedor) return
+    // scrollTop directo en vez de scrollIntoView: este widget vive dentro de un contenedor
+    // "fixed" (el chat flotante), y scrollIntoView puede desplazar contenedores ancestros o el
+    // documento para revelar el elemento, lo que provoca un mal pintado del widget "fixed" justo
+    // al montarse tras navegar. Limitar el scroll al propio contenedor evita ese efecto.
+    contenedor.scrollTo({ top: contenedor.scrollHeight, behavior: 'smooth' })
   }, [mensajes.length, escribiendo])
 
   function enviar() {
@@ -58,7 +64,7 @@ export function ConversacionAsistente({ contenidoVacio }: ConversacionAsistenteP
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 bg-gray-50">
+      <div ref={contenedorRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2 bg-gray-50">
         {mensajes.length === 0 && contenidoVacio}
 
         {mensajes.map((mensaje, i) => (
@@ -82,8 +88,6 @@ export function ConversacionAsistente({ contenidoVacio }: ConversacionAsistenteP
             </div>
           </div>
         )}
-
-        <div ref={finRef} />
       </div>
 
       <div className="flex items-center gap-2 border-t border-gray-100 p-2 shrink-0">

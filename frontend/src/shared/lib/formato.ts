@@ -15,6 +15,14 @@ export function primerSegmentoDireccion(direccion: string): string {
   return direccion.split(',')[0].trim()
 }
 
+export function formatearMonedaCOP(valor: number): string {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(valor)
+}
+
 export function truncarTexto(texto: string, longitudMaxima: number): string {
   const plano = texto.replace(/\s+/g, ' ').trim()
   if (plano.length <= longitudMaxima) return plano

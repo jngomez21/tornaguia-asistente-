@@ -24,6 +24,7 @@ export interface LoteProductoItem {
   productoId: number
   productoNombre: string
   cantidad: number
+  valorImpuestoConsumo: number
 }
 
 export interface DeclaracionResumen {
@@ -56,6 +57,7 @@ export interface ProductoPropuestoDeclaracion {
   capacidadCoincidente: number | null
   cantidad: number
   capacidadDetectada: number | null
+  valorImpuestoDetectado: number | null
 }
 
 export interface PropuestaDeclaracion {
@@ -77,6 +79,7 @@ export interface ProductoDeclaradoRequest {
   productoNombre: string
   capacidad: number
   cantidad: number
+  valorImpuestoDeclarado: number
 }
 
 export interface CrearLoteDesdeDeclaracionRequest {

@@ -26,8 +26,13 @@ public class CasoUsoEditarLote : ICasoUsoEditarLote
 
         _context.LotesProductos.RemoveRange(lote.LoteProductos);
         lote.LoteProductos.Clear();
-        foreach (var (productoId, cantidad) in cantidadesNuevas)
-            lote.LoteProductos.Add(new LoteProducto { ProductoId = productoId, Cantidad = cantidad });
+        foreach (var (productoId, datos) in cantidadesNuevas)
+            lote.LoteProductos.Add(new LoteProducto
+            {
+                ProductoId = productoId,
+                Cantidad = datos.Cantidad,
+                ValorImpuestoConsumo = datos.ValorImpuestoConsumo,
+            });
 
         await _context.SaveChangesAsync();
 

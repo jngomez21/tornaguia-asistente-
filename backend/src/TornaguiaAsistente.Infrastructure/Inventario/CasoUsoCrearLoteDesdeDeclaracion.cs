@@ -28,18 +28,23 @@ public class CasoUsoCrearLoteDesdeDeclaracion : ICasoUsoCrearLoteDesdeDeclaracio
         if (!departamentoExiste)
             throw new InventarioInvalidoException($"Departamento {request.DepartamentoId} no encontrado.");
 
-        var cantidades = new Dictionary<int, decimal>();
+        var cantidades = new Dictionary<int, DatosLoteProducto>();
         foreach (var item in request.Productos)
         {
             if (item.Cantidad <= 0)
                 throw new InventarioInvalidoException("La cantidad de cada producto debe ser mayor que cero.");
 
             var producto = await _crearProducto.EjecutarAsync(item.ProductoNombre, item.Capacidad);
-            cantidades[producto.Id] = cantidades.GetValueOrDefault(producto.Id) + item.Cantidad;
+            var previo = cantidades.GetValueOrDefault(producto.Id);
+            // El impuesto viene del documento declarado, no del valor por defecto del sistema:
+            // este lote ya causo el impuesto en origen.
+            cantidades[producto.Id] = new DatosLoteProducto(
+                previo.Cantidad + item.Cantidad,
+                previo.ValorImpuestoConsumo + item.ValorImpuestoDeclarado);
         }
 
         var loteProductosEntrada = cantidades
-            .Select(par => new LoteProducto { ProductoId = par.Key, Cantidad = par.Value })
+            .Select(par => new LoteProducto { ProductoId = par.Key, Cantidad = par.Value.Cantidad })
             .ToList();
 
         await InventarioAjustes.RegistrarEntradaPorTrasladoAsync(_context, request.BodegaId, loteProductosEntrada);

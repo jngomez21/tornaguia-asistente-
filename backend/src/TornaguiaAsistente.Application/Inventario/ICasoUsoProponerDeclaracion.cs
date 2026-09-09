@@ -23,5 +23,6 @@ public record ProductoPropuesto(
     int? ProductoIdCoincidente,
     decimal? CapacidadCoincidente,
     decimal Cantidad,
-    decimal? CapacidadDetectada
+    decimal? CapacidadDetectada,
+    decimal? ValorImpuestoDetectado
 );

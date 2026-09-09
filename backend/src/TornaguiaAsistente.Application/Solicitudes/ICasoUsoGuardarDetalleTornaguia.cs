@@ -28,7 +28,9 @@ public record DetalleTornaguiaResponse(
     string TransportadorIdentificacion,
     string PlacaVehiculo,
     DateTime FechaGeneracion,
-    IReadOnlyList<ProductoTransportadoResponse> Productos
+    IReadOnlyList<ProductoTransportadoResponse> Productos,
+    decimal ValorImpuestoTotal
 );
 
-public record ProductoTransportadoResponse(string ProductoCodigo, string ProductoNombre, decimal Cantidad, decimal Capacidad);
+public record ProductoTransportadoResponse(
+    string ProductoCodigo, string ProductoNombre, decimal Cantidad, decimal Capacidad, decimal ValorImpuestoConsumo);

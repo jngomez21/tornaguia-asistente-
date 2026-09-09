@@ -72,6 +72,7 @@ export interface ProductoTransportadoResponse {
   productoNombre: string
   cantidad: number
   capacidad: number
+  valorImpuestoConsumo: number
 }
 
 export interface GuardarDetalleTornaguiaRequest {
@@ -96,6 +97,7 @@ export interface DetalleTornaguiaResponse {
   placaVehiculo: string
   fechaGeneracion: string
   productos: ProductoTransportadoResponse[]
+  valorImpuestoTotal: number
 }
 
 export interface HistorialSolicitud {
@@ -110,4 +112,5 @@ export interface HistorialSolicitud {
   tieneDetalleGenerado: boolean
   tienePdf: boolean
   loteNumeroSerie: string | null
+  valorImpuestoTotal: number | null
 }

@@ -15,7 +15,7 @@ public record DeclaracionDetectada(
     IReadOnlyList<ProductoDetectado> Productos
 );
 
-public record ProductoDetectado(string NombreDetectado, decimal Cantidad, decimal? Capacidad);
+public record ProductoDetectado(string NombreDetectado, decimal Cantidad, decimal? Capacidad, decimal? ValorImpuesto);
 
 public class ExtraccionDeclaracionException : Exception
 {

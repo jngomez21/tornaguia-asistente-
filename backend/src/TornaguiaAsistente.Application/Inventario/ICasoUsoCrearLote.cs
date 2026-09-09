@@ -18,7 +18,7 @@ public record LoteResponse(
     DeclaracionResumen? Declaracion = null
 );
 
-public record LoteProductoResponse(int ProductoId, string ProductoNombre, decimal Cantidad);
+public record LoteProductoResponse(int ProductoId, string ProductoNombre, decimal Cantidad, decimal ValorImpuestoConsumo);
 
 public record DeclaracionResumen(
     string NumeroDeclaracion,

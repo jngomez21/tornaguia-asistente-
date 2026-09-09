@@ -1,6 +1,11 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import type { PDFFont, PDFPage } from 'pdf-lib'
-import { primerSegmentoDireccion } from '../../../shared/lib/formato'
+import { primerSegmentoDireccion, formatearMonedaCOP } from '../../../shared/lib/formato'
+
+// Mismo valor por defecto que Domain/Impuestos/ImpuestoConsumo.cs: la declaracion de prueba
+// simula un impuesto ya liquidado consistente con lo que el sistema calcularia por su cuenta,
+// para poder validar que la extraccion de Gemini lee el numero correcto.
+const VALOR_IMPUESTO_POR_UNIDAD = 1300
 
 const ANCHO_PAGINA = 595.28
 const MARGEN_X = 55
@@ -60,6 +65,7 @@ export interface ProductoDeclarado {
   presentacion: number
   unidad: string
   cantidad: number
+  valorImpuesto: number
 }
 
 export interface DatosDeclaracion {
@@ -94,7 +100,10 @@ export function generarDatosDeclaracion(departamento: string, direccion: string 
     remitente: aleatorio(EMPRESAS),
     nit: generarNit(),
     radicado: generarRadicado(),
-    productos: productosElegidos.map((p) => ({ ...p, cantidad: numeroAleatorio(20, 500) })),
+    productos: productosElegidos.map((p) => {
+      const cantidad = numeroAleatorio(20, 500)
+      return { ...p, cantidad, valorImpuesto: cantidad * VALOR_IMPUESTO_POR_UNIDAD }
+    }),
     direccion,
   }
 }
@@ -271,8 +280,9 @@ function dibujarTablaProductos(
   yInicial: number,
 ): number {
   const colProducto = MARGEN_X
-  const colPresentacion = MARGEN_X + 280
-  const colCantidad = MARGEN_X + 400
+  const colPresentacion = MARGEN_X + 220
+  const colCantidad = MARGEN_X + 330
+  const colImpuesto = MARGEN_X + 400
 
   let y = yInicial
 
@@ -280,6 +290,7 @@ function dibujarTablaProductos(
     ['Producto', colProducto],
     ['Presentacion', colPresentacion],
     ['Cantidad', colCantidad],
+    ['Valor impuesto', colImpuesto],
   ]
   for (const [texto, x] of encabezados) {
     page.drawText(texto, { x, y, size: 9, font: fontBold, color: AZUL_MARCA })
@@ -291,6 +302,7 @@ function dibujarTablaProductos(
       [producto.nombre, colProducto],
       [`${producto.presentacion} ${producto.unidad}`, colPresentacion],
       [String(producto.cantidad), colCantidad],
+      [formatearMonedaCOP(producto.valorImpuesto), colImpuesto],
     ]
     for (const [texto, x] of fila) {
       page.drawText(texto, { x, y, size: 9, font, color: GRIS_TEXTO })
@@ -312,7 +324,8 @@ function dibujarListaProductos(
   for (const producto of productos) {
     page.drawText('•', { x: MARGEN_X, y, size: 9, font: fontBold, color: AZUL_MARCA })
     page.drawText(
-      `${producto.nombre} — ${producto.presentacion} ${producto.unidad} — Cant: ${producto.cantidad}`,
+      `${producto.nombre} — ${producto.presentacion} ${producto.unidad} — Cant: ${producto.cantidad} — ` +
+        `Impuesto: ${formatearMonedaCOP(producto.valorImpuesto)}`,
       { x: MARGEN_X + 12, y, size: 9, font, color: GRIS_TEXTO },
     )
     y -= 15
@@ -491,7 +504,8 @@ function dibujarContenidoDeclaracionEnCanvas(
     ctx.font = '15px Arial'
     ctx.fillStyle = '#404040'
     ctx.fillText(
-      `• ${producto.nombre} — ${producto.presentacion} ${producto.unidad} — Cant: ${producto.cantidad}`,
+      `• ${producto.nombre} — ${producto.presentacion} ${producto.unidad} — Cant: ${producto.cantidad} — ` +
+        `Impuesto: ${formatearMonedaCOP(producto.valorImpuesto)}`,
       margenX,
       y,
     )

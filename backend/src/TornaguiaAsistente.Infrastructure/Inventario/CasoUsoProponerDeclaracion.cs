@@ -48,7 +48,8 @@ public class CasoUsoProponerDeclaracion : ICasoUsoProponerDeclaracion
                 // valor real: no debe pisar lo que la IA haya detectado en el documento.
                 CapacidadCoincidente: coincidencia is { Capacidad: > 0 } ? coincidencia.Capacidad : null,
                 Cantidad: productoDetectado.Cantidad,
-                CapacidadDetectada: productoDetectado.Capacidad));
+                CapacidadDetectada: productoDetectado.Capacidad,
+                ValorImpuestoDetectado: productoDetectado.ValorImpuesto));
         }
 
         return new PropuestaDeclaracionResponse(

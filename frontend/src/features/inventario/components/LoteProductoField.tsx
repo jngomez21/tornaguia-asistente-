@@ -1,6 +1,8 @@
 import { Controller, useWatch } from 'react-hook-form'
 import type { Control, UseFormRegister, UseFormSetValue, FieldErrors } from 'react-hook-form'
 import { BuscadorProducto } from '../../solicitudes/components/BuscadorProducto'
+import { calcularImpuestoEstimado } from '../lib/impuestoConsumoEstimado'
+import { formatearMonedaCOP } from '../../../shared/lib/formato'
 import type { LoteFormValues } from '../schemas'
 import type { Producto } from '../../solicitudes/types'
 
@@ -30,7 +32,9 @@ export function LoteProductoField({
   onQuitar,
 }: LoteProductoFieldProps) {
   const nombreSeleccionado = useWatch({ control, name: `productos.${index}.productoNombre` })
+  const cantidad = useWatch({ control, name: `productos.${index}.cantidad` })
   const errorItem = errors?.[index]
+  const impuestoEstimado = calcularImpuestoEstimado(Number(cantidad))
 
   return (
     <div className="border border-gray-200 rounded-lg p-3 mb-3">
@@ -62,6 +66,11 @@ export function LoteProductoField({
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marca-medio"
         />
         {errorItem?.cantidad && <p className="text-xs text-red-600 mt-1">{errorItem.cantidad.message}</p>}
+        {impuestoEstimado > 0 && (
+          <p className="text-xs text-gray-400 mt-1">
+            Impuesto al consumo estimado: {formatearMonedaCOP(impuestoEstimado)}
+          </p>
+        )}
       </div>
 
       {mostrarQuitar && (

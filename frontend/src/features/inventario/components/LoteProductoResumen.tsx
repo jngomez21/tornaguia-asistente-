@@ -1,5 +1,7 @@
 import { useWatch } from 'react-hook-form'
 import type { Control } from 'react-hook-form'
+import { calcularImpuestoEstimado } from '../lib/impuestoConsumoEstimado'
+import { formatearMonedaCOP } from '../../../shared/lib/formato'
 import type { LoteFormValues } from '../schemas'
 
 interface LoteProductoResumenProps {
@@ -10,12 +12,17 @@ interface LoteProductoResumenProps {
 
 export function LoteProductoResumen({ index, control, onQuitar }: LoteProductoResumenProps) {
   const producto = useWatch({ control, name: `productos.${index}` })
+  const impuestoEstimado = calcularImpuestoEstimado(Number(producto?.cantidad))
 
   return (
     <div className="flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2 mb-2 text-sm bg-gray-50">
       <span className="text-gray-700 truncate">
         {producto?.productoNombre || 'Producto'}
-        <span className="text-gray-400"> — cant. {producto?.cantidad}</span>
+        <span className="text-gray-400">
+          {' '}
+          — cant. {producto?.cantidad}
+          {impuestoEstimado > 0 && ` — imp. ${formatearMonedaCOP(impuestoEstimado)}`}
+        </span>
       </span>
       <button
         type="button"

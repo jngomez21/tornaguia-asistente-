@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAsistente } from '../context/useAsistente'
 import { ConversacionAsistente } from './ConversacionAsistente'
@@ -35,7 +36,17 @@ function IconoLimpiar() {
 
 export function ChatAsistente() {
   const location = useLocation()
-  const { abierto, mensajes, abrir, cerrar, limpiar } = useAsistente()
+  const { abierto, mensajes, abrir, cerrar, colapsar, limpiar } = useAsistente()
+  const [pathnameAnterior, setPathnameAnterior] = useState(location.pathname)
+
+  // Ajuste de estado durante el render (patrón oficial de React, sin useEffect) para que el
+  // colapso ocurra antes de pintar y no se vea un frame con el widget abierto. Al salir de
+  // "Tornaguías ChatBot" hacia cualquier otra vista, el widget debe verse colapsado sin importar
+  // si se dejó abierto ahí — pero sin perder la conversación (colapsar, no cerrar).
+  if (location.pathname !== pathnameAnterior) {
+    if (pathnameAnterior === RUTA_HISTORIAL) colapsar()
+    setPathnameAnterior(location.pathname)
+  }
 
   if (location.pathname === RUTA_HISTORIAL) return null
 

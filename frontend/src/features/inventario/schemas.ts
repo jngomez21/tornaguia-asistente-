@@ -64,6 +64,7 @@ const productoDeclaradoBaseSchema = z.object({
   productoNombre: z.string(),
   capacidad: z.number(),
   cantidad: z.number(),
+  valorImpuestoDeclarado: z.number(),
 })
 
 export const productoDeclaradoSchema = productoDeclaradoBaseSchema.superRefine((data, ctx) => {
@@ -75,6 +76,9 @@ export const productoDeclaradoSchema = productoDeclaradoBaseSchema.superRefine((
   }
   if (!Number.isFinite(data.cantidad) || data.cantidad <= 0) {
     ctx.addIssue({ code: 'custom', path: ['cantidad'], message: 'Debe ser mayor a 0.' })
+  }
+  if (!Number.isFinite(data.valorImpuestoDeclarado) || data.valorImpuestoDeclarado < 0) {
+    ctx.addIssue({ code: 'custom', path: ['valorImpuestoDeclarado'], message: 'Debe ser 0 o mayor.' })
   }
 })
 
@@ -105,7 +109,12 @@ export const declaracionFormSchema = z.object({
 
 export type DeclaracionFormValues = z.infer<typeof declaracionFormSchema>
 
-export const declaracionProductoPorDefecto = { productoNombre: '', capacidad: NaN, cantidad: NaN }
+export const declaracionProductoPorDefecto = {
+  productoNombre: '',
+  capacidad: NaN,
+  cantidad: NaN,
+  valorImpuestoDeclarado: NaN,
+}
 
 export function propuestaAValoresFormulario(propuesta: PropuestaDeclaracion): DeclaracionFormValues {
   return {
@@ -120,6 +129,7 @@ export function propuestaAValoresFormulario(propuesta: PropuestaDeclaracion): De
             productoNombre: p.nombreDetectado,
             capacidad: p.capacidadCoincidente ?? p.capacidadDetectada ?? NaN,
             cantidad: p.cantidad,
+            valorImpuestoDeclarado: p.valorImpuestoDetectado ?? NaN,
           }))
         : [declaracionProductoPorDefecto],
   }
@@ -130,5 +140,6 @@ export function productosDeclaradosParaRequest(values: DeclaracionFormValues): P
     productoNombre: p.productoNombre,
     capacidad: p.capacidad,
     cantidad: p.cantidad,
+    valorImpuestoDeclarado: p.valorImpuestoDeclarado,
   }))
 }

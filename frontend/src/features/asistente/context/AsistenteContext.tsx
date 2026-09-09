@@ -14,6 +14,7 @@ export function AsistenteProvider({ children }: { children: ReactNode }) {
     mensajes,
     conversacionId,
     abrir: () => setAbierto(true),
+    colapsar: () => setAbierto(false),
     cerrar: () => {
       setAbierto(false)
       setMensajes([])

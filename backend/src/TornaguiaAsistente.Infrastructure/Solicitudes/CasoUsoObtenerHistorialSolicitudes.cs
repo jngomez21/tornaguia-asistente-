@@ -32,6 +32,9 @@ public class CasoUsoObtenerHistorialSolicitudes : ICasoUsoObtenerHistorialSolici
                 TieneDetalleGenerado = s.DetalleTornaguia != null,
                 TienePdf = s.DetalleTornaguia != null && s.DetalleTornaguia.PdfBytes != null,
                 s.LoteId,
+                ValorImpuestoTotal = s.DetalleTornaguia != null
+                    ? s.SolicitudProductos.Sum(sp => (decimal?)sp.ValorImpuestoConsumo)
+                    : null,
             })
             .ToListAsync();
 
@@ -47,7 +50,8 @@ public class CasoUsoObtenerHistorialSolicitudes : ICasoUsoObtenerHistorialSolici
                 f.FechaSolicitud,
                 f.TieneDetalleGenerado,
                 f.TienePdf,
-                f.LoteId.HasValue ? InventarioAjustes.NumeroSerie(f.LoteId.Value) : null))
+                f.LoteId.HasValue ? InventarioAjustes.NumeroSerie(f.LoteId.Value) : null,
+                f.ValorImpuestoTotal))
             .ToList();
     }
 }

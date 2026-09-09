@@ -32,10 +32,18 @@ public class ExtractorDeclaracionGemini : IExtractorDeclaracion
             cajetillas y no tienen volumen en mililitros, OMITE este campo (no escribas 0).
             Escribe SOLO el numero, sin la unidad: si el documento dice "250 ml" o "250cc",
             escribe 250 (no "250 ml" ni "250cc").
+          - valorImpuesto: el valor TOTAL en pesos colombianos de impuesto al consumo ya
+            liquidado/pagado para ese producto (no un valor por unidad). Puede aparecer como
+            "valor a pagar", "impuesto liquidado", "total impuesto" u otra columna similar.
+            Escribe SOLO el numero, sin simbolo de moneda ni separadores de miles (si el
+            documento dice "$156.000", escribe 156000). Si el documento no trae este dato,
+            OMITE el campo (no inventes ni calcules un valor).
 
         Ejemplos:
-        - "Ron Medellin 750ml x 120 unidades" -> nombre="Ron Medellin", cantidad=120, capacidadMl=750.
-        - "Cigarrillos Marlboro x 40 cajetillas" -> nombre="Cigarrillos Marlboro", cantidad=40, sin capacidadMl.
+        - "Ron Medellin 750ml x 120 unidades, impuesto $156.000" -> nombre="Ron Medellin",
+          cantidad=120, capacidadMl=750, valorImpuesto=156000.
+        - "Cigarrillos Marlboro x 40 cajetillas" -> nombre="Cigarrillos Marlboro", cantidad=40,
+          sin capacidadMl ni valorImpuesto.
 
         Si un campo no aparece en el documento o no puedes determinarlo con certeza, dejalo
         vacio (o, en el caso de capacidadMl, omitelo). No inventes datos que no esten en el
@@ -159,7 +167,8 @@ public class ExtractorDeclaracionGemini : IExtractorDeclaracion
                 .Select(p => new ProductoDetectado(
                     NombreDetectado: p.GetProperty("nombre").GetString() ?? string.Empty,
                     Cantidad: p.GetProperty("cantidad").GetDecimal(),
-                    Capacidad: LeerCapacidadOpcional(p)))
+                    Capacidad: LeerCapacidadOpcional(p),
+                    ValorImpuesto: LeerValorImpuestoOpcional(p)))
                 .Where(p => p.NombreDetectado.Length > 0)
                 .ToList()
             : new List<ProductoDetectado>();
@@ -205,6 +214,26 @@ public class ExtractorDeclaracionGemini : IExtractorDeclaracion
         return null;
     }
 
+    private static decimal? LeerValorImpuestoOpcional(JsonElement producto)
+    {
+        if (!producto.TryGetProperty("valorImpuesto", out var valor))
+            return null;
+
+        if (valor.ValueKind == JsonValueKind.Number)
+            return valor.GetDecimal() is > 0 and var numero ? numero : null;
+
+        if (valor.ValueKind == JsonValueKind.String)
+        {
+            var coincidencia = Regex.Match(valor.GetString() ?? string.Empty, @"[\d.,]+");
+            if (coincidencia.Success &&
+                decimal.TryParse(coincidencia.Value.Replace(".", "").Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out var extraido) &&
+                extraido > 0)
+                return extraido;
+        }
+
+        return null;
+    }
+
     private static readonly object EsquemaRespuesta = new
     {
         type = "OBJECT",
@@ -226,6 +255,7 @@ public class ExtractorDeclaracionGemini : IExtractorDeclaracion
                         nombre = new { type = "STRING" },
                         cantidad = new { type = "NUMBER" },
                         capacidadMl = new { type = "NUMBER", nullable = true },
+                        valorImpuesto = new { type = "NUMBER", nullable = true },
                     },
                     required = new[] { "nombre", "cantidad" },
                 },
