@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using TornaguiaAsistente.Application.Inventario;
-using TornaguiaAsistente.Domain.Entities;
 using TornaguiaAsistente.Infrastructure.Persistence;
 
 namespace TornaguiaAsistente.Infrastructure.Inventario;
@@ -16,9 +15,7 @@ public class CasoUsoObtenerImpuestoPorProducto : ICasoUsoObtenerImpuestoPorProdu
 
     public async Task<IReadOnlyList<ImpuestoPorProductoResponse>> EjecutarAsync(int usuarioId)
     {
-        // Solo lotes Reservado: uno Vinculado ya aporta su valor via SolicitudProducto (evita doble conteo).
-        var enLotesSinUsar = await _context.LotesProductos
-            .Where(lp => lp.Lote.Estado == EstadoLote.Reservado && lp.Lote.Bodega!.UsuarioId == usuarioId)
+        var enLotesSinUsar = await ImpuestoConsumoQueries.LotesSinUsar(_context, usuarioId)
             .GroupBy(lp => new { lp.ProductoId, lp.Producto.Nombre })
             .Select(g => new { g.Key.ProductoId, g.Key.Nombre, Total = g.Sum(x => x.ValorImpuestoConsumo) })
             .ToListAsync();

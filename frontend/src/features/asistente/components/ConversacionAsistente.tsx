@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { extraerMensajeAxios } from '../../../shared/lib/errores'
-import { preguntarAsistente } from '../api/asistenteApi'
 import { useAsistente } from '../context/useAsistente'
 import { MensajeContenido } from './MensajeContenido'
 
@@ -19,13 +18,13 @@ interface ConversacionAsistenteProps {
 }
 
 export function ConversacionAsistente({ contenidoVacio }: ConversacionAsistenteProps) {
-  const { mensajes, conversacionId, agregarMensaje } = useAsistente()
+  const { mensajes, conversacionId, agregarMensaje, preguntar } = useAsistente()
   const [pregunta, setPregunta] = useState('')
   const [escribiendo, setEscribiendo] = useState(false)
   const contenedorRef = useRef<HTMLDivElement>(null)
 
   const mutation = useMutation({
-    mutationFn: (texto: string) => preguntarAsistente(texto, conversacionId),
+    mutationFn: (texto: string) => preguntar(texto, conversacionId),
     onMutate: (texto: string) => {
       setEscribiendo(true)
       agregarMensaje({ rol: 'usuario', contenido: texto, fechaCreacion: new Date().toISOString(), conversacionId })

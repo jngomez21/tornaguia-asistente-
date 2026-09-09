@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using TornaguiaAsistente.Application.Inventario;
-using TornaguiaAsistente.Domain.Entities;
 using TornaguiaAsistente.Infrastructure.Persistence;
 
 namespace TornaguiaAsistente.Infrastructure.Inventario;
@@ -16,19 +15,13 @@ public class CasoUsoObtenerResumenImpuestoConsumo : ICasoUsoObtenerResumenImpues
 
     public async Task<ResumenImpuestoConsumoResponse> EjecutarAsync(int usuarioId)
     {
-        var impuestoEnLotesSinUsar = await _context.Lotes
-            .Where(l => l.Bodega!.UsuarioId == usuarioId && l.Estado == EstadoLote.Reservado)
-            .SelectMany(l => l.LoteProductos)
+        var impuestoEnLotesSinUsar = await ImpuestoConsumoQueries.LotesSinUsar(_context, usuarioId)
             .SumAsync(lp => (decimal?)lp.ValorImpuestoConsumo) ?? 0m;
 
-        var impuestoYaCausadoEnReenvios = await _context.Solicitudes
-            .Where(s => s.UsuarioId == usuarioId && s.TipoTornaguia.Nombre == "Reenvío")
-            .SelectMany(s => s.SolicitudProductos)
+        var impuestoYaCausadoEnReenvios = await ImpuestoConsumoQueries.Causado(_context, usuarioId, anio: null)
             .SumAsync(sp => (decimal?)sp.ValorImpuestoConsumo) ?? 0m;
 
-        var impuestoPorCausar = await _context.Solicitudes
-            .Where(s => s.UsuarioId == usuarioId && s.TipoTornaguia.Nombre != "Reenvío")
-            .SelectMany(s => s.SolicitudProductos)
+        var impuestoPorCausar = await ImpuestoConsumoQueries.PorCausar(_context, usuarioId, anio: null)
             .SumAsync(sp => (decimal?)sp.ValorImpuestoConsumo) ?? 0m;
 
         return new ResumenImpuestoConsumoResponse(

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using TornaguiaAsistente.Application.Autenticacion;
+using TornaguiaAsistente.Domain.Entities;
 using TornaguiaAsistente.Infrastructure.Persistence;
 
 namespace TornaguiaAsistente.Infrastructure.Autenticacion;
@@ -28,12 +29,12 @@ public class CasoUsoLogin : ICasoUsoLogin
         if (usuario is null || !BCrypt.Net.BCrypt.Verify(request.Password, usuario.PasswordHash))
             throw new CredencialesInvalidasException("Correo o contraseña incorrectos.");
 
-        var token = GenerarToken(usuario.Id, usuario.Nombre, usuario.Email);
+        var token = GenerarToken(usuario.Id, usuario.Nombre, usuario.Email, usuario.Rol);
 
-        return new LoginResponse(token, usuario.Id, usuario.Nombre);
+        return new LoginResponse(token, usuario.Id, usuario.Nombre, usuario.Rol.ToString());
     }
 
-    private string GenerarToken(int usuarioId, string nombre, string email)
+    private string GenerarToken(int usuarioId, string nombre, string email, RolUsuario rol)
     {
         var secretKey = _configuration["Jwt:SecretKey"]
             ?? throw new InvalidOperationException("Falta configurar Jwt:SecretKey");
@@ -45,7 +46,8 @@ public class CasoUsoLogin : ICasoUsoLogin
         {
             new Claim(JwtRegisteredClaimNames.Sub, usuarioId.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, email),
-            new Claim("nombre", nombre)
+            new Claim("nombre", nombre),
+            new Claim("rol", rol.ToString())
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));

@@ -1,10 +1,6 @@
-using System.Net;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using TornaguiaAsistente.Application.Asistente;
 using TornaguiaAsistente.Application.Bodegas;
 using TornaguiaAsistente.Application.Inventario;
@@ -16,9 +12,6 @@ namespace TornaguiaAsistente.Infrastructure.Asistente;
 
 public class CasoUsoResponderPreguntaGroq : ICasoUsoResponderPregunta
 {
-    private const string Modelo = "openai/gpt-oss-120b";
-    private const string Url = "https://api.groq.com/openai/v1/chat/completions";
-    private const int MaxIteracionesHerramientas = 6;
     private const int MensajesDeHistorialACargar = 20;
 
     private const string SystemPrompt = """
@@ -133,9 +126,7 @@ public class CasoUsoResponderPreguntaGroq : ICasoUsoResponderPregunta
         },
     };
 
-    private readonly HttpClient _httpClient;
-    private readonly IConfiguration _configuration;
-    private readonly ILogger<CasoUsoResponderPreguntaGroq> _logger;
+    private readonly ClienteChatGroq _clienteChat;
     private readonly TornaguiaDbContext _context;
     private readonly ICasoUsoListarBodegas _listarBodegas;
     private readonly ICasoUsoObtenerHistorialSolicitudes _obtenerHistorialSolicitudes;
@@ -146,9 +137,7 @@ public class CasoUsoResponderPreguntaGroq : ICasoUsoResponderPregunta
     private readonly ICasoUsoObtenerImpuestoPorProducto _obtenerImpuestoPorProducto;
 
     public CasoUsoResponderPreguntaGroq(
-        HttpClient httpClient,
-        IConfiguration configuration,
-        ILogger<CasoUsoResponderPreguntaGroq> logger,
+        ClienteChatGroq clienteChat,
         TornaguiaDbContext context,
         ICasoUsoListarBodegas listarBodegas,
         ICasoUsoObtenerHistorialSolicitudes obtenerHistorialSolicitudes,
@@ -158,9 +147,7 @@ public class CasoUsoResponderPreguntaGroq : ICasoUsoResponderPregunta
         ICasoUsoObtenerResumenImpuestoConsumo obtenerResumenImpuestoConsumo,
         ICasoUsoObtenerImpuestoPorProducto obtenerImpuestoPorProducto)
     {
-        _httpClient = httpClient;
-        _configuration = configuration;
-        _logger = logger;
+        _clienteChat = clienteChat;
         _context = context;
         _listarBodegas = listarBodegas;
         _obtenerHistorialSolicitudes = obtenerHistorialSolicitudes;
@@ -174,10 +161,6 @@ public class CasoUsoResponderPreguntaGroq : ICasoUsoResponderPregunta
     public async Task<ResponderPreguntaResponse> EjecutarAsync(
         ResponderPreguntaRequest request, CancellationToken cancellationToken = default)
     {
-        var apiKey = _configuration["Groq:ApiKey"]
-            ?? throw new AsistenteNoDisponibleException(
-                "El asistente no está disponible: falta configurar Groq:ApiKey en el servidor.");
-
         var historial = await _context.MensajesAsistente
             .Where(m => m.UsuarioId == request.UsuarioId)
             .OrderByDescending(m => m.Id)
@@ -185,25 +168,17 @@ public class CasoUsoResponderPreguntaGroq : ICasoUsoResponderPregunta
             .ToListAsync(cancellationToken);
         historial.Reverse();
 
-        var mensajes = new JsonArray
-        {
-            new JsonObject { ["role"] = "system", ["content"] = SystemPrompt },
-        };
+        var mensajes = new JsonArray();
         foreach (var mensaje in historial)
             mensajes.Add(new JsonObject { ["role"] = RolOpenAi(mensaje.Rol), ["content"] = mensaje.Contenido });
         mensajes.Add(new JsonObject { ["role"] = "user", ["content"] = request.Pregunta });
 
-        string respuestaFinal;
-        try
-        {
-            respuestaFinal = await EjecutarLoopAsync(mensajes, apiKey, request.UsuarioId, cancellationToken);
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
-        {
-            _logger.LogError(ex, "No se pudo contactar el asistente (Groq).");
-            throw new AsistenteNoDisponibleException(
-                "No se pudo conectar con el asistente. Verifica tu conexión e intenta de nuevo.");
-        }
+        var respuestaFinal = await _clienteChat.CompletarAsync(
+            SystemPrompt,
+            mensajes,
+            Herramientas,
+            (nombre, argumentosJson, ct) => EjecutarHerramientaAsync(nombre, argumentosJson, request.UsuarioId, ct),
+            cancellationToken);
 
         _context.MensajesAsistente.AddRange(
             new MensajeAsistente { UsuarioId = request.UsuarioId, ConversacionId = request.ConversacionId, Rol = "usuario", Contenido = request.Pregunta, FechaCreacion = DateTime.UtcNow },
@@ -213,95 +188,28 @@ public class CasoUsoResponderPreguntaGroq : ICasoUsoResponderPregunta
         return new ResponderPreguntaResponse(respuestaFinal);
     }
 
-    private async Task<string> EjecutarLoopAsync(
-        JsonArray mensajes, string apiKey, int usuarioId, CancellationToken cancellationToken)
-    {
-        for (var iteracion = 0; iteracion < MaxIteracionesHerramientas; iteracion++)
-        {
-            var cuerpo = new JsonObject
-            {
-                ["model"] = Modelo,
-                ["messages"] = ClonarArray(mensajes),
-                ["tools"] = ClonarArray(Herramientas),
-                ["tool_choice"] = "auto",
-            };
-
-            using var contenido = new StringContent(cuerpo.ToJsonString(), Encoding.UTF8, "application/json");
-            using var solicitud = new HttpRequestMessage(HttpMethod.Post, Url) { Content = contenido };
-            solicitud.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
-
-            var respuestaHttp = await _httpClient.SendAsync(solicitud, cancellationToken);
-            var json = await respuestaHttp.Content.ReadAsStringAsync(cancellationToken);
-
-            if (!respuestaHttp.IsSuccessStatusCode)
-            {
-                _logger.LogError("Groq devolvió {StatusCode}: {Json}", (int)respuestaHttp.StatusCode, json);
-                throw new AsistenteNoDisponibleException(MensajeAmigablePorEstado(respuestaHttp.StatusCode));
-            }
-
-            var raiz = JsonNode.Parse(json)!.AsObject();
-            var eleccion = raiz["choices"]![0]!.AsObject();
-            var mensaje = eleccion["message"]!.AsObject();
-            var toolCalls = mensaje["tool_calls"]?.AsArray();
-
-            if (toolCalls is null || toolCalls.Count == 0)
-                return mensaje["content"]?.GetValue<string>()
-                    ?? "No pude generar una respuesta. Intenta reformular tu pregunta.";
-
-            mensajes.Add(ClonarObjeto(mensaje));
-
-            foreach (var toolCallNode in toolCalls)
-            {
-                var toolCall = toolCallNode!.AsObject();
-                var id = toolCall["id"]!.GetValue<string>();
-                var funcion = toolCall["function"]!.AsObject();
-                var nombre = funcion["name"]!.GetValue<string>();
-                var argumentosJson = funcion["arguments"]?.GetValue<string>() ?? "{}";
-
-                var resultado = await EjecutarHerramientaAsync(nombre, argumentosJson, usuarioId, cancellationToken);
-                mensajes.Add(new JsonObject
-                {
-                    ["role"] = "tool",
-                    ["tool_call_id"] = id,
-                    ["content"] = resultado,
-                });
-            }
-        }
-
-        throw new AsistenteNoDisponibleException(
-            "El asistente no pudo completar la respuesta. Intenta reformular tu pregunta.");
-    }
-
     private async Task<string> EjecutarHerramientaAsync(
         string nombre, string argumentosJson, int usuarioId, CancellationToken cancellationToken)
     {
-        try
-        {
-            using var argumentos = JsonDocument.Parse(argumentosJson);
-            var raiz = argumentos.RootElement;
+        using var argumentos = JsonDocument.Parse(argumentosJson);
+        var raiz = argumentos.RootElement;
 
-            object resultado = nombre switch
-            {
-                "listar_bodegas" => await _listarBodegas.EjecutarAsync(usuarioId),
-                "obtener_historial_solicitudes" => await _obtenerHistorialSolicitudes.EjecutarAsync(usuarioId),
-                "obtener_inventario" => await _obtenerInventario.EjecutarAsync(
-                    raiz.GetProperty("bodegaId").GetInt32(), usuarioId),
-                "listar_lotes_disponibles" => await _listarLotesDisponibles.EjecutarAsync(
-                    usuarioId, LeerIntOpcional(raiz, "bodegaId")),
-                "obtener_solicitud" => await _obtenerSolicitud.EjecutarAsync(
-                    raiz.GetProperty("solicitudId").GetInt32(), usuarioId),
-                "obtener_resumen_impuesto_consumo" => await _obtenerResumenImpuestoConsumo.EjecutarAsync(usuarioId),
-                "obtener_impuesto_por_producto" => await _obtenerImpuestoPorProducto.EjecutarAsync(usuarioId),
-                _ => throw new InvalidOperationException($"Herramienta desconocida: {nombre}"),
-            };
-
-            return JsonSerializer.Serialize(resultado);
-        }
-        catch (Exception ex)
+        object resultado = nombre switch
         {
-            _logger.LogWarning(ex, "Falló la ejecución de la herramienta {Nombre}", nombre);
-            return JsonSerializer.Serialize(new { error = ex.Message });
-        }
+            "listar_bodegas" => await _listarBodegas.EjecutarAsync(usuarioId),
+            "obtener_historial_solicitudes" => await _obtenerHistorialSolicitudes.EjecutarAsync(usuarioId),
+            "obtener_inventario" => await _obtenerInventario.EjecutarAsync(
+                raiz.GetProperty("bodegaId").GetInt32(), usuarioId),
+            "listar_lotes_disponibles" => await _listarLotesDisponibles.EjecutarAsync(
+                usuarioId, LeerIntOpcional(raiz, "bodegaId")),
+            "obtener_solicitud" => await _obtenerSolicitud.EjecutarAsync(
+                raiz.GetProperty("solicitudId").GetInt32(), usuarioId),
+            "obtener_resumen_impuesto_consumo" => await _obtenerResumenImpuestoConsumo.EjecutarAsync(usuarioId),
+            "obtener_impuesto_por_producto" => await _obtenerImpuestoPorProducto.EjecutarAsync(usuarioId),
+            _ => throw new InvalidOperationException($"Herramienta desconocida: {nombre}"),
+        };
+
+        return JsonSerializer.Serialize(resultado);
     }
 
     private static int? LeerIntOpcional(JsonElement raiz, string propiedad)
@@ -310,16 +218,4 @@ public class CasoUsoResponderPreguntaGroq : ICasoUsoResponderPregunta
             : null;
 
     private static string RolOpenAi(string rol) => rol == "asistente" ? "assistant" : "user";
-
-    private static JsonArray ClonarArray(JsonArray original) => (JsonArray)original.DeepClone();
-    private static JsonObject ClonarObjeto(JsonObject original) => (JsonObject)original.DeepClone();
-
-    private static string MensajeAmigablePorEstado(HttpStatusCode statusCode) => statusCode switch
-    {
-        HttpStatusCode.TooManyRequests or HttpStatusCode.ServiceUnavailable =>
-            "El asistente está saturado en este momento. Intenta de nuevo en unos minutos.",
-        HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden =>
-            "El asistente no está disponible en este momento. Contacta al administrador del sistema.",
-        _ => "No se pudo obtener una respuesta del asistente. Intenta de nuevo.",
-    };
 }

@@ -8,7 +8,7 @@ namespace TornaguiaAsistente.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [EnableRateLimiting("fixed")]
-[Authorize]
+[Authorize(Roles = "Contribuyente")]
 public class AsistenteController : ApiControllerBase
 {
     private readonly ICasoUsoResponderPregunta _casoUsoResponderPregunta;

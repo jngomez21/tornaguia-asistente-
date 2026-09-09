@@ -8,6 +8,7 @@ public class Usuario
     public string PasswordHash { get; set; } = string.Empty;
     public string PreguntaSeguridad { get; set; } = string.Empty;
     public string RespuestaSeguridadHash { get; set; } = string.Empty;
+    public RolUsuario Rol { get; set; } = RolUsuario.Contribuyente;
 
     public ICollection<Solicitud> Solicitudes { get; set; } = new List<Solicitud>();
     public ICollection<Bodega> Bodegas { get; set; } = new List<Bodega>();

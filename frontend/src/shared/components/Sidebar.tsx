@@ -23,6 +23,7 @@ export function Sidebar({ items, extra }: SidebarProps) {
     localStorage.removeItem('token')
     localStorage.removeItem('usuarioId')
     localStorage.removeItem('nombre')
+    localStorage.removeItem('rol')
     navigate('/')
   }
 

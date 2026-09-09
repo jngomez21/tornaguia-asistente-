@@ -24,7 +24,7 @@ public record RegistrarUsuarioRequest(string Nombre, string Email, string Passwo
 public record RegistrarUsuarioResponse(int UsuarioId, string Nombre, string Email);
 
 public record LoginRequest(string Email, string Password);
-public record LoginResponse(string Token, int UsuarioId, string Nombre);
+public record LoginResponse(string Token, int UsuarioId, string Nombre, string Rol);
 
 public record PreguntaSeguridadRequest(string Email);
 public record PreguntaSeguridadResponse(string Pregunta);

@@ -1,5 +1,6 @@
 import { createContext } from 'react'
-import type { MensajeAsistente } from '../types'
+import type { SidebarItem } from '../../../shared/components/Sidebar'
+import type { MensajeAsistente, PreguntarResponse } from '../types'
 
 export interface AsistenteContextValue {
   abierto: boolean
@@ -12,6 +13,11 @@ export interface AsistenteContextValue {
   limpiar: () => void
   continuarConHistorial: (historial: MensajeAsistente[], conversacionId: string) => void
   agregarMensaje: (mensaje: MensajeAsistente) => void
+  /** Endpoint real (contribuyente o gerencial) — lo decide quien monta el AsistenteProvider. */
+  preguntar: (pregunta: string, conversacionId: string) => Promise<PreguntarResponse>
+  obtenerHistorial: () => Promise<MensajeAsistente[]>
+  rutaHistorial: string
+  sidebarItems: SidebarItem[]
 }
 
 export const AsistenteContext = createContext<AsistenteContextValue | null>(null)

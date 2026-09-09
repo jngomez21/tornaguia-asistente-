@@ -1,9 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Sidebar } from '../../../shared/components/Sidebar'
-import { appSidebarItems } from '../../../shared/components/sidebarItems'
 import { formatearFecha, truncarTexto } from '../../../shared/lib/formato'
-import { getHistorialAsistente } from '../api/asistenteApi'
 import { useAsistente } from '../context/useAsistente'
 import { ConversacionAsistente } from '../components/ConversacionAsistente'
 import type { MensajeAsistente } from '../types'
@@ -24,8 +22,8 @@ function IconoNuevo() {
 }
 
 export function HistorialAsistentePage() {
-  const historialQuery = useQuery({ queryKey: ['asistente-historial'], queryFn: getHistorialAsistente })
-  const { continuarConHistorial, limpiar } = useAsistente()
+  const { continuarConHistorial, limpiar, obtenerHistorial, sidebarItems, rutaHistorial } = useAsistente()
+  const historialQuery = useQuery({ queryKey: ['asistente-historial', rutaHistorial], queryFn: obtenerHistorial })
   const [seleccionada, setSeleccionada] = useState<string | null>(null)
 
   const conversaciones = useMemo<ConversacionListada[]>(() => {
@@ -59,7 +57,7 @@ export function HistorialAsistentePage() {
 
   return (
     <div className="h-dvh flex bg-gray-50">
-      <Sidebar items={appSidebarItems} />
+      <Sidebar items={sidebarItems} />
 
       <main className="flex-1 overflow-hidden">
         <div className="max-w-6xl mx-auto h-full flex flex-col p-6 sm:p-10">

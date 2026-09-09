@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TornaguiaAsistente.Application.Geografia;
 
@@ -5,6 +6,7 @@ namespace TornaguiaAsistente.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class RutasController : ControllerBase
 {
     private readonly IMotorGeografico _motorGeografico;

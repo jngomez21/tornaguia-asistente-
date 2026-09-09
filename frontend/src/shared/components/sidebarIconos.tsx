@@ -1,4 +1,11 @@
 export const sidebarIconos = {
+  dashboard: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+      <rect x="3" y="12" width="4" height="8" rx="1" />
+      <rect x="10" y="7" width="4" height="13" rx="1" />
+      <rect x="17" y="3" width="4" height="17" rx="1" />
+    </svg>
+  ),
   inicio: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
       <path d="M4 11l8-7 8 7M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9" strokeLinecap="round" strokeLinejoin="round" />

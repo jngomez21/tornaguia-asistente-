@@ -17,7 +17,8 @@ export function LoginPage() {
       localStorage.setItem('token', data.token)
       localStorage.setItem('usuarioId', data.usuarioId.toString())
       localStorage.setItem('nombre', data.nombre)
-      navigate('/inicio')
+      localStorage.setItem('rol', data.rol)
+      navigate(data.rol === 'Ejecutivo' ? '/gerencial' : '/inicio')
     },
   })
 

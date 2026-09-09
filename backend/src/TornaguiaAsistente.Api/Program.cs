@@ -22,6 +22,8 @@ using TornaguiaAsistente.Application.Ia;
 using TornaguiaAsistente.Infrastructure.Ia;
 using TornaguiaAsistente.Application.Asistente;
 using TornaguiaAsistente.Infrastructure.Asistente;
+using TornaguiaAsistente.Application.Gerencial;
+using TornaguiaAsistente.Infrastructure.Gerencial;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -94,9 +96,19 @@ builder.Services.AddHttpClient<ExtractorDeclaracionGemini>();
 builder.Services.AddScoped<IExtractorDeclaracion, ExtractorDeclaracionGemini>();
 builder.Services.AddScoped<ICasoUsoProponerDeclaracion, CasoUsoProponerDeclaracion>();
 builder.Services.AddScoped<ICasoUsoCrearLoteDesdeDeclaracion, CasoUsoCrearLoteDesdeDeclaracion>();
-builder.Services.AddHttpClient<CasoUsoResponderPreguntaGroq>();
+builder.Services.AddHttpClient<ClienteChatGroq>();
 builder.Services.AddScoped<ICasoUsoResponderPregunta, CasoUsoResponderPreguntaGroq>();
 builder.Services.AddScoped<ICasoUsoObtenerHistorialConversacion, CasoUsoObtenerHistorialConversacion>();
+builder.Services.AddScoped<ICasoUsoResponderPreguntaGerencial, CasoUsoResponderPreguntaGerencialGroq>();
+builder.Services.AddScoped<ICasoUsoObtenerResumenGerencial, CasoUsoObtenerResumenGerencial>();
+builder.Services.AddScoped<ICasoUsoObtenerSerieMensual, CasoUsoObtenerSerieMensual>();
+builder.Services.AddScoped<ICasoUsoObtenerDistribucionPorTipo, CasoUsoObtenerDistribucionPorTipo>();
+builder.Services.AddScoped<ICasoUsoObtenerVolumenPorDepartamento, CasoUsoObtenerVolumenPorDepartamento>();
+builder.Services.AddScoped<ICasoUsoObtenerTopProductos, CasoUsoObtenerTopProductos>();
+builder.Services.AddScoped<ICasoUsoObtenerTopRutas, CasoUsoObtenerTopRutas>();
+builder.Services.AddScoped<ICasoUsoListarContribuyentes, CasoUsoListarContribuyentes>();
+builder.Services.AddScoped<ICasoUsoObtenerResumenContribuyente, CasoUsoObtenerResumenContribuyente>();
+builder.Services.AddScoped<ICasoUsoContarSolicitudes, CasoUsoContarSolicitudes>();
 
 builder.Services.AddDbContext<TornaguiaDbContext>(options =>
     options.UseNpgsql(
@@ -130,7 +142,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = builder.Configuration["Jwt:Audience"],
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
+            RoleClaimType = "rol"
         };
     });
 

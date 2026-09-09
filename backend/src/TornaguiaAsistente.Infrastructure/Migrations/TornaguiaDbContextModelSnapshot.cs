@@ -648,6 +648,13 @@ namespace TornaguiaAsistente.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Rol")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Contribuyente");
+
                     b.HasKey("Id");
 
                     b.ToTable("Usuarios");

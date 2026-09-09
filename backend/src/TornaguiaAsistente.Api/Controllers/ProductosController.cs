@@ -7,6 +7,7 @@ namespace TornaguiaAsistente.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ProductosController : ControllerBase
 {
     private readonly ICasoUsoListarProductos _casoUsoListar;

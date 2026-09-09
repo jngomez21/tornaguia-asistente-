@@ -9,6 +9,8 @@ import { LotesPage } from './features/inventario/pages/LotesPage'
 import { BodegasPage } from './features/bodegas/pages/BodegasPage'
 import { HistorialAsistentePage } from './features/asistente/pages/HistorialAsistentePage'
 import { RutaProtegida } from './shared/components/RutaProtegida'
+import { RutaEjecutiva } from './shared/components/RutaEjecutiva'
+import { DashboardGerencialPage } from './features/gerencial/pages/DashboardGerencialPage'
 
 export const router = createBrowserRouter([
     {
@@ -48,6 +50,19 @@ export const router = createBrowserRouter([
             },
             {
                 path: '/asistente/historial',
+                element: <HistorialAsistentePage />,
+            },
+        ],
+    },
+    {
+        element: <RutaEjecutiva />,
+        children: [
+            {
+                path: '/gerencial',
+                element: <DashboardGerencialPage />,
+            },
+            {
+                path: '/gerencial/asistente/historial',
                 element: <HistorialAsistentePage />,
             },
         ],

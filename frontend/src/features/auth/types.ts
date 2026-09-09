@@ -3,10 +3,13 @@ export interface LoginRequest {
     password: string
 }
 
+export type RolUsuario = 'Contribuyente' | 'Ejecutivo'
+
 export interface LoginResponse {
     token: string
     usuarioId: number
     nombre: string
+    rol: RolUsuario
 }
 
 export interface RegisterRequest {
