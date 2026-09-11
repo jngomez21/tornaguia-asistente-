@@ -41,8 +41,9 @@ public class CasoUsoContarSolicitudes : ICasoUsoContarSolicitudes
 
         if (request.DepartamentoId is not null)
         {
-            solicitudesQuery = solicitudesQuery.Where(s => s.MunicipioOrigen.DepartamentoId == request.DepartamentoId);
-            productosQuery = productosQuery.Where(sp => sp.Solicitud.MunicipioOrigen.DepartamentoId == request.DepartamentoId);
+            // Cantidad (tráfico) por origen; impuesto (fiscal) por destino — ver ImpuestoConsumoQueries.
+            solicitudesQuery = solicitudesQuery.FiltrarPorDepartamento(request.DepartamentoId, CriterioDepartamento.Origen);
+            productosQuery = productosQuery.FiltrarPorDepartamento(request.DepartamentoId, CriterioDepartamento.Destino);
         }
 
         if (request.UsuarioId is not null)

@@ -3,15 +3,17 @@ import { useEffect, useMemo } from 'react'
 interface ModalVistaPreviaPdfProps {
   titulo?: string
   bytes: Uint8Array
+  /** El documento de una declaración no siempre es un PDF (puede ser una foto escaneada, por ejemplo). */
+  contentType?: string
   onCerrar: () => void
   onDescargar?: () => void
 }
 
-export function ModalVistaPreviaPdf({ titulo, bytes, onCerrar, onDescargar }: ModalVistaPreviaPdfProps) {
+export function ModalVistaPreviaPdf({ titulo, bytes, contentType = 'application/pdf', onCerrar, onDescargar }: ModalVistaPreviaPdfProps) {
   const url = useMemo(() => {
-    const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' })
+    const blob = new Blob([new Uint8Array(bytes)], { type: contentType })
     return URL.createObjectURL(blob)
-  }, [bytes])
+  }, [bytes, contentType])
 
   useEffect(() => () => URL.revokeObjectURL(url), [url])
 

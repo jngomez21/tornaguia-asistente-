@@ -8,10 +8,13 @@ import { MapaControles, MapaNoDisponible } from '../../../shared/components/mapa
 import { getLimitesDepartamentos } from '../api/gerencialApi'
 import { colorSecuencial } from '../lib/colorSecuencial'
 import { formatearMonedaCOP } from '../../../shared/lib/formato'
+import { LeyendaCoropletica } from './LeyendaCoropletica'
 import type { VolumenDepartamento } from '../types'
 
 interface MapaDepartamentosVolumenProps {
   datos: VolumenDepartamento[]
+  departamentoSeleccionadoId?: number | null
+  onSeleccionar?: (departamento: VolumenDepartamento) => void
 }
 
 const BOUNDS_COLOMBIA: [[number, number], [number, number]] = [
@@ -19,6 +22,7 @@ const BOUNDS_COLOMBIA: [[number, number], [number, number]] = [
   [-66.8, 13.4],
 ]
 const COLOR_SIN_GEOMETRIA = '#e5e7eb'
+const COLOR_RESALTADO = '#0B1F4B' // marca-oscuro
 
 interface PopupDepartamento {
   lon: number
@@ -31,7 +35,7 @@ interface PopupDepartamento {
  * departamento, con el color ya calculado en JS (rampa secuencial normalizada contra el máximo
  * del período) — Mapbox no puede normalizar contra un máximo dinámico dentro de la expresión.
  */
-export function MapaDepartamentosVolumen({ datos }: MapaDepartamentosVolumenProps) {
+export function MapaDepartamentosVolumen({ datos, departamentoSeleccionadoId, onSeleccionar }: MapaDepartamentosVolumenProps) {
   const { mapRef, mapCargado, onLoad, ajustarABounds } = useMapaBase()
   const [popup, setPopup] = useState<PopupDepartamento | null>(null)
 
@@ -71,6 +75,13 @@ export function MapaDepartamentosVolumen({ datos }: MapaDepartamentosVolumenProp
     return ['match', ['get', 'id'], ...casos, COLOR_SIN_GEOMETRIA] as unknown as string
   }, [datos, maxCantidad])
 
+  // Ancho de línea condicional: 0 en todos salvo el departamento activo, así el borde grueso
+  // resalta cuál está filtrando el resto del tablero sin necesitar una capa/fuente aparte.
+  const anchoResaltado = useMemo(
+    () => ['case', ['==', ['get', 'id'], departamentoSeleccionadoId ?? -1], 3, 0] as unknown as number,
+    [departamentoSeleccionadoId]
+  )
+
   if (!MAPBOX_TOKEN) return <MapaNoDisponible />
 
   function handleClick(e: MapMouseEvent) {
@@ -81,8 +92,10 @@ export function MapaDepartamentosVolumen({ datos }: MapaDepartamentosVolumenProp
     setPopup({ lon: e.lngLat.lng, lat: e.lngLat.lat, departamento })
   }
 
+  // Alto heredado del contenedor (`h-full`): la fila principal del tablero es de altura fija y el
+  // mapa se ajusta a ella, en vez de imponer los 384px que antes marcaban el alto de toda la fila.
   return (
-    <div className="relative w-full h-96 rounded-xl overflow-hidden border border-gray-100">
+    <div className="relative w-full h-full rounded-xl overflow-hidden border border-gray-100">
       <Map
         ref={mapRef}
         mapboxAccessToken={MAPBOX_TOKEN}
@@ -105,6 +118,11 @@ export function MapaDepartamentosVolumen({ datos }: MapaDepartamentosVolumenProp
               paint={{ 'fill-color': expresionColor, 'fill-opacity': 0.85 }}
             />
             <Layer id="gerencial-departamentos-borde" type="line" paint={{ 'line-color': '#ffffff', 'line-width': 1 }} />
+            <Layer
+              id="gerencial-departamentos-resaltado"
+              type="line"
+              paint={{ 'line-color': COLOR_RESALTADO, 'line-width': anchoResaltado }}
+            />
           </Source>
         )}
 
@@ -114,10 +132,24 @@ export function MapaDepartamentosVolumen({ datos }: MapaDepartamentosVolumenProp
               <p className="font-semibold text-marca-oscuro text-sm mb-1">{popup.departamento.nombre}</p>
               <p className="text-xs text-gray-600">{popup.departamento.cantidad.toLocaleString('es-CO')} tornaguías</p>
               <p className="text-xs text-gray-600">{formatearMonedaCOP(popup.departamento.impuesto)}</p>
+              {onSeleccionar && popup.departamento.departamentoId !== departamentoSeleccionadoId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSeleccionar(popup.departamento)
+                    setPopup(null)
+                  }}
+                  className="mt-2 text-xs font-semibold text-marca-medio hover:underline"
+                >
+                  Filtrar el tablero por aquí →
+                </button>
+              )}
             </div>
           </Popup>
         )}
       </Map>
+
+      <LeyendaCoropletica maximo={maxCantidad} />
     </div>
   )
 }

@@ -23,6 +23,20 @@ export function formatearMonedaCOP(valor: number): string {
   }).format(valor)
 }
 
+/** Montos en millones para columnas estrechas (tira de KPIs): "$ 1.235 M" en vez de
+ * "$ 1.234.567.890", que no cabe. El valor exacto se conserva en el `title` de quien la use. */
+export function formatearMonedaCompacta(valor: number): string {
+  if (Math.abs(valor) < 1_000_000) return formatearMonedaCOP(valor)
+
+  const millones = valor / 1_000_000
+  const decimales = Math.abs(millones) >= 100 ? 0 : 1
+  const numero = millones.toLocaleString('es-CO', {
+    minimumFractionDigits: decimales,
+    maximumFractionDigits: decimales,
+  })
+  return `$ ${numero} M`
+}
+
 export function truncarTexto(texto: string, longitudMaxima: number): string {
   const plano = texto.replace(/\s+/g, ' ').trim()
   if (plano.length <= longitudMaxima) return plano

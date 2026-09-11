@@ -14,7 +14,7 @@ public class CasoUsoObtenerDistribucionPorTipo : ICasoUsoObtenerDistribucionPorT
         _context = context;
     }
 
-    public async Task<IReadOnlyList<DistribucionTipoResponse>> EjecutarAsync(int? anio)
+    public async Task<IReadOnlyList<DistribucionTipoResponse>> EjecutarAsync(int? anio, int? departamentoId = null)
     {
         var solicitudesQuery = _context.Solicitudes.AsQueryable();
         var productosQuery = _context.SolicitudesProductos.AsQueryable();
@@ -24,6 +24,10 @@ public class CasoUsoObtenerDistribucionPorTipo : ICasoUsoObtenerDistribucionPorT
             solicitudesQuery = solicitudesQuery.Where(s => s.FechaSolicitud >= desde && s.FechaSolicitud < hasta);
             productosQuery = productosQuery.Where(sp => sp.Solicitud.FechaSolicitud >= desde && sp.Solicitud.FechaSolicitud < hasta);
         }
+
+        // Regla fija: cantidad de tornaguías por origen, impuesto por destino.
+        solicitudesQuery = solicitudesQuery.FiltrarPorDepartamento(departamentoId, CriterioDepartamento.Origen);
+        productosQuery = productosQuery.FiltrarPorDepartamento(departamentoId, CriterioDepartamento.Destino);
 
         var cantidades = await solicitudesQuery
             .GroupBy(s => s.TipoTornaguia.Nombre)

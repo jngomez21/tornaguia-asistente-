@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import type { SidebarItem } from '../../../shared/components/Sidebar'
 import type { MensajeAsistente, PreguntarResponse } from '../types'
 import { AsistenteContext } from './asistenteContextDef'
-import type { AsistenteContextValue } from './asistenteContextDef'
+import type { AsistenteContextValue, DocumentoChat } from './asistenteContextDef'
 
 interface AsistenteProviderProps {
   children: ReactNode
@@ -11,9 +11,17 @@ interface AsistenteProviderProps {
   obtenerHistorial: () => Promise<MensajeAsistente[]>
   rutaHistorial: string
   sidebarItems: SidebarItem[]
+  abrirDocumento?: (doc: DocumentoChat) => void
 }
 
-export function AsistenteProvider({ children, preguntar, obtenerHistorial, rutaHistorial, sidebarItems }: AsistenteProviderProps) {
+export function AsistenteProvider({
+  children,
+  preguntar,
+  obtenerHistorial,
+  rutaHistorial,
+  sidebarItems,
+  abrirDocumento,
+}: AsistenteProviderProps) {
   const [abierto, setAbierto] = useState(false)
   const [mensajes, setMensajes] = useState<MensajeAsistente[]>([])
   const [conversacionId, setConversacionId] = useState<string>(() => crypto.randomUUID())
@@ -43,6 +51,7 @@ export function AsistenteProvider({ children, preguntar, obtenerHistorial, rutaH
     obtenerHistorial,
     rutaHistorial,
     sidebarItems,
+    abrirDocumento,
   }
 
   return <AsistenteContext.Provider value={value}>{children}</AsistenteContext.Provider>

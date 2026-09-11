@@ -12,9 +12,9 @@ export async function getLimitesDepartamentos(departamentoIds: number[]): Promis
   return response.data
 }
 
-export async function getDashboardGerencial(anio: number | null): Promise<DashboardGerencial> {
+export async function getDashboardGerencial(anio: number | null, departamentoId: number | null): Promise<DashboardGerencial> {
   const response = await api.get<DashboardGerencial>('/gerencial/dashboard', {
-    params: anio != null ? { anio } : undefined,
+    params: { anio: anio ?? undefined, departamentoId: departamentoId ?? undefined },
   })
   return response.data
 }
@@ -24,4 +24,31 @@ export async function getResumenContribuyente(usuarioId: number, anio: number | 
     params: anio != null ? { anio } : undefined,
   })
   return response.data
+}
+
+export async function getPdfSolicitudGerencial(solicitudId: number): Promise<Uint8Array> {
+  const response = await api.get<ArrayBuffer>(`/gerencial/solicitudes/${solicitudId}/pdf`, {
+    responseType: 'arraybuffer',
+  })
+  return new Uint8Array(response.data)
+}
+
+export interface DocumentoDeclaracion {
+  bytes: Uint8Array
+  contentType: string
+  nombreArchivo: string
+}
+
+export async function getDocumentoDeclaracion(declaracionId: number): Promise<DocumentoDeclaracion> {
+  const response = await api.get<ArrayBuffer>(`/gerencial/declaraciones/${declaracionId}/documento`, {
+    responseType: 'arraybuffer',
+  })
+  const disposition = response.headers['content-disposition'] as string | undefined
+  const nombreArchivo = disposition?.match(/filename="?([^";]+)"?/)?.[1] ?? `declaracion-${declaracionId}`
+  const contentType = (response.headers['content-type'] as string | undefined) ?? 'application/octet-stream'
+  return {
+    bytes: new Uint8Array(response.data),
+    contentType,
+    nombreArchivo,
+  }
 }

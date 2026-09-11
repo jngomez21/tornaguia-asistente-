@@ -1,8 +1,8 @@
 export interface ResumenGerencial {
   totalTornaguias: number
-  impuestoCausado: number
+  impuestoRecaudado: number
   impuestoPorCausar: number
-  impuestoTotal: number
+  impuestoEnTornaguias: number
   totalContribuyentes: number
   totalBodegas: number
   lotesReservados: number
@@ -10,6 +10,7 @@ export interface ResumenGerencial {
 }
 
 export interface PuntoSerieMensual {
+  anio: number
   mes: number
   tornaguias: number
   impuesto: number
@@ -66,7 +67,7 @@ export interface ResumenContribuyente {
   nombre: string
   totalBodegas: number
   lotesReservados: number
-  impuestoCausado: number
+  impuestoRecaudado: number
   impuestoPorCausar: number
   porTipo: DistribucionTipo[]
 }

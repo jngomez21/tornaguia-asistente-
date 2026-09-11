@@ -52,17 +52,19 @@ public class CasoUsoObtenerResumenContribuyente : ICasoUsoObtenerResumenContribu
         var lotesReservados = await _context.Lotes
             .CountAsync(l => l.Estado == EstadoLote.Reservado && l.Bodega!.UsuarioId == usuarioId);
 
-        var impuestoCausado = await ImpuestoConsumoQueries.Causado(_context, usuarioId, anio)
-            .SumAsync(sp => (decimal?)sp.ValorImpuestoConsumo) ?? 0m;
-        var impuestoPorCausar = await ImpuestoConsumoQueries.PorCausar(_context, usuarioId, anio)
-            .SumAsync(sp => (decimal?)sp.ValorImpuestoConsumo) ?? 0m;
+        // Recaudado: toda línea de producto ya asociada a una tornaguía emitida (los tres tipos).
+        // Por causar: el valor de sus lotes reservados sin usar todavía — inventario quieto, sin
+        // año (foto del estado actual), no impuesto de una solicitud ya emitida.
+        var impuestoRecaudado = await productosQuery.SumAsync(sp => (decimal?)sp.ValorImpuestoConsumo) ?? 0m;
+        var impuestoPorCausar = await ImpuestoConsumoQueries.LotesSinUsar(_context, usuarioId)
+            .SumAsync(lp => (decimal?)lp.ValorImpuestoConsumo) ?? 0m;
 
         return new ResumenContribuyenteResponse(
             UsuarioId: usuario.Id,
             Nombre: usuario.Nombre,
             TotalBodegas: totalBodegas,
             LotesReservados: lotesReservados,
-            ImpuestoCausado: impuestoCausado,
+            ImpuestoRecaudado: impuestoRecaudado,
             ImpuestoPorCausar: impuestoPorCausar,
             PorTipo: porTipo);
     }

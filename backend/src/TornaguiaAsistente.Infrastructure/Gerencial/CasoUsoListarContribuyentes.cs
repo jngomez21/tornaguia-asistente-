@@ -15,7 +15,7 @@ public class CasoUsoListarContribuyentes : ICasoUsoListarContribuyentes
         _context = context;
     }
 
-    public async Task<IReadOnlyList<ContribuyenteResumenResponse>> EjecutarAsync(int? anio)
+    public async Task<IReadOnlyList<ContribuyenteResumenResponse>> EjecutarAsync(int? anio, int? limite = null, int? departamentoId = null)
     {
         var solicitudesQuery = _context.Solicitudes.AsQueryable();
         var productosQuery = _context.SolicitudesProductos.AsQueryable();
@@ -25,6 +25,11 @@ public class CasoUsoListarContribuyentes : ICasoUsoListarContribuyentes
             solicitudesQuery = solicitudesQuery.Where(s => s.FechaSolicitud >= desde && s.FechaSolicitud < hasta);
             productosQuery = productosQuery.Where(sp => sp.Solicitud.FechaSolicitud >= desde && sp.Solicitud.FechaSolicitud < hasta);
         }
+
+        // Regla fija: tornaguías (tráfico) por origen, impuesto (fiscal) por destino — pueden ser
+        // subconjuntos de solicitudes distintos del mismo contribuyente, no una elección del usuario.
+        solicitudesQuery = solicitudesQuery.FiltrarPorDepartamento(departamentoId, CriterioDepartamento.Origen);
+        productosQuery = productosQuery.FiltrarPorDepartamento(departamentoId, CriterioDepartamento.Destino);
 
         var tornaguiasPorUsuario = await solicitudesQuery
             .GroupBy(s => s.UsuarioId)
@@ -48,14 +53,22 @@ public class CasoUsoListarContribuyentes : ICasoUsoListarContribuyentes
             .Select(u => new { u.Id, u.Nombre })
             .ToListAsync();
 
-        return contribuyentes
+        var resumenes = contribuyentes
             .Select(u => new ContribuyenteResumenResponse(
                 u.Id,
                 u.Nombre,
                 tornaguiasPorUsuario.GetValueOrDefault(u.Id),
                 impuestoPorUsuario.GetValueOrDefault(u.Id),
-                ultimaActividadPorUsuario.TryGetValue(u.Id, out var ultima) ? ultima : (DateTime?)null))
+                ultimaActividadPorUsuario.TryGetValue(u.Id, out var ultima) ? ultima : (DateTime?)null));
+
+        // Acotado a un departamento: solo los que tuvieron movimiento ahí, no los 32 contribuyentes
+        // con la mayoría en cero — eso sí tiene sentido para el tablero global (sin departamento).
+        if (departamentoId is not null)
+            resumenes = resumenes.Where(c => c.Tornaguias > 0);
+
+        return resumenes
             .OrderByDescending(c => c.Impuesto)
+            .Take(limite ?? int.MaxValue)
             .ToList();
     }
 }

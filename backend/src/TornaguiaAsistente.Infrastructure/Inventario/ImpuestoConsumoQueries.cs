@@ -1,4 +1,6 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
+using TornaguiaAsistente.Application.Gerencial;
 using TornaguiaAsistente.Domain.Entities;
 using TornaguiaAsistente.Infrastructure.Persistence;
 
@@ -30,8 +32,11 @@ internal static class ImpuestoConsumoQueries
 
     private static IQueryable<SolicitudProducto> PorTipo(TornaguiaDbContext ctx, int? usuarioId, int? anio, bool esReenvio)
     {
-        var query = ctx.SolicitudesProductos.Where(sp =>
-            esReenvio ? sp.Solicitud.TipoTornaguia.Nombre == TipoReenvio : sp.Solicitud.TipoTornaguia.Nombre != TipoReenvio);
+        // Ramificado en C#, no con un ternario dentro del Where: así EF traduce a "=" o "<>"
+        // directo en vez de un CASE WHEN @esReenvio evaluado por fila en Postgres.
+        var query = esReenvio
+            ? ctx.SolicitudesProductos.Where(sp => sp.Solicitud.TipoTornaguia.Nombre == TipoReenvio)
+            : ctx.SolicitudesProductos.Where(sp => sp.Solicitud.TipoTornaguia.Nombre != TipoReenvio);
 
         if (usuarioId is not null)
             query = query.Where(sp => sp.Solicitud.UsuarioId == usuarioId);
@@ -44,6 +49,36 @@ internal static class ImpuestoConsumoQueries
 
         return query;
     }
+
+    /// <summary>
+    /// A qué departamento le pertenece fiscalmente el impuesto de una línea: el de DESTINO (el
+    /// consumidor final — en Movilización se causa allá, y en Reenvío la ley cruza ahí el impuesto
+    /// ya pagado en origen), o el de origen cuando no hay destino colombiano (exportación). Único
+    /// lugar donde vive esta regla — reutilizada tanto para agrupar (mapa) como para filtrar
+    /// (FiltroDepartamentoProducto) por un departamento puntual (drill-down).
+    /// </summary>
+    public static Expression<Func<SolicitudProducto, int>> DepartamentoFiscalDeProducto { get; } =
+        sp => sp.Solicitud.MunicipioDestino != null ? sp.Solicitud.MunicipioDestino.DepartamentoId : sp.Solicitud.MunicipioOrigen.DepartamentoId;
+
+    // Cantidad (tráfico) siempre por origen; impuesto (fiscal) siempre por destino — ver
+    // DepartamentoFiscalDeProducto. Los cuatro casos de uso que acotan por un departamento puntual
+    // (Contribuyentes/TopProductos/TopRutas del drill-down, y ContarSolicitudes del bot) reutilizan
+    // estas dos expresiones en vez de repetir el ternario.
+    public static Expression<Func<Solicitud, bool>> FiltroDepartamento(int departamentoId, CriterioDepartamento criterio) =>
+        criterio == CriterioDepartamento.Origen
+            ? s => s.MunicipioOrigen.DepartamentoId == departamentoId
+            : s => (s.MunicipioDestino != null ? s.MunicipioDestino.DepartamentoId : s.MunicipioOrigen.DepartamentoId) == departamentoId;
+
+    public static Expression<Func<SolicitudProducto, bool>> FiltroDepartamentoProducto(int departamentoId, CriterioDepartamento criterio) =>
+        criterio == CriterioDepartamento.Origen
+            ? sp => sp.Solicitud.MunicipioOrigen.DepartamentoId == departamentoId
+            : sp => (sp.Solicitud.MunicipioDestino != null ? sp.Solicitud.MunicipioDestino.DepartamentoId : sp.Solicitud.MunicipioOrigen.DepartamentoId) == departamentoId;
+
+    public static IQueryable<Solicitud> FiltrarPorDepartamento(this IQueryable<Solicitud> query, int? departamentoId, CriterioDepartamento criterio) =>
+        departamentoId is null ? query : query.Where(FiltroDepartamento(departamentoId.Value, criterio));
+
+    public static IQueryable<SolicitudProducto> FiltrarPorDepartamento(this IQueryable<SolicitudProducto> query, int? departamentoId, CriterioDepartamento criterio) =>
+        departamentoId is null ? query : query.Where(FiltroDepartamentoProducto(departamentoId.Value, criterio));
 
     /// <summary>
     /// Límites UTC (inicio inclusivo, fin exclusivo) de un año calendario en Colombia (UTC-5, sin

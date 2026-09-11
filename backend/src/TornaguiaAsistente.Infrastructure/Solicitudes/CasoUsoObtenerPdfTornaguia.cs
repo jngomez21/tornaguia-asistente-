@@ -12,13 +12,9 @@ public class CasoUsoObtenerPdfTornaguia : ICasoUsoObtenerPdfTornaguia
         _context = context;
     }
 
-    public async Task<byte[]> EjecutarAsync(int solicitudId, int usuarioId)
-    {
-        var detalle = await SolicitudesAjustes.ObtenerDetalleConSolicitudAsync(_context, solicitudId, usuarioId);
+    public Task<byte[]> EjecutarAsync(int solicitudId, int usuarioId) =>
+        PdfTornaguiaQueries.ObtenerPdfAsync(_context, solicitudId, usuarioId);
 
-        if (detalle.PdfBytes is null)
-            throw new SolicitudInvalidaException("El PDF de esta tornaguía aún no se ha generado.");
-
-        return detalle.PdfBytes;
-    }
+    public Task<byte[]> EjecutarSinVerificarDuenoAsync(int solicitudId) =>
+        PdfTornaguiaQueries.ObtenerPdfAsync(_context, solicitudId, usuarioId: null);
 }

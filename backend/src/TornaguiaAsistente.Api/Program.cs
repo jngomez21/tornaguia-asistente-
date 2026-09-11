@@ -38,7 +38,11 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins("http://localhost:5173")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              // Content-Disposition no está en la lista segura de CORS por defecto: sin esto, el
+              // nombre de archivo real del documento de una declaración es invisible para el
+              // frontend (solo lo ve el navegador al descargar directo, no vía fetch/axios).
+              .WithExposedHeaders("Content-Disposition");
     });
 });
 builder.Services.AddSwaggerGen(options =>
@@ -109,6 +113,11 @@ builder.Services.AddScoped<ICasoUsoObtenerTopRutas, CasoUsoObtenerTopRutas>();
 builder.Services.AddScoped<ICasoUsoListarContribuyentes, CasoUsoListarContribuyentes>();
 builder.Services.AddScoped<ICasoUsoObtenerResumenContribuyente, CasoUsoObtenerResumenContribuyente>();
 builder.Services.AddScoped<ICasoUsoContarSolicitudes, CasoUsoContarSolicitudes>();
+builder.Services.AddScoped<ICasoUsoListarSolicitudesGerencial, CasoUsoListarSolicitudes>();
+builder.Services.AddScoped<ICasoUsoObtenerSolicitudDetalleGerencial, CasoUsoObtenerSolicitudDetalle>();
+builder.Services.AddScoped<ICasoUsoListarLotesGerencial, CasoUsoListarLotesGerencial>();
+builder.Services.AddScoped<ICasoUsoListarDeclaraciones, CasoUsoListarDeclaraciones>();
+builder.Services.AddScoped<ICasoUsoObtenerDocumentoDeclaracion, CasoUsoObtenerDocumentoDeclaracion>();
 
 builder.Services.AddDbContext<TornaguiaDbContext>(options =>
     options.UseNpgsql(

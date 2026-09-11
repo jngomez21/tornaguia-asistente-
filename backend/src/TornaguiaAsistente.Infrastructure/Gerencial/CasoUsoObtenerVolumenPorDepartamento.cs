@@ -16,7 +16,11 @@ public class CasoUsoObtenerVolumenPorDepartamento : ICasoUsoObtenerVolumenPorDep
 
     public async Task<IReadOnlyList<VolumenDepartamentoResponse>> EjecutarAsync(int? anio)
     {
-        // Se atribuye al departamento de origen: es donde se causa/recauda el impuesto al consumo.
+        // Dos atribuciones geográficas distintas, no una: la cantidad (tráfico) va al origen —
+        // ahí se radica la tornaguía, el origen es "el distribuidor". El impuesto (fiscal) va al
+        // destino — es el departamento consumidor: en Movilización se causa allá, y en Reenvío,
+        // aunque ya se pagó en origen, la ley lo cruza al destino (sin cobrar dos veces). Solo cae
+        // a origen cuando no hay destino colombiano (exportación).
         var solicitudesQuery = _context.Solicitudes.AsQueryable();
         var productosQuery = _context.SolicitudesProductos.AsQueryable();
         if (anio is not null)
@@ -32,7 +36,7 @@ public class CasoUsoObtenerVolumenPorDepartamento : ICasoUsoObtenerVolumenPorDep
             .ToDictionaryAsync(x => x.DepartamentoId, x => x.Cantidad);
 
         var impuestos = await productosQuery
-            .GroupBy(sp => sp.Solicitud.MunicipioOrigen.DepartamentoId)
+            .GroupBy(ImpuestoConsumoQueries.DepartamentoFiscalDeProducto)
             .Select(g => new { DepartamentoId = g.Key, Impuesto = g.Sum(x => x.ValorImpuestoConsumo) })
             .ToDictionaryAsync(x => x.DepartamentoId, x => x.Impuesto);
 

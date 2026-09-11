@@ -27,7 +27,7 @@ public class ProductosController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "Contribuyente")]
     public async Task<ActionResult<ProductoResponse>> CrearProducto(CrearProductoRequest request)
     {
         try

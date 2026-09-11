@@ -7,8 +7,6 @@ namespace TornaguiaAsistente.Infrastructure.Gerencial;
 
 public class CasoUsoObtenerTopProductos : ICasoUsoObtenerTopProductos
 {
-    private const int LimiteResultados = 10;
-
     private readonly TornaguiaDbContext _context;
 
     public CasoUsoObtenerTopProductos(TornaguiaDbContext context)
@@ -16,32 +14,43 @@ public class CasoUsoObtenerTopProductos : ICasoUsoObtenerTopProductos
         _context = context;
     }
 
-    public async Task<IReadOnlyList<TopProductoResponse>> EjecutarAsync(int? anio)
+    public async Task<IReadOnlyList<TopProductoResponse>> EjecutarAsync(int? anio, int? limite = null, int? departamentoId = null)
     {
-        var query = _context.SolicitudesProductos.AsQueryable();
+        var queryBase = _context.SolicitudesProductos.AsQueryable();
         if (anio is not null)
         {
             var (desde, hasta) = ImpuestoConsumoQueries.RangoAnioUtc(anio.Value);
-            query = query.Where(sp => sp.Solicitud.FechaSolicitud >= desde && sp.Solicitud.FechaSolicitud < hasta);
+            queryBase = queryBase.Where(sp => sp.Solicitud.FechaSolicitud >= desde && sp.Solicitud.FechaSolicitud < hasta);
         }
 
-        // EF Core no traduce un Select que construya el record directamente con dos Sum() tras
-        // el GroupBy; se proyecta primero a un tipo anónimo y se mapea al record ya en memoria.
-        var agrupado = await query
-            .GroupBy(sp => new { sp.ProductoId, sp.Producto.Nombre })
-            .Select(g => new
-            {
-                g.Key.ProductoId,
-                g.Key.Nombre,
-                Impuesto = g.Sum(x => x.ValorImpuestoConsumo),
-                Unidades = g.Sum(x => x.Cantidad)
-            })
-            .OrderByDescending(x => x.Impuesto)
-            .Take(LimiteResultados)
-            .ToListAsync();
+        // Regla fija: unidades (cuánto producto se movió) por origen, impuesto por destino — pueden
+        // salir de líneas de solicitud distintas del mismo producto, así que van en dos consultas.
+        var unidadesPorProducto = await queryBase
+            .FiltrarPorDepartamento(departamentoId, CriterioDepartamento.Origen)
+            .GroupBy(sp => sp.ProductoId)
+            .Select(g => new { ProductoId = g.Key, Unidades = g.Sum(x => x.Cantidad) })
+            .ToDictionaryAsync(x => x.ProductoId, x => x.Unidades);
 
-        return agrupado
-            .Select(x => new TopProductoResponse(x.ProductoId, x.Nombre, x.Impuesto, x.Unidades))
+        var impuestoPorProducto = await queryBase
+            .FiltrarPorDepartamento(departamentoId, CriterioDepartamento.Destino)
+            .GroupBy(sp => sp.ProductoId)
+            .Select(g => new { ProductoId = g.Key, Impuesto = g.Sum(x => x.ValorImpuestoConsumo) })
+            .ToDictionaryAsync(x => x.ProductoId, x => x.Impuesto);
+
+        var productoIds = unidadesPorProducto.Keys.Union(impuestoPorProducto.Keys).ToList();
+        var nombresPorProducto = await _context.Productos
+            .Where(p => productoIds.Contains(p.Id))
+            .Select(p => new { p.Id, p.Nombre })
+            .ToDictionaryAsync(x => x.Id, x => x.Nombre);
+
+        return productoIds
+            .Select(id => new TopProductoResponse(
+                id,
+                nombresPorProducto.GetValueOrDefault(id, string.Empty),
+                impuestoPorProducto.GetValueOrDefault(id),
+                unidadesPorProducto.GetValueOrDefault(id)))
+            .OrderByDescending(x => x.Impuesto)
+            .Take(limite ?? int.MaxValue)
             .ToList();
     }
 }
